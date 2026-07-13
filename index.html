@@ -352,7 +352,7 @@ const INSPECTOR_REGION = {
   '旷小波':'华东','尚杰':'华东','谢志亮':'华东',
   '赵子龙':'华北','张晰梦':'华北','吴恩惠':'华北','杨涛':'华北',
 };
-const regionOf = (inspector,center) => INSPECTOR_REGION[inspector] || CENTER_REGION[center] || '其他';
+const regionOf = (inspector,center) => CENTER_REGION[center] || INSPECTOR_REGION[inspector] || '其他';
 const REGION_COLOR = {华东:'--s1', 华南:'--s2', 华西:'--s3', 华北:'--s5'};
 const MODELS = {
   '手机':['iPhone 14 Pro','iPhone 13','小米13','华为Mate50','OPPO Reno9','vivo X90','三星S22'],
@@ -945,7 +945,7 @@ function importCSV(text){
     if(!pd){ skipped++; continue; }                 // 跳过取值枚举等无日期行
     const center=get(c,'中心仓')||'—';
     const inspector=get(c,'巡检人员')||'—';
-    const region=regionOf(inspector,center);
+    const region=CENTER_REGION[center]||INSPECTOR_REGION[inspector]||'其他';
     const diffRaw=get(c,'差异');
     const isDiff=/^(是|有|y|yes|true|1|差异)$/i.test(diffRaw);
     const items=(get(c,'差异项')||'').split(/[、,;；\/]/).map(s=>s.trim()).filter(Boolean);
