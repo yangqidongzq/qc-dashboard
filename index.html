@@ -411,7 +411,7 @@ function genData(){
    3. 状态 & 筛选
    ========================================================= */
 const state = {region:'全区域', center:'全部', category:'全部', inspector:'全部',
-  bizline:'全部', diffItem:'全部', subjObj:'全部', status:'全部', from:1, to:CFG.asOfDay, preset:'todate', underOnly:false, hlDesc:'', collapsed:{}, detailPage:1};
+  bizline:'全部', from:1, to:CFG.asOfDay, preset:'todate', underOnly:false, hlDesc:'', collapsed:{}, detailPage:1, dSubjObj:'全部', dStatus:'全部', dDiffItem:'全部'};
 const PAGE_SIZE=15;
 
 function baseFilter(r, ignore={}){
@@ -420,9 +420,6 @@ function baseFilter(r, ignore={}){
   if(state.category!=='全部' && r.category!==state.category) return false;
   if(state.inspector!=='全部' && r.inspector!==state.inspector) return false;
   if(state.bizline!=='全部' && r.bizline!==state.bizline) return false;
-  if(state.diffItem!=='全部' && !r.diffItems.includes(state.diffItem)) return false;
-  if(state.subjObj!=='全部' && r.subjObj!==state.subjObj) return false;
-  if(state.status!=='全部' && r.status!==state.status) return false;
   if(r.day<state.from || r.day>state.to) return false;
   return true;
 }
@@ -774,7 +771,13 @@ function renderInspectors(){
 }
 
 function renderDetail(){
-  const f=getFiltered().slice().sort((a,b)=>b.day-a.day);
+  const all=getFiltered().slice().sort((a,b)=>b.day-a.day);
+  const f=all.filter(r=>{
+    if(state.dSubjObj!=='全部' && r.subjObj!==state.dSubjObj) return false;
+    if(state.dStatus!=='全部' && r.status!==state.dStatus) return false;
+    if(state.dDiffItem!=='全部' && !r.diffItems.includes(state.dDiffItem)) return false;
+    return true;
+  });
   const total=f.length, pages=Math.ceil(total/PAGE_SIZE);
   if(state.detailPage>pages) state.detailPage=Math.max(1,pages);
   const page=state.detailPage||1, start=(page-1)*PAGE_SIZE, end=start+PAGE_SIZE;
@@ -852,15 +855,15 @@ function buildControls(){
   const dc=document.getElementById('dDiffChips'); if(dc){
     dc.innerHTML=CFG.diffTypes.map(dt=>
       '<button class="chip" style="font-size:11px;padding:2px 7px" data-dt="'+dt+'">'+dt+'</button>').join('');
-    dc.querySelectorAll('.chip').forEach(b=>{ b.classList.toggle('active',state.diffItem===b.dataset.dt);
-      b.onclick=()=>{ state.diffItem=state.diffItem===b.dataset.dt?'全部':b.dataset.dt; state.detailPage=1;
-        dc.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active',state.diffItem===c.dataset.dt));
+    dc.querySelectorAll('.chip').forEach(b=>{ b.classList.toggle('active',state.dDiffItem===b.dataset.dt);
+      b.onclick=()=>{ state.dDiffItem=state.dDiffItem===b.dataset.dt?'全部':b.dataset.dt; state.detailPage=1;
+        dc.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active',state.dDiffItem===c.dataset.dt));
         renderDetail(); };
     });
   }
   // 明细面板内的筛选器
-  fillSelect('dSubjObj',['全部','主观','客观'],state.subjObj,v=>{state.subjObj=v;state.detailPage=1;renderDetail();});
-  fillSelect('dStatus',['全部','合格','差异','待验'],state.status,v=>{state.status=v;state.detailPage=1;renderDetail();});
+  fillSelect('dSubjObj',['全部','主观','客观'],state.dSubjObj,v=>{state.dSubjObj=v;state.detailPage=1;renderDetail();});
+  fillSelect('dStatus',['全部','合格','差异','待验'],state.dStatus,v=>{state.dStatus=v;state.detailPage=1;renderDetail();});
 }
 function fillSelect(id,opts,val,on){ const s=document.getElementById(id);
   s.innerHTML=opts.map(o=>`<option ${o===val?'selected':''}>${o}</option>`).join('');
