@@ -404,7 +404,7 @@ function genData(){
    3. 状态 & 筛选
    ========================================================= */
 const state = {region:'全区域', center:'全部', category:'全部', inspector:'全部',
-  bizline:'全部', from:1, to:CFG.asOfDay, preset:'todate', underOnly:false};
+  bizline:'全部', from:1, to:CFG.asOfDay, preset:'todate', underOnly:false, hlDesc:''};
 
 function baseFilter(r, ignore={}){
   if(!ignore.region && state.region!=='全区域' && r.region!==state.region) return false;
@@ -443,6 +443,7 @@ function deriveDims(){ if(typeof window!=='undefined' && window.QC_DATA && windo
 /* =========================================================
    4. 渲染
    ========================================================= */
+function linkToDesc(dt){state.hlDesc=dt;var da=document.getElementById('descAnalysis');if(da)da.scrollIntoView({behavior:'smooth'});renderDescAnalysis();}
 function renderAll(){ renderKPIs(); renderDaily(); renderProgress(); renderRegions();
   renderMerchantTop(); renderDonut(); renderDiffItems(); renderSplits(); renderDescAnalysis(); renderInspectors(); renderDetail(); }
 
@@ -565,7 +566,7 @@ function renderMerchantTop(){
       const col=a.rate>=12?'var(--crit)':a.rate>=8?'var(--serious)':'var(--s1)';
       const rc=cssv(REGION_COLOR[a.region]||'--muted');
       const itemBadges=Object.entries(a.items).sort((x,y)=>y[1]-x[1]).slice(0,4)
-        .map(([k,v])=>`<span style=\"display:inline-block;margin:1px 2px;padding:1px 6px;border-radius:4px;font-size:10px;background:color-mix(in srgb,${cssv('--s1')} 12%,transparent);color:${cssv('--ink-2')}\">${k} ${v}</span>`).join('');
+        .map(([k,v])=>`<span class=\"difftag\" data-dt=\"${k}\" style=\"display:inline-block;margin:1px 2px;padding:1px 6px;border-radius:4px;font-size:10px;background:color-mix(in srgb,${cssv('--s1')} 12%,transparent);color:${cssv('--ink-2')};cursor:pointer\" title=\"点击查看${k}的描述分析\">${k} ${v}</span>`).join('');
       const shortName=a.m.length>28?'<span title=\"'+a.m.replace(/\"/g,'&quot;')+'\">'+a.m.slice(0,26)+'…</span>':a.m;
       html+=`<tr class=\"mclick\" data-m=\"${a.m.replace(/\"/g,'&quot;')}\" style=\"cursor:pointer\">
         <td style=\"color:var(--muted);font-size:11px\">${i+1}</td>
