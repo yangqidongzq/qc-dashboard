@@ -568,7 +568,7 @@ function renderMerchantTop(){
   else {
     html='<div style=\"font-size:12px;color:var(--muted);margin-bottom:8px\">共 '+arr.filter(a=>a.diff>0).length+' 家有差异商户，显示TOP20。点击行可筛选明细。</div>';
     html+='<div class=\"tablewrap\" style=\"max-height:480px;overflow:auto\"><table><thead><tr>';
-    html+='<th>#</th><th>商户</th><th>区域</th><th class=\"num\">质检台</th><th class=\"num\">差异台</th><th class=\"num\">差异率</th><th>差异项</th>';
+    html+='<th>#</th><th>商户</th><th>中心仓</th><th>区域</th><th class=\"num\">质检台</th><th class=\"num\">差异台</th><th class=\"num\">差异率</th><th>差异项</th>';
     html+='</tr></thead><tbody>';
     top20.forEach((a,i)=>{
       const col=a.rate>=12?'var(--crit)':a.rate>=8?'var(--serious)':'var(--s1)';
@@ -956,6 +956,9 @@ function importCSV(text){
       subjObj:get(c,'主客观'), status:isDiff?'差异':(get(c,'差异')==='否'?'合格':'待验')});
   }
   if(!recs.length) throw new Error('未解析到有效记录');
+  // 商户→中心仓自动归类
+  const mcMap={}; RECORDS.forEach(r=>{if(r.merchant&&r.center&&r.merchant!=='—'&&r.center!=='—') mcMap[r.merchant]=r.center;});
+  recs.forEach(r=>{if((!r.center||r.center==='—')&&r.merchant&&mcMap[r.merchant]) r.center=mcMap[r.merchant];});
   RECORDS=RECORDS.concat(recs);
   computeDims();
   overlay.classList.remove('on');
