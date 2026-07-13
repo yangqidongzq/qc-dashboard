@@ -572,14 +572,13 @@ function renderMerchantTop(){
     html+='</tr></thead><tbody>';
     top20.forEach((a,i)=>{
       const col=a.rate>=12?'var(--crit)':a.rate>=8?'var(--serious)':'var(--s1)';
-      const rc=cssv(REGION_COLOR[a.region]||'--muted');
       const itemBadges=Object.entries(a.items).sort((x,y)=>y[1]-x[1]).slice(0,4)
         .map(([k,v])=>`<span class=\"difftag\" data-dt=\"${k}\" style=\"display:inline-block;margin:1px 2px;padding:1px 6px;border-radius:4px;font-size:10px;background:color-mix(in srgb,${cssv('--s1')} 12%,transparent);color:${cssv('--ink-2')};cursor:pointer\" title=\"点击查看${k}的描述分析\">${k} ${v}</span>`).join('');
-      const shortName=a.m.length>28?'<span title=\"'+a.m.replace(/\"/g,'&quot;')+'\">'+a.m.slice(0,26)+'…</span>':a.m;
+      const shortName=a.m.length>24?'<span title=\"'+a.m.replace(/\"/g,'&quot;')+'\">'+a.m.slice(0,22)+'…</span>':a.m;
       html+=`<tr class=\"mclick\" data-m=\"${a.m.replace(/\"/g,'&quot;')}\" style=\"cursor:pointer\">
         <td style=\"color:var(--muted);font-size:11px\">${i+1}</td>
         <td>${shortName}</td>
-        <td><span style=\"display:inline-block;width:7px;height:7px;border-radius:50%;background:${rc};margin-right:4px;vertical-align:middle\"></span>${a.region}</td>
+        <td style=\"font-size:12px\">${a.center}</td>
         <td class=\"num tnum\">${fmt(a.qty)}</td>
         <td class=\"num tnum\" style=\"color:${col};font-weight:600\">${a.diff}</td>
         <td class=\"num tnum\" style=\"color:${a.rate>=8?'var(--crit)':'var(--ink)'}\">${a.rate.toFixed(1)}%</td>
