@@ -181,23 +181,28 @@ svg{display:block; width:100%; height:auto}
 
   <div class="grid">
 
-    <div class="card col-6">
-      <h3>每日质检量 vs 目标（台）<span class="hint">目标 100 台/人/日</span></h3>
-      <div class="csub">蓝柱=当日实际，虚线=当日目标（随出勤人数变），悬停看达成率。</div>
+    <div class="card col-5">
+      <h3>每日质检量 vs 目标（台）<span class="hint">100台/人/日</span></h3>
+      <div class="csub">蓝柱=实际，虚线=当日目标，悬停看达成率。</div>
       <div id="dailyChart"></div>
     </div>
 
     <div class="card col-3">
-      <h3>中心仓达成 <span class="hint">目标=100×人日</span></h3>
-      <div class="csub">各仓实际 vs 目标（100台/日×出勤人之和）。</div>
+      <h3>中心仓达成 <span class="hint">100×人日</span></h3>
+      <div class="csub">各仓实际 vs 目标。</div>
       <div id="progress"></div>
     </div>
 
-    <div class="card col-3">
-      <h3>品类分布 <span class="hint">质检台数占比</span></h3>
-      <div class="csub">各品类质检台数。</div>
-      <div id="donut" style="width:120px;margin:0 auto"></div>
+    <div class="card col-2">
+      <h3>品类 <span class="hint">占比</span></h3>
+      <div id="donut" style="width:80px;margin:0 auto"></div>
       <div class="legend" id="donutLegend" style="margin-top:6px"></div>
+    </div>
+
+    <div class="card col-2" style="display:flex;align-items:center;justify-content:center">
+      <div style="text-align:center;color:var(--muted);font-size:12px;line-height:1.8">
+        📌<br>预留扩展区<br><span style="font-size:10px">可添加新指标</span>
+      </div>
     </div>
 
     <div class="card col-12">
@@ -467,7 +472,7 @@ function tile(l,v,u,d,good,bad){ return `<div class="kpi"><div class="klabel">${
   <div class="kdelta ${bad?'down':good?'up':''}">${d}</div></div>`; }
 
 function renderDaily(){
-  const W=960,H=320,L=46,R=18,T=18,B=42, x0=L,x1=W-R,y0=T,y1=H-B;
+  const W=960,H=240,L=46,R=18,T=18,B=42, x0=L,x1=W-R,y0=T,y1=H-B;
   const byDay={}, insByDay={};
   for(const r of getFiltered()){ byDay[r.day]=(byDay[r.day]||0)+r.qty; (insByDay[r.day]=insByDay[r.day]||new Set()).add(r.inspector); }
   const tgtByDay={}; Object.keys(insByDay).forEach(d=>tgtByDay[d]=insByDay[d].size*CFG.dailyTarget);
