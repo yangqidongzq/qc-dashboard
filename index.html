@@ -233,6 +233,12 @@ svg{display:block; width:100%; height:auto}
     </div>
 
     <div class="card col-12">
+      <h3>🔍 差异分析 · 改善建议与方向 <span class="hint">基于当前筛选数据自动生成</span></h3>
+      <div class="csub">根据差异项分布、商户集中度、人员检出率、主客观比例综合分析，给出可落地的改善方向。</div>
+      <div id="suggestions"></div>
+    </div>
+
+    <div class="card col-12">
       <h3>巡检人员数据 <span class="hint">达成率 = 实际 / (100×出勤天)</span></h3>
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
         <div class="csub" style="margin-bottom:0">按大区分组、每区带小计行与排名；组内按达成率排序。达成率≥100%绿、85%~100%常规、＜85%红。</div>
@@ -446,7 +452,7 @@ function deriveDims(){ if(typeof window!=='undefined' && window.QC_DATA && windo
    4. 渲染
    ========================================================= */
 function renderAll(){ renderKPIs(); renderDaily(); renderProgress(); renderRegions();
-  renderMerchantTop(); renderDonut(); renderDiffItems(); renderSplits(); renderInspectors(); renderDetail(); }
+  renderMerchantTop(); renderDonut(); renderDiffItems(); renderSplits(); renderSuggestions(); renderInspectors(); renderDetail(); }
 
 function renderKPIs(){
   const f=getFiltered();
@@ -674,6 +680,87 @@ function renderSplits(){
   const f=getFiltered().filter(r=>r.qtyDiff>0);
   document.getElementById('sourceSplit').innerHTML=splitBlock('来源',CFG.sources,f,r=>r.source,['--s2','--s5']);
   document.getElementById('subjSplit').innerHTML=splitBlock('主客观',CFG.subj,f,r=>r.subjObj,['--s8','--s1']);
+}
+function renderSuggestions(){
+  const f=getFiltered(); const diffRecs=f.filter(r=>r.qtyDiff>0);
+  if(!diffRecs.length){ document.getElementById('suggestions').innerHTML='<div style=\"color:var(--muted);padding:12px 0\">当前筛选无差异记录，无需改善建议。</div>'; return; }
+  const total=f.length,diffTotal=diffRecs.length,diffRate=pct(diffTotal,total);
+
+  // 1. 差异项集中度
+  const diMap={}; diffRecs.forEach(r=>r.diffItems.forEach(it=>{const m=diMap[it]||(diMap[it]={total:0,merchants:{}});m.total++;m.merchants[r.merchant]=(m.merchants[r.merchant]||0)+1;}));
+  const topItems=Object.entries(diMap).map(([k,v])=>({k,total:v.total,topM:Object.entries(v.merchants).sort((a,b)=>b[1]-a[1])[0]||[]})).sort((a,b)=>b.total-a.total);
+
+  // 2. 商户集中度
+  const mMap={}; diffRecs.forEach(r=>{mMap[r.merchant]=(mMap[r.merchant]||0)+1;});
+  const topMerchants=Object.entries(mMap).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const merchantConcentration=topMerchants.reduce((s,x)=>s+x[1],0)/diffTotal*100;
+
+  // 3. 人员差异率
+  const pMap={}; f.forEach(r=>{const m=pMap[r.inspector]||(pMap[r.inspector]={q:0,d:0});m.q++;m.d+=r.qtyDiff;});
+  const ppl=Object.entries(pMap).map(([k,v])=>({name:k,rate:pct(v.d,v.q)})).sort((a,b)=>b.rate-a.rate);
+  const highRisk=ppl.filter(p=>p.rate>diffRate*1.3);
+  const lowRisk=ppl.filter(p=>p.rate<diffRate*0.7);
+
+  // 4. 区域差异率
+  const rMap={}; f.forEach(r=>{const m=rMap[r.region]||(rMap[r.region]={q:0,d:0});m.q++;m.d+=r.qtyDiff;});
+  const regions=Object.entries(rMap).map(([k,v])=>({r:k,rate:pct(v.d,v.q)})).sort((a,b)=>b.rate-a.rate);
+
+  // 5. 主客观比
+  const subjCount=diffRecs.filter(r=>r.subjObj==='主观').length;
+  const objCount=diffRecs.filter(r=>r.subjObj==='客观').length;
+  const subjRatio=subjCount+objCount>0?pct(subjCount,subjCount+objCount):0;
+
+  // 生成建议
+  const tips=[];
+  if(topItems[0]&&topItems[0].total>diffTotal*0.25){
+    tips.push({icon:'🎯',level:'high',text:'<b>'+topItems[0].k+'</b> 占差异总量 <b>'+(topItems[0].total/diffTotal*100).toFixed(0)+'%</b>，是最大的差异来源。主要集中商户：<b>'+topItems[0].topM[0]+'</b>。建议对该商户加强前置质检标准。'});
+  }
+  if(merchantConcentration>40){
+    tips.push({icon:'🏪',level:'high',text:'前5家商户贡献了 <b>'+merchantConcentration.toFixed(0)+'%</b> 的差异，源头集中度高。建议对 TOP5 商户建立重点监控清单，增加抽检频次。'});
+  }
+  if(highRisk.length>0){
+    tips.push({icon:'👤',level:'medium',text:'差异率偏高人员：'+highRisk.map(p=>'<b>'+p.name+'</b>('+p.rate.toFixed(1)+'%)').join('、')+'。建议安排复训或交叉核验。'});
+  }
+  if(lowRisk.length>0){
+    tips.push({icon:'⭐',level:'good',text:'差异率偏低人员：'+lowRisk.slice(0,3).map(p=>'<b>'+p.name+'</b>('+p.rate.toFixed(1)+'%)').join('、')+'，可总结其核验方法推广至全组。'});
+  }
+  if(regions.length>1){
+    const worst=regions[0],best=regions[regions.length-1];
+    if(worst.rate>best.rate*1.5){
+      tips.push({icon:'🗺',level:'medium',text:'<b>'+worst.r+'</b> 差异率('+worst.rate.toFixed(1)+'%) 显著高于 <b>'+best.r+'</b>('+best.rate.toFixed(1)+'%)，差值 >50%。建议分析 '+worst.r+' 的货源结构和质检流程差异。'});
+    }
+  }
+  if(subjRatio>55){
+    tips.push({icon:'⚖',level:'medium',text:'主观差异占比 <b>'+subjRatio.toFixed(0)+'%</b>，主观判断差异偏高。建议统一判定标准、增加双盲复核，减少人为偏差。'});
+  } else if(objCount>subjCount){
+    tips.push({icon:'🔧',level:'medium',text:'客观差异（硬件/外观）占比 <b>'+(100-subjRatio).toFixed(0)+'%</b>，属于可控质量缺陷。建议反馈给货源端做源头改善。'});
+  }
+  if(diffRate>5){
+    tips.push({icon:'⚠️',level:'high',text:'整体差异率 <b>'+diffRate.toFixed(1)+'%</b>，超过 5% 警戒线。建议启动专项质量月活动，每日通报差异率排名。'});
+  }
+
+  if(!tips.length) tips.push({icon:'✅',level:'good',text:'当前差异指标整体健康，无显著异常需干预。保持现有巡检标准即可。'});
+
+  const lvlColor={high:cssv('--crit'),medium:cssv('--s3'),good:cssv('--good-ink')};
+  const lvlBg={high:'color-mix(in srgb,'+cssv('--crit')+' 8%,transparent)',medium:'color-mix(in srgb,'+cssv('--s3')+' 8%,transparent)',good:'color-mix(in srgb,'+cssv('--good')+' 8%,transparent)'};
+
+  let html='<div style=\"display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px\">';
+  html+='<div style=\"grid-column:1/-1;background:'+cssv('--surface-1')+';border-radius:10px;padding:12px 14px\">';
+  html+='<div style=\"font-weight:600;margin-bottom:8px\">📊 数据快照</div>';
+  html+='<div style=\"display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:12px\">';
+  html+='<div><span style=\"color:'+cssv('--muted')+'\">总质检</span><br><b>'+fmt(total)+'</b> 台</div>';
+  html+='<div><span style=\"color:'+cssv('--muted')+'\">差异率</span><br><b style=\"color:'+(diffRate>5?cssv('--crit'):cssv('--ink'))+'\">'+diffRate.toFixed(1)+'%</b></div>';
+  html+='<div><span style=\"color:'+cssv('--muted')+'\">商户集中度</span><br><b>'+merchantConcentration.toFixed(0)+'%</b></div>';
+  html+='<div><span style=\"color:'+cssv('--muted')+'\">主观占比</span><br><b>'+(subjRatio||0).toFixed(0)+'%</b></div>';
+  html+='</div></div>';
+
+  tips.forEach(t=>{
+    html+='<div style=\"background:'+lvlBg[t.level]+';border-left:3px solid '+lvlColor[t.level]+';border-radius:0 8px 8px 0;padding:10px 12px;font-size:13px;line-height:1.55\">';
+    html+='<span style=\"font-size:16px;margin-right:6px;vertical-align:middle\">'+t.icon+'</span>';
+    html+=t.text+'</div>';
+  });
+  html+='</div>';
+  document.getElementById('suggestions').innerHTML=html;
 }
 function splitBlock(title,keys,recs,fn,cols){
   const map={}; for(const r of recs){ const k=fn(r); if(k) map[k]=(map[k]||0)+1; }
