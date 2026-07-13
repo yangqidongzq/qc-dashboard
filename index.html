@@ -199,10 +199,9 @@ svg{display:block; width:100%; height:auto}
       <div class="legend" id="donutLegend" style="margin-top:6px"></div>
     </div>
 
-    <div class="card col-2" style="display:flex;align-items:center;justify-content:center">
-      <div style="text-align:center;color:var(--muted);font-size:12px;line-height:1.8">
-        📌<br>预留扩展区<br><span style="font-size:10px">可添加新指标</span>
-      </div>
+    <div class="card col-2">
+      <h3>差异描述分析 <span class="hint">关键词归类</span></h3>
+      <div id="descAnalysis"></div>
     </div>
 
     <div class="card col-12">
@@ -446,7 +445,7 @@ function deriveDims(){ if(typeof window!=='undefined' && window.QC_DATA && windo
    4. 渲染
    ========================================================= */
 function renderAll(){ renderKPIs(); renderDaily(); renderProgress(); renderRegions();
-  renderMerchantTop(); renderDonut(); renderDiffItems(); renderSplits(); renderInspectors(); renderDetail(); }
+  renderMerchantTop(); renderDonut(); renderDiffItems(); renderSplits(); renderDescAnalysis(); renderInspectors(); renderDetail(); }
 
 function renderKPIs(){
   const f=getFiltered();
@@ -674,6 +673,38 @@ function renderSplits(){
   const f=getFiltered().filter(r=>r.qtyDiff>0);
   document.getElementById('sourceSplit').innerHTML=splitBlock('来源',CFG.sources,f,r=>r.source,['--s2','--s5']);
   document.getElementById('subjSplit').innerHTML=splitBlock('主客观',CFG.subj,f,r=>r.subjObj,['--s8','--s1']);
+}
+function renderDescAnalysis(){
+  const diff=RECORDS.filter(r=>r.qtyDiff>0&&r.reason);
+  if(!diff.length){ document.getElementById('descAnalysis').innerHTML='<div style=\"color:var(--muted);font-size:12px;padding:8px 0\">无差异描述</div>'; return; }
+  const cats=[
+    {name:'屏幕显示',kw:['屏幕','显示','亮斑','色斑','漏液','透图','亮点','偏光','气泡','水波纹','内屏','坏点']},
+    {name:'外观结构',kw:['壳','漆面','脱胶','外壳','后壳','压伤','开孔','卡托','碎','划痕','磕碰','溢胶']},
+    {name:'摄像头',kw:['摄像头','后摄','拍照','进灰','镜头','有斑']},
+    {name:'电池充电',kw:['电池','充电','续航','发热']},
+    {name:'传感器',kw:['面容','Face','距离感应','光线','指纹','按键','触控','转轴']},
+    {name:'音频',kw:['扬声器','蓝牙','音频','声音','杂音','听筒']},
+  ];
+  const pending=diff.filter(r=>r.reason.includes('暂存')).length;
+  const colors=['var(--s6)','var(--s8)','var(--s2)','var(--s3)','var(--s5)','var(--s1)'];
+  let html='<div style=\"font-size:11px\">';
+  let unclass=0;
+  cats.forEach((cat,i)=>{
+    const m=diff.filter(r=>cat.kw.some(k=>r.reason.includes(k)));
+    if(!m.length) return;
+    const p=m.filter(r=>r.reason.includes('暂存')).length;
+    html+='<div style=\"margin-bottom:8px;border-left:2px solid '+colors[i]+';padding-left:6px\">';
+    html+='<div style=\"font-weight:600;font-size:12px\">'+cat.name+' <b style=\"color:'+colors[i]+'\">'+m.length+'</b>'+(p>0?' <span style=\"color:var(--muted);font-size:10px\">暂'+p+'</span>':'')+'</div>';
+    html+='</div>';
+    m.forEach(r=>{r._classified=true;});
+  });
+  // 未分类
+  diff.forEach(r=>{r._classified=r._classified||cats.some(c=>c.kw.some(k=>r.reason.includes(k)));});
+  const uncl=diff.filter(r=>!r._classified).length;
+  html+='<div style=\"margin-top:6px;padding-top:6px;border-top:1px solid var(--grid);font-size:11px;color:var(--muted)\">';
+  html+='暂存 <b>'+pending+'</b> 台 · 其他 <b>'+uncl+'</b> 台';
+  html+='</div></div>';
+  document.getElementById('descAnalysis').innerHTML=html;
 }
 function splitBlock(title,keys,recs,fn,cols){
   const map={}; for(const r of recs){ const k=fn(r); if(k) map[k]=(map[k]||0)+1; }
