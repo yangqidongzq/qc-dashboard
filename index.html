@@ -181,9 +181,15 @@ svg{display:block; width:100%; height:auto}
 
   <div class="grid">
 
-    <div class="card col-5">
+    <div class="card col-12">
+      <h3>全区域完成情况 <span class="hint">华东 / 华南 / 华西 / 华北</span></h3>
+      <div class="csub">各大区实际质检台数、占比与差异率（受全局筛选影响；大区Tab仅高亮不隐藏）。</div>
+      <div class="regiongrid" id="regionGrid"></div>
+    </div>
+
+    <div class="card col-6">
       <h3>每日质检量 vs 目标（台）<span class="hint">100台/人/日</span></h3>
-      <div class="csub">蓝柱=实际，虚线=当日目标，悬停看达成率。</div>
+      <div class="csub">蓝柱=实际，虚线=当日目标（随出勤人数变），悬停看达成率。</div>
       <div id="dailyChart"></div>
     </div>
 
@@ -193,21 +199,10 @@ svg{display:block; width:100%; height:auto}
       <div id="progress"></div>
     </div>
 
-    <div class="card col-2">
-      <h3>品类 <span class="hint">占比</span></h3>
-      <div id="donut" style="width:80px;margin:0 auto"></div>
+    <div class="card col-3">
+      <h3>品类分布 <span class="hint">质检台数占比</span></h3>
+      <div id="donut" style="width:100px;margin:0 auto"></div>
       <div class="legend" id="donutLegend" style="margin-top:6px"></div>
-    </div>
-
-    <div class="card col-2">
-      <h3>差异描述分析 <span class="hint">关键词归类</span></h3>
-      <div id="descAnalysis"></div>
-    </div>
-
-    <div class="card col-12">
-      <h3>全区域完成情况 <span class="hint">华东 / 华南 / 华西 / 华北</span></h3>
-      <div class="csub">各大区实际质检台数、占比与差异率（受全局筛选影响；大区Tab仅高亮不隐藏）。</div>
-      <div class="regiongrid" id="regionGrid"></div>
     </div>
 
     <div class="card col-7">
@@ -225,10 +220,16 @@ svg{display:block; width:100%; height:auto}
       </div>
     </div>
 
-    <div class="card col-12">
+    <div class="card col-6">
       <h3>差异项分析 · 商户拆分 <span class="hint">各差异项下TOP5商户</span></h3>
-      <div class="csub">拆修 / 功能 / 外观 / 显示 / 浸液 / 其他 —— 高发项决定复检与培训重点。</div>
+      <div class="csub">拆修 / 功能 / 外观 / 显示 / 浸液 / 其他 → 每项下TOP5商户。点击商户名下钻明细。</div>
       <div id="diffItems"></div>
+    </div>
+
+    <div class="card col-6">
+      <h3>差异描述分析 <span class="hint">关键词归类·暂存追踪</span></h3>
+      <div class="csub">屏幕/外观/电池/摄像头/传感器/音频六类，含暂存统计。</div>
+      <div id="descAnalysis"></div>
     </div>
 
     <div class="card col-12">
@@ -687,22 +688,26 @@ function renderDescAnalysis(){
   ];
   const pending=diff.filter(r=>r.reason.includes('暂存')).length;
   const colors=['var(--s6)','var(--s8)','var(--s2)','var(--s3)','var(--s5)','var(--s1)'];
-  let html='<div style=\"font-size:11px\">';
+  let html='<div style=\"font-size:12px\">';
+  const bar=(v,max,w)=>[...Array(w)].map((_,i)=>(i+1)/w<=v/max?'█':'░').join('');
+  const maxCount=Math.max(1,...cats.map(cat=>diff.filter(r=>cat.kw.some(k=>r.reason.includes(k))).length));
   let unclass=0;
   cats.forEach((cat,i)=>{
     const m=diff.filter(r=>cat.kw.some(k=>r.reason.includes(k)));
     if(!m.length) return;
     const p=m.filter(r=>r.reason.includes('暂存')).length;
-    html+='<div style=\"margin-bottom:8px;border-left:2px solid '+colors[i]+';padding-left:6px\">';
-    html+='<div style=\"font-weight:600;font-size:12px\">'+cat.name+' <b style=\"color:'+colors[i]+'\">'+m.length+'</b>'+(p>0?' <span style=\"color:var(--muted);font-size:10px\">暂'+p+'</span>':'')+'</div>';
+    const top=Object.entries(m.reduce((o,r)=>{const d=r.reason;o[d]=(o[d]||0)+1;return o;},{})).sort((a,b)=>b[1]-a[1]).slice(0,3);
+    html+='<div style=\"margin-bottom:10px;border-left:3px solid '+colors[i]+';padding-left:8px\">';
+    html+='<div style=\"font-weight:600;margin-bottom:3px\">'+cat.name+' <b style=\"color:'+colors[i]+'\">'+m.length+'台</b>'+(p>0?' <span style=\"color:var(--warn);font-size:10px\">⏳'+p+'</span>':'')+'</div>';
+    html+='<div style=\"height:4px;background:var(--track);border-radius:2px;margin-bottom:4px\"><div style=\"height:100%;width:'+(m.length/maxCount*100)+'%;background:'+colors[i]+';border-radius:2px;opacity:.5\"></div></div>';
+    html+='<div style=\"font-size:11px;color:var(--ink-2)\">'+top.map(([k,v])=>'<span title=\"'+k+'\">'+k.slice(0,12)+(k.length>12?'…':'')+'</span> <b style=\"color:var(--ink)\">'+v+'</b>').join(' · ')+'</div>';
     html+='</div>';
     m.forEach(r=>{r._classified=true;});
   });
-  // 未分类
   diff.forEach(r=>{r._classified=r._classified||cats.some(c=>c.kw.some(k=>r.reason.includes(k)));});
   const uncl=diff.filter(r=>!r._classified).length;
-  html+='<div style=\"margin-top:6px;padding-top:6px;border-top:1px solid var(--grid);font-size:11px;color:var(--muted)\">';
-  html+='暂存 <b>'+pending+'</b> 台 · 其他 <b>'+uncl+'</b> 台';
+  html+='<div style=\"margin-top:8px;padding-top:6px;border-top:1px solid var(--grid);font-size:11px;color:var(--muted);display:flex;justify-content:space-between\">';
+  html+='<span>⏳ 暂存 <b>'+pending+'</b> 台</span><span>📋 其他 <b>'+uncl+'</b> 台</span><span>📝 共 <b>'+diff.length+'</b> 台</span>';
   html+='</div></div>';
   document.getElementById('descAnalysis').innerHTML=html;
 }
