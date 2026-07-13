@@ -250,11 +250,8 @@ svg{display:block; width:100%; height:auto}
       <div class="csub">业务线：前置/后验=商户发货前后核验 · 入仓质检=入库全检。共 <b id="detailCount">0</b> 条记录（每条=1 台机型）。15条/页。</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
         <span style="font-size:12px;color:var(--muted)">筛选明细：</span>
-        <select id="dDiffItem" style="border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;background:var(--surface-1);color:var(--ink);font-family:inherit"></select>
         <select id="dSubjObj" style="border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;background:var(--surface-1);color:var(--ink);font-family:inherit"></select>
         <select id="dStatus" style="border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;background:var(--surface-1);color:var(--ink);font-family:inherit"></select>
-        <span style="font-size:11px;color:var(--muted)">| 差异项</span>
-        <span id="dDiffChips" style="display:flex;gap:4px;flex-wrap:wrap"></span>
       </div>
       <div class="tablewrap scroll"><table id="detailTable"></table></div>
     </div>
@@ -852,21 +849,6 @@ function buildControls(){
   // 明细面板内的筛选器
   fillSelect('dSubjObj',['全部','主观','客观'],state.subjObj,v=>{state.subjObj=v;state.detailPage=1;renderDetail();});
   fillSelect('dStatus',['全部','合格','差异','待验'],state.status,v=>{state.status=v;state.detailPage=1;renderDetail();});
-  // 差异项用 chips
-  const dc=document.getElementById('dDiffChips'); if(dc){
-    dc.innerHTML=CFG.diffTypes.map(dt=>
-      '<button class=\"chip\" style=\"font-size:11px;padding:2px 7px\" data-dt=\"'+dt+'\">'+dt+'</button>').join('');
-    dc.querySelectorAll('.chip').forEach(b=>{ b.classList.toggle('active',state.diffItem===b.dataset.dt);
-      b.onclick=()=>{ state.diffItem=state.diffItem===b.dataset.dt?'全部':b.dataset.dt; state.detailPage=1;
-        dc.querySelectorAll('.chip').forEach(c=>c.classList.toggle('active',state.diffItem===c.dataset.dt));
-        var dd=document.getElementById('dDiffItem'); if(dd) dd.value=state.diffItem;
-        renderDetail(); };
-    });
-  }
-  // 也加一个下拉兼容
-  fillSelect('dDiffItem',['全部',...CFG.diffTypes],state.diffItem,v=>{state.diffItem=v;state.detailPage=1;
-    document.querySelectorAll('#dDiffChips .chip').forEach(c=>c.classList.toggle('active',v===c.dataset.dt));
-    renderDetail();});
 }
 function fillSelect(id,opts,val,on){ const s=document.getElementById(id);
   s.innerHTML=opts.map(o=>`<option ${o===val?'selected':''}>${o}</option>`).join('');
