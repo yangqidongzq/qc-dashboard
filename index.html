@@ -164,6 +164,9 @@ svg{display:block; width:100%; height:auto}
       <div class="field"><label>品类</label><select id="fCategory"></select></div>
       <div class="field"><label>巡检人员</label><select id="fInspector"></select></div>
       <div class="field"><label>业务线</label><select id="fBiz"></select></div>
+      <div class="field"><label>差异项</label><select id="fDiffItem"></select></div>
+      <div class="field"><label>主客观</label><select id="fSubjObj"></select></div>
+      <div class="field"><label>状态</label><select id="fStatus"></select></div>
       <div class="field"><label>开始日期</label><input type="date" id="fFrom"></div>
       <div class="field"><label>结束日期</label><input type="date" id="fTo"></div>
       <div class="field">
@@ -404,7 +407,8 @@ function genData(){
    3. 状态 & 筛选
    ========================================================= */
 const state = {region:'全区域', center:'全部', category:'全部', inspector:'全部',
-  bizline:'全部', from:1, to:CFG.asOfDay, preset:'todate', underOnly:false, hlDesc:'', collapsed:{}};
+  bizline:'全部', diffItem:'全部', subjObj:'全部', status:'全部', from:1, to:CFG.asOfDay, preset:'todate', underOnly:false, hlDesc:'', collapsed:{}, detailPage:1};
+const PAGE_SIZE=15;
 
 function baseFilter(r, ignore={}){
   if(!ignore.region && state.region!=='全区域' && r.region!==state.region) return false;
@@ -412,6 +416,9 @@ function baseFilter(r, ignore={}){
   if(state.category!=='全部' && r.category!==state.category) return false;
   if(state.inspector!=='全部' && r.inspector!==state.inspector) return false;
   if(state.bizline!=='全部' && r.bizline!==state.bizline) return false;
+  if(state.diffItem!=='全部' && !r.diffItems.includes(state.diffItem)) return false;
+  if(state.subjObj!=='全部' && r.subjObj!==state.subjObj) return false;
+  if(state.status!=='全部' && r.status!==state.status) return false;
   if(r.day<state.from || r.day>state.to) return false;
   return true;
 }
@@ -764,20 +771,35 @@ function renderInspectors(){
 
 function renderDetail(){
   const f=getFiltered().slice().sort((a,b)=>b.day-a.day);
-  document.getElementById('detailCount').textContent=fmt(f.length);
-  let rows=f.slice(0,80).map(r=>{
+  const total=f.length, pages=Math.ceil(total/PAGE_SIZE);
+  if(state.detailPage>pages) state.detailPage=Math.max(1,pages);
+  const page=state.detailPage||1, start=(page-1)*PAGE_SIZE, end=start+PAGE_SIZE;
+  const pageItems=f.slice(start,end);
+  document.getElementById('detailCount').textContent=fmt(total);
+  let rows=pageItems.map(r=>{
     const tag=r.status==='合格'?'ok':r.status==='差异'?'diff':'wait';
-    return `<tr><td class="tnum">${r.date}</td><td class="tnum">${r.code||'—'}</td><td>${r.center}</td>
-      <td class="mcell" title="${r.merchant}">${r.merchant}</td><td>${r.category}</td>
-      <td class="mcell" title="${r.model||''}">${r.model||'—'}</td><td>${r.inspector}</td><td>${r.bizline}</td>
-      <td>${r.diffItems.join('、')||'—'}</td><td>${r.subjObj||'—'}</td>
-      <td><span class="tag ${tag}">${r.status}</span></td></tr>`;
+    return '<tr><td class=\"tnum\">'+r.date+'</td><td class=\"tnum\">'+(r.code||'—')+'</td><td>'+r.center+'</td>'+
+      '<td class=\"mcell\" title=\"'+r.merchant.replace(/\"/g,'&quot;')+'\">'+r.merchant+'</td><td>'+r.category+'</td>'+
+      '<td class=\"mcell\" title=\"'+(r.model||'').replace(/\"/g,'&quot;')+'\">'+(r.model||'—')+'</td><td>'+r.inspector+'</td><td>'+r.bizline+'</td>'+
+      '<td>'+(r.diffItems.join('、')||'—')+'</td><td>'+(r.subjObj||'—')+'</td>'+
+      '<td><span class=\"tag '+tag+'\">'+r.status+'</span></td></tr>';
   }).join('');
-  if(!f.length) rows='<tr><td colspan="11" style="color:var(--muted)">当前筛选无数据</td></tr>';
+  if(!f.length) rows='<tr><td colspan=\"11\" style=\"color:var(--muted)\">当前筛选无数据</td></tr>';
+  // Pagination controls
+  let pager='';
+  if(pages>1){
+    pager='<div style=\"display:flex;justify-content:center;align-items:center;gap:8px;margin-top:10px;font-size:13px\">'+
+      '<button class=\"chip\" onclick=\"state.detailPage=1;renderDetail();\"'+(page<=1?' disabled':'')+'>« 首页</button>'+
+      '<button class=\"chip\" onclick=\"state.detailPage='+(page-1)+';renderDetail();\"'+(page<=1?' disabled':'')+'>‹ 上页</button>'+
+      '<span style=\"color:var(--ink-2)\">'+page+' / '+pages+' 页</span>'+
+      '<button class=\"chip\" onclick=\"state.detailPage='+(page+1)+';renderDetail();\"'+(page>=pages?' disabled':'')+'>下页 ›</button>'+
+      '<button class=\"chip\" onclick=\"state.detailPage='+pages+';renderDetail();\"'+(page>=pages?' disabled':'')+'>末页 »</button>'+
+      '</div>';
+  }
   document.getElementById('detailTable').innerHTML=
-    `<thead><tr><th>日期</th><th>质检码</th><th>中心仓</th><th>商户</th><th>品类</th><th>机型</th><th>巡检人员</th>
-      <th>业务线</th><th>差异项</th><th>主客观</th><th>状态</th></tr></thead><tbody>${rows}</tbody>`
-    +(f.length>80?`<tfoot><tr><td colspan="11" style="color:var(--muted);text-align:center">仅显示前 80 条，共 ${fmt(f.length)} 条 · 导出可获取全部</td></tr></tfoot>`:'');
+    '<thead><tr><th>日期</th><th>质检码</th><th>中心仓</th><th>商户</th><th>品类</th><th>机型</th><th>巡检人员</th>'+
+      '<th>业务线</th><th>差异项</th><th>主客观</th><th>状态</th></tr></thead><tbody>'+rows+'</tbody>'+
+    (pager?'<tfoot><tr><td colspan=\"11\">'+pager+'</td></tr></tfoot>':'');
 }
 
 /* =========================================================
@@ -805,6 +827,9 @@ function buildControls(){
   fillSelect('fCategory',['全部',...CFG.categories],state.category,v=>state.category=v);
   fillSelect('fInspector',['全部',...DYN_INSPECTORS.map(i=>i[0])],state.inspector,v=>state.inspector=v);
   fillSelect('fBiz',['全部',...CFG.bizlines],state.bizline,v=>state.bizline=v);
+  fillSelect('fDiffItem',['全部',...CFG.diffTypes],state.diffItem,v=>state.diffItem=v);
+  fillSelect('fSubjObj',['全部','主观','客观'],state.subjObj,v=>state.subjObj=v);
+  fillSelect('fStatus',['全部','合格','差异','待验'],state.status,v=>state.status=v);
 
   const ff=document.getElementById('fFrom'), ft=document.getElementById('fTo');
   ff.min=ft.min=dayToDate(1); ff.max=ft.max=dayToDate(CFG.workDays);
@@ -825,7 +850,7 @@ function buildControls(){
 }
 function fillSelect(id,opts,val,on){ const s=document.getElementById(id);
   s.innerHTML=opts.map(o=>`<option ${o===val?'selected':''}>${o}</option>`).join('');
-  s.onchange=()=>{ on(s.value); if(id==='fBiz') buildControls(); renderAll(); }; }
+  s.onchange=()=>{ on(s.value); state.detailPage=1; if(id==='fBiz') buildControls(); renderAll(); }; }
 function applyPreset(p){ state.preset=p;
   if(p==='todate'){state.from=1; state.to=CFG.asOfDay;}
   else if(p==='7'){state.to=CFG.asOfDay; state.from=Math.max(1,CFG.asOfDay-6);}
