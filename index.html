@@ -742,7 +742,7 @@ function renderInspectors(){
     const q=sum(ppl,p=>p.qty), tgt=sum(ppl,p=>p.tgt), diff=sum(ppl,p=>p.diff), days=sum(ppl,p=>p.days);
     const comp=pct(q,tgt), rate=pct(diff,q), rc=cssv(REGION_COLOR[reg]||'--muted');
     const badge=RANK_BADGE[reg]||'';
-    const collapsed=state.collapsed[reg]||false; rows+=`<tr class="reg-sub" data-reg="${reg}" style="background:color-mix(in srgb,${rc} 12%,transparent);font-weight:600;cursor:pointer" onclick="state.collapsed[&#34;${reg}&#34;]=!state.collapsed[&#34;${reg}&#34;];renderInspectors();">
+    const collapsed=state.collapsed[reg]!==undefined?state.collapsed[reg]:true; rows+=`<tr class="reg-sub" data-reg="${reg}" style="background:color-mix(in srgb,${rc} 12%,transparent);font-weight:600;cursor:pointer" onclick="state.collapsed[&#34;${reg}&#34;]=!state.collapsed[&#34;${reg}&#34;];renderInspectors();">
       <td colspan="2"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${rc};margin-right:7px;vertical-align:middle"></span><span class="toggle-icon">${collapsed?"▶":"▼"}</span> ${reg} 小计 · ${ppl.length}人${badge?' <span style=\"font-size:16px;line-height:1\">'+badge+'</span>':''}</td>
       <td></td><td class="num tnum">${days}</td><td class="num tnum">${fmt(q)}</td><td class="num tnum">${fmt(tgt)}</td>
       <td class="num tnum" style="color:${cc(comp)}">${comp.toFixed(0)}%</td><td class="num tnum">${rate.toFixed(1)}%</td></tr>`;
