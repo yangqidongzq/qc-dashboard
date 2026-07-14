@@ -505,9 +505,12 @@ function renderAnaInsight(){
   // 通病匹配
   var cmc=0;dr.forEach(function(r){if(_findCM(r.model).length>0)cmc++;});
   var commonRate=diffCount>0?cmc/diffCount*100:0;
-  // 中心仓差异率
-  var cc={};f.forEach(function(r){cc[r.center]=cc[r.center]||{t:0,d:0};cc[r.center].t++;if(r.qtyDiff)cc[r.center].d++;});
-  var cr=Object.entries(cc).filter(function(e){return e[1].t>=10;}).sort(function(a,b){return(b[1].d/b[1].t)-(a[1].d/a[1].t);});
+  // 差异项×主观客观交叉——哪些项主观判定最多？
+  var subjByItem={};dr.forEach(function(r){(r.diffItems||[]).forEach(function(i){subjByItem[i]=subjByItem[i]||{t:0,s:0};subjByItem[i].t++;if(r.subjObj==='主观')subjByItem[i].s++;});});
+  var subjRank=Object.entries(subjByItem).filter(function(e){return e[1].t>=3;}).sort(function(a,b){return(b[1].s/b[1].t)-(a[1].s/a[1].t);});
+  // 高频具体缺陷TOP8
+  var kwRank={};analysis.match.forEach(function(x){kwRank[x.kw.tag]=(kwRank[x.kw.tag]||0)+1;});
+  var topKW=Object.entries(kwRank).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
 
   var bar=function(v,max,w,c){w=w||100;var p=Math.min(v/max*100,100);return '<div style="flex:1;height:6px;background:var(--track);border-radius:3px;overflow:hidden"><div style="width:'+p+'%;height:100%;background:'+(c||'var(--s1)')+';border-radius:3px"></div></div>';};
   var pctFmt=function(v){return v.toFixed(1)+'%';};
@@ -585,15 +588,33 @@ function renderAnaInsight(){
     html+='</div></div>';
   }
 
-  // ── 中心仓差异率对比 ──
-  if(cr.length>1){
-    var best=cr[cr.length-1],worst=cr[0];
-    var gap=worst[1].d/worst[1].t*100-best[1].d/best[1].t*100;
-    html+='<div class="insight-box '+(gap>15?'crit':gap>8?'warn':'')+'" style="margin-bottom:10px">';
-    html+='<div class="ititle">🏢 中心仓差异率（差距'+pctFmt(gap)+'）</div><div class="ibody">';
-    cr.forEach(function(e){var r=e[1].d/e[1].t*100;html+='<div style="margin:3px 0;display:flex;align-items:center;gap:8px;font-size:12px"><span style="width:72px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+e[0]+'</span>'+bar(r,worst[1].d/worst[1].t*100,120,'var(--s2)')+'<b>'+pctFmt(r)+'</b><span style="color:var(--muted);font-size:10px">'+e[1].d+'/'+e[1].t+'</span></div>';});
-    html+='<b>建议：</b>'+worst[0]+'差异率最高→<b>专项培训+对照SOP校准</b>；'+best[0]+'经验→提炼分享给其他仓</div></div>';
-  }
+  // ── 差异项主观/客观争议度 ──
+  html+='<div style="font-weight:600;font-size:13px;margin-bottom:8px;margin-top:4px">⚖️ 差异项主观争议度 & 高频缺陷</div>';
+  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">';
+
+  // 左：主观争议排行
+  html+='<div class="insight-box" style="margin-bottom:0"><div class="ititle">⚖️ 主观判定率排行</div><div class="ibody" style="font-size:12px">';
+  if(subjRank.length){
+    var maxSubj=subjRank[0][1].s/subjRank[0][1].t*100;
+    subjRank.slice(0,6).forEach(function(e){
+      var r=e[1].s/e[1].t*100,color=r>60?'var(--crit)':r>40?'var(--warn)':'var(--s1)';
+      html+='<div style="margin:3px 0;display:flex;align-items:center;gap:6px;font-size:11px"><span style="width:36px;font-weight:600">'+e[0]+'</span>'+bar(r,100,90,color)+'<span style="width:38px;text-align:right;font-weight:600;color:'+color+'">'+pctFmt(r)+'</span><span style="color:var(--muted);font-size:10px">'+e[1].s+'/'+e[1].t+'</span></div>';
+    });
+    html+='<div style="font-size:10px;color:var(--muted);margin-top:4px">主观率>60%=争议大 → 建议增加客观判定标准</div>';
+  } else { html+='<span style="color:var(--muted)">数据不足</span>'; }
+  html+='</div></div>';
+
+  // 右：高频缺陷TOP8
+  html+='<div class="insight-box" style="margin-bottom:0"><div class="ititle">🔝 高频具体缺陷 TOP8</div><div class="ibody" style="font-size:12px">';
+  if(topKW.length){
+    var colors2=['var(--s6)','var(--s1)','var(--s8)','var(--s2)','var(--s5)','var(--s3)','var(--s7)','var(--s4)'];
+    topKW.forEach(function(e,idx){
+      var p=e[1]/analysis.match.length*100;
+      html+='<div style="margin:3px 0;display:flex;align-items:center;gap:6px;font-size:11px"><span style="color:var(--muted);width:16px">'+(idx+1)+'</span><span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+e[0]+'</span>'+bar(e[1],topKW[0][1],80,colors2[idx%colors2.length])+'<span style="font-weight:600;width:24px;text-align:right">'+e[1]+'</span></div>';
+    });
+    html+='<div style="font-size:10px;color:var(--muted);margin-top:4px">TOP1「'+topKW[0][0]+'」占缺陷总数'+pctFmt(topKW[0][1]/analysis.match.length*100)+'→列为重点改善项</div>';
+  } else { html+='<span style="color:var(--muted)">无匹配数据</span>'; }
+  html+='</div></div></div>';
 
   // ── 改善路线图 ──
   html+='<div class="insight-box ok">';
@@ -601,7 +622,7 @@ function renderAnaInsight(){
   html+='<table style="font-size:12px;margin-top:6px"><thead><tr><th>阶段</th><th>时间</th><th>措施</th><th>模板</th></tr></thead><tbody>';
   html+='<tr><td>🔴 紧急</td><td>1-2周</td><td>差异原因改为必填+30项标准关键词下拉；APP校验禁止模糊描述提交</td><td>描述覆盖率→90%+；模糊率→<10%</td></tr>';
   html+='<tr><td>🟡 短期</td><td>1个月</td><td>关键词→差异项自动建议（消除归类不一致）；回溯复核'+analysis.mismatch.length+'条不一致记录</td><td>归类一致率→95%+</td></tr>';
-  html+='<tr><td>🟢 中期</td><td>1-2月</td><td>描述+关键词→自动匹配标准阈值→建议成色等级；跨仓校准会议制度化</td><td>中心仓差异率差距→<5%</td></tr>';
+  html+='<tr><td>🟢 中期</td><td>1-2月</td><td>描述+关键词→自动匹配标准阈值→建议成色等级；高频缺陷项建立自动判定规则减少主观争议</td><td>主观率→<30%；归类一致率→95%+</td></tr>';
   html+='<tr><td>🔵 长期</td><td>季度</td><td>12个月数据训练AI差异预测模型（机型+描述→预判差异项+等级）</td><td>整体差异率→降低30%</td></tr>';
   html+='</tbody></table></div></div>';
 
