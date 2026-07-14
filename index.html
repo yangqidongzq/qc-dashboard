@@ -473,7 +473,7 @@ function _tagKW(t){for(var i=0;i<_KW.length;i++){if(_KW[i].re.test(t||''))return
 function _findCM(m){var r=[];for(var i=0;i<_CM.length;i++){if(_CM[i].re.test(m||''))r.push(_CM[i]);}return r;}
 function _stdTier(cat,sub){var s=_STD.phone;if(!s[cat])return'?';if(sub&&s[cat]&&s[cat][sub]){var it=s[cat][sub];return it[0].g+'~'+it[it.length-1].g;}return'多子项';}
 function renderAnaStandard(){
-  var dr=RECORDS.filter(function(r){return r.qtyDiff>0||(r.diffItems&&r.diffItems.length);});var t=dr.length||1;
+  var f=getFiltered(),dr=f.filter(function(r){return r.qtyDiff>0||(r.diffItems&&r.diffItems.length);});var t=dr.length||1;
   var h='<table><thead><tr><th>差异项</th><th>台数</th><th>占比</th><th>标准对照</th><th>标准阈值</th><th>描述</th></tr></thead><tbody>';
   ['拆修','功能','外观','显示','浸液','其他'].forEach(function(it){
     var rs=dr.filter(function(r){return r.diffItems&&r.diffItems.indexOf(it)>=0;});if(!rs.length)return;
@@ -482,8 +482,8 @@ function renderAnaStandard(){
   });h+='</tbody></table>';var el=document.getElementById('anaStandard');if(el)el.innerHTML=h;
 }
 function renderAnaMerchant(){
-  var dr=RECORDS.filter(function(r){return r.qtyDiff>0||(r.diffItems&&r.diffItems.length);});
-  var mm={};RECORDS.forEach(function(r){mm[r.merchant]=mm[r.merchant]||{t:0,d:0,it:{}};mm[r.merchant].t++;if(r.qtyDiff){mm[r.merchant].d++;(r.diffItems||[]).forEach(function(i){mm[r.merchant].it[i]=(mm[r.merchant].it[i]||0)+1;});}});
+  var f=getFiltered(),dr=f.filter(function(r){return r.qtyDiff>0||(r.diffItems&&r.diffItems.length);});
+  var mm={};f.forEach(function(r){mm[r.merchant]=mm[r.merchant]||{t:0,d:0,it:{}};mm[r.merchant].t++;if(r.qtyDiff){mm[r.merchant].d++;(r.diffItems||[]).forEach(function(i){mm[r.merchant].it[i]=(mm[r.merchant].it[i]||0)+1;});}});
   var rk=Object.entries(mm).filter(function(e){return e[1].t>=3;}).sort(function(a,b){return(b[1].d/b[1].t)-(a[1].d/a[1].t);}).slice(0,12);
   var h='<table><thead><tr><th>#</th><th>商户</th><th>送检</th><th>差异</th><th>差异率</th><th>主要差异</th><th>风险</th></tr></thead><tbody>';
   rk.forEach(function(e,idx){var rate=e[1].d/e[1].t*100;var ti=Object.entries(e[1].it).sort(function(a,b){return b[1]-a[1];}).slice(0,3).map(function(x){return x[0]+'('+x[1]+')';}).join(' ');var risk=rate>30?'crit':rate>15?'warn':'ok';
@@ -491,7 +491,7 @@ function renderAnaMerchant(){
   h+='</tbody></table>';var el=document.getElementById('anaMerchant');if(el)el.innerHTML=h;
 }
 function renderAnaModel(){
-  var dr=RECORDS.filter(function(r){return r.qtyDiff>0||(r.diffItems&&r.diffItems.length);});
+  var f=getFiltered(),dr=f.filter(function(r){return r.qtyDiff>0||(r.diffItems&&r.diffItems.length);});
   var md={};dr.forEach(function(r){var m=r.model||'未知';md[m]=md[m]||{d:0,it:{}};md[m].d++;(r.diffItems||[]).forEach(function(i){md[m].it[i]=(md[m].it[i]||0)+1;});});
   var rk=Object.entries(md).sort(function(a,b){return b[1].d-a[1].d;}).slice(0,10);
   var h='<table><thead><tr><th>#</th><th>机型</th><th>差异台</th><th>主要差异</th><th>已知通病</th></tr></thead><tbody>';
@@ -500,8 +500,8 @@ function renderAnaModel(){
   h+='</tbody></table>';var el=document.getElementById('anaModel');if(el)el.innerHTML=h;
 }
 function renderAnaInsight(){
-  var dr=RECORDS.filter(function(r){return r.qtyDiff>0||(r.diffItems&&r.diffItems.length);});
-  var total=RECORDS.length,ins=[];
+  var f=getFiltered(),dr=f.filter(function(r){return r.qtyDiff>0||(r.diffItems&&r.diffItems.length);});
+  var total=f.length,ins=[];
   var id={};dr.forEach(function(r){(r.diffItems||[]).forEach(function(i){id[i]=(id[i]||0)+1;});});
   var ti=Object.entries(id).sort(function(a,b){return b[1]-a[1];})[0];
   var nr=dr.filter(function(r){return!r.reason||r.reason==='—'||r.reason==='';}).length;
@@ -509,7 +509,7 @@ function renderAnaInsight(){
   var xd={};dr.forEach(function(r){xd[r.merchant]=(xd[r.merchant]||0)+1;});
   var tm=Object.entries(xd).sort(function(a,b){return b[1]-a[1];}).slice(0,3);
   var tms=tm.reduce(function(s,e){return s+e[1];},0);
-  var cc={};RECORDS.forEach(function(r){cc[r.center]=cc[r.center]||{t:0,d:0};cc[r.center].t++;if(r.qtyDiff)cc[r.center].d++;});
+  var cc={};f.forEach(function(r){cc[r.center]=cc[r.center]||{t:0,d:0};cc[r.center].t++;if(r.qtyDiff)cc[r.center].d++;});
   var cr=Object.entries(cc).filter(function(e){return e[1].t>=10;}).sort(function(a,b){return(b[1].d/b[1].t)-(a[1].d/a[1].t);});
 
   ins.push({ic:'📊',ti:'差异分布：'+dr.length.toLocaleString()+'条（'+(dr.length/total*100).toFixed(1)+'%）',bd:'最大差异项：<b>'+(ti?ti[0]:'—')+'</b>（'+ti[1]+'台）',cl:''});
@@ -523,7 +523,7 @@ function renderAnaInsight(){
   var el=document.getElementById('anaInsight');if(el)el.innerHTML=h;
 }
 function renderAnaReason(){
-  var dr=RECORDS.filter(function(r){return r.qtyDiff>0||(r.diffItems&&r.diffItems.length);});
+  var f=getFiltered(),dr=f.filter(function(r){return r.qtyDiff>0||(r.diffItems&&r.diffItems.length);});
   var g={};dr.forEach(function(r){(r.diffItems||[]).forEach(function(it){g[it]=g[it]||[];g[it].push(r);});});
   var h='<table><thead><tr><th>差异项</th><th>台数</th><th>有描述</th><th>可解析</th><th>TOP关键词</th><th>典型描述</th></tr></thead><tbody>';
   Object.entries(g).sort(function(a,b){return b[1].length-a[1].length;}).forEach(function(e){
@@ -670,6 +670,10 @@ function renderMerchantTop(){
     html+='</tbody></table></div>';
   }
   const host=document.getElementById('merchantTop'); host.innerHTML=html;
+  // 追加高风险商户摘要
+  var mm2={};f.forEach(function(r){mm2[r.merchant]=mm2[r.merchant]||{t:0,d:0};mm2[r.merchant].t++;if(r.qtyDiff)mm2[r.merchant].d++;});
+  var highRisk=Object.entries(mm2).filter(function(e){return e[1].t>=5&&e[1].d/e[1].t>0.15;}).sort(function(a,b){return(b[1].d/b[1].t)-(a[1].d/a[1].t);});
+  if(highRisk.length){var s='<div style="margin-top:10px;padding:8px 12px;background:color-mix(in srgb,var(--crit) 6%,transparent);border-radius:8px;font-size:12px"><b>⚠️ 高风险商户（差异率>15%）：</b> ';s+=highRisk.slice(0,5).map(function(e){return e[0]+' <b style="color:var(--crit)">'+(e[1].d/e[1].t*100).toFixed(1)+'%</b>';}).join(' · ');if(highRisk.length>5)s+=' …等'+highRisk.length+'家';s+='</div>';host.insertAdjacentHTML('beforeend',s);}
   // 点击行 → 筛选明细
   host.querySelectorAll('.mclick').forEach(el=>{
     el.addEventListener('click',()=>{
@@ -737,65 +741,31 @@ function renderSplits(){
   document.getElementById('subjSplit').innerHTML='主客观：'+oItems.map(([k,v])=>k+' <b>'+Math.round(v/oTotal*100)+'%</b>').join(' · ');
 }
 function renderDescAnalysis(){
-  let diff=RECORDS.filter(r=>r.qtyDiff>0&&r.reason);
-  if(state.selMerchant) diff=diff.filter(r=>r.merchant===state.selMerchant);
-  if(!diff.length){ document.getElementById('descAnalysis').innerHTML='<div style=\"color:var(--muted);font-size:12px;padding:8px 0\">无差异描述</div>'; return; }
-  const cats=[
-    {name:'屏幕显示',kw:['屏幕','显示','亮斑','色斑','漏液','透图','亮点','偏光','气泡','水波纹','内屏','坏点']},
-    {name:'外观结构',kw:['壳','漆面','脱胶','外壳','后壳','压伤','开孔','卡托','碎','划痕','磕碰','溢胶']},
-    {name:'摄像头',kw:['摄像头','后摄','拍照','进灰','镜头','有斑']},
-    {name:'电池充电',kw:['电池','充电','续航','发热']},
-    {name:'传感器',kw:['面容','Face','距离感应','光线','指纹','按键','触控','转轴']},
-    {name:'音频',kw:['扬声器','蓝牙','音频','声音','杂音','听筒']},
-  ];
-  const pending=diff.filter(r=>r.reason.includes('暂存')).length;
-  const colors=['var(--s6)','var(--s8)','var(--s2)','var(--s3)','var(--s5)','var(--s1)'];
+  var f=getFiltered(),diff=f.filter(function(r){return r.qtyDiff>0&&r.reason&&r.reason!=='—';});
+  if(state.selMerchant) diff=diff.filter(function(r){return r.merchant===state.selMerchant;});
+  if(!diff.length){document.getElementById('descAnalysis').innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px 0">无差异描述</div>';return;}
+  var catColors={'屏幕外观':'var(--s6)','屏幕显示':'var(--s1)','外壳外观':'var(--s8)','功能':'var(--s2)','拆修':'var(--s5)','其他':'var(--muted)'};
+  // 使用统一30条关键词体系
+  var descMap={};
+  diff.forEach(function(r){var d=r.reason;if(!d)return;var m=descMap[d]||(descMap[d]={cnt:0,merchants:{},diffs:{},kw:null});m.cnt++;m.merchants[r.merchant]=(m.merchants[r.merchant]||0)+1;r.diffItems.forEach(function(it){m.diffs[it]=(m.diffs[it]||0)+1;});if(!m.kw)m.kw=_tagKW(d);});
+  var descs=Object.entries(descMap).map(function(e){return{desc:e[0],cnt:e[1].cnt,merchants:e[1].merchants,diffs:e[1].diffs,kw:e[1].kw};}).sort(function(a,b){return b.cnt-a.cnt;});
+  var topN=descs.slice(0,15);
+  var autoCount=descs.filter(function(d){return d.kw!==null;}).reduce(function(s,d){return s+d.cnt;},0);
 
-  // 按描述聚合, TOP15
-  const descMap={};
-  diff.forEach(r=>{
-    const d=r.reason; if(!d) return;
-    const m=descMap[d]||(descMap[d]={cnt:0,pending:0,merchants:{},inspectors:{},diffs:{}});
-    m.cnt++; if(r.reason.includes('暂存')) m.pending++;
-    m.merchants[r.merchant]=(m.merchants[r.merchant]||0)+1;
-    m.inspectors[r.inspector]=(m.inspectors[r.inspector]||0)+1;
-    r.diffItems.forEach(it=>{ m.diffs[it]=(m.diffs[it]||0)+1; });
-    // 分类
-    const cat=cats.find(c=>c.kw.some(k=>d.includes(k)));
-    m.cat=cat?cat.name:'其他';
+  var html='';
+  if(state.hlDesc) html+='<div style="margin-bottom:6px;font-size:12px;color:var(--s1);cursor:pointer" onclick="state.hlDesc=\x27\x27;state.selMerchant=\x27\x27;renderDescAnalysis();renderDiffItems();renderMerchantTop();">🔍 筛选: '+state.hlDesc+' ✕</div>';
+  if(state.selMerchant) html+='<div style="margin-bottom:6px;font-size:12px;color:var(--s1);cursor:pointer" onclick="state.selMerchant=\x27\x27;renderDescAnalysis();renderDiffItems();renderMerchantTop();">🏪 商户: '+state.selMerchant+' ✕</div>';
+  html+='<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;font-size:11px;color:var(--ink-2)"><span>📝 <b>'+diff.length+'</b>台差异</span><span>|</span><span>📋 <b>'+descs.length+'</b>种描述</span><span>|</span><span>🤖 可解析 <b style="color:'+(autoCount/diff.length>0.5?'var(--good-ink)':'var(--warn)')+'">'+autoCount+'</b>台 ('+(autoCount/diff.length*100).toFixed(0)+'%)</span></div>';
+
+  html+='<div class="tablewrap scroll" style="max-height:500px"><table style="font-size:12px"><thead><tr><th>#</th><th>差异描述</th><th>标准分类</th><th class="num">台数</th><th>差异项</th><th>主要商户</th></tr></thead><tbody>';
+  topN.forEach(function(d,i){
+    var cat=d.kw?d.kw.cat:'其他',catCol=catColors[cat]||'var(--muted)';
+    var topM=Object.entries(d.merchants).sort(function(a,b){return b[1]-a[1];}).slice(0,2).map(function(e){return e[0].length>14?e[0].slice(0,12)+'…':e[0];}).join(' · ')||'—';
+    var topDiff=Object.entries(d.diffs).sort(function(a,b){return b[1]-a[1];}).slice(0,2).map(function(e){return e[0];}).join('/')||'—';
+    var sd=d.desc.length>38?'<span title="'+d.desc.replace(/"/g,'&quot;')+'">'+d.desc.slice(0,36)+'…</span>':d.desc;
+    html+='<tr><td style="color:var(--muted);font-size:11px">'+(i+1)+'</td><td>'+sd+'</td><td><span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;background:color-mix(in srgb,'+catCol+' 15%,transparent);color:'+catCol+'">'+(d.kw?d.kw.tag:cat)+'</span></td><td class="num tnum" style="font-weight:600">'+d.cnt+'</td><td style="font-size:11px;color:var(--ink-2)">'+topDiff+'</td><td style="font-size:11px;color:var(--ink-2)">'+topM+'</td></tr>';
   });
-  const descs=Object.entries(descMap).map(([k,v])=>({desc:k,...v})).sort((a,b)=>b.cnt-a.cnt);
-  const topN=descs.slice(0,15);
-  const pendingTotal=descs.reduce((s,d)=>s+d.pending,0);
-
-  let html='';
-  if(state.hlDesc) html+='<div style=\"margin-bottom:6px;font-size:12px;color:var(--s1);cursor:pointer\" onclick=\"state.hlDesc=\\\'\\\';state.selMerchant=\\\'\\\';renderDescAnalysis();renderDiffItems();renderMerchantTop();\">🔍 筛选: '+state.hlDesc+' ✕</div>';
-  if(state.selMerchant) html+='<div style=\"margin-bottom:6px;font-size:12px;color:var(--s1);cursor:pointer\" onclick=\"state.selMerchant=\\\'\\\';renderDescAnalysis();renderDiffItems();renderMerchantTop();\">🏪 商户: '+state.selMerchant+' ✕</div>';
-
-  html+='<div style=\"display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;font-size:11px;color:var(--ink-2)\">';
-  html+='<span>📝 共 <b>'+diff.length+'</b> 台差异</span><span>|</span><span>📋 <b>'+descs.length+'</b> 种描述</span><span>|</span><span>⏳ 暂存 <b style=\"color:'+(pendingTotal>diff.length*0.2?'var(--crit)':'var(--warn)')+'\">'+pendingTotal+'</b> 台</span>';
-  html+='</div>';
-
-  html+='<div class=\"tablewrap scroll\" style=\"max-height:500px\"><table style=\"font-size:13px\"><thead><tr>';
-  html+='<th>#</th><th>差异描述</th><th>分类</th><th class=\"num\">台数</th><th class=\"num\">⏳暂存</th><th>差异项</th><th>主要商户</th></tr></thead><tbody>';
-
-  topN.forEach((d,i)=>{
-    const catColor=colors[cats.findIndex(c=>c.name===d.cat)]||'var(--muted)';
-    const topM=Object.entries(d.merchants).sort((a,b)=>b[1]-a[1]).slice(0,1)[0]||['—',0];
-    const topDiff=Object.entries(d.diffs).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([k,v])=>k).join('/')||'—';
-    const shortDesc=d.desc.length>40?'<span title=\"'+d.desc.replace(/\"/g,'&quot;')+'\">'+d.desc.slice(0,38)+'…</span>':d.desc;
-    const shortM=topM[0].length>18?'<span title=\"'+topM[0].replace(/\"/g,'&quot;')+'\">'+topM[0].slice(0,16)+'…</span>':topM[0];
-    const hl=state.hlDesc&&d.desc.includes(state.hlDesc);
-    html+='<tr style=\"'+(hl?'background:color-mix(in srgb,var(--s3) 12%,transparent)':'')+'\">';
-    html+='<td style=\"color:var(--muted);font-size:11px\">'+(i+1)+'</td>';
-    html+='<td>'+shortDesc+'</td>';
-    html+='<td><span style=\"display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;background:color-mix(in srgb,'+catColor+' 15%,transparent);color:'+catColor+'\">'+d.cat+'</span></td>';
-    html+='<td class=\"num tnum\" style=\"font-weight:600\">'+d.cnt+'</td>';
-    html+='<td class=\"num tnum\" style=\"color:'+(d.pending>0?'var(--warn)':'var(--muted)')+'\">'+(d.pending>0?d.pending:'—')+'</td>';
-    html+='<td style=\"font-size:11px;color:var(--ink-2)\">'+topDiff+'</td>';
-    html+='<td style=\"font-size:12px;color:var(--ink-2)\">'+shortM+'</td></tr>';
-  });
-  if(descs.length>15) html+='<tr><td colspan=\"7\" style=\"color:var(--muted);text-align:center;font-size:11px\">仅显示 TOP15，共 '+descs.length+' 种描述</td></tr>';
+  if(descs.length>15)html+='<tr><td colspan="6" style="color:var(--muted);text-align:center;font-size:11px">仅显示 TOP15，共 '+descs.length+' 种描述</td></tr>';
   html+='</tbody></table></div>';
   document.getElementById('descAnalysis').innerHTML=html;
 }
