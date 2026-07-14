@@ -218,15 +218,15 @@ svg{display:block; width:100%; height:auto}
       </div>
     </div>
 
-    <div class="card col-6">
+    <div class="card col-12">
       <h3>差异项分析 · 商户拆分 <span class="hint">各差异项下TOP5商户</span></h3>
       <div class="csub">拆修 / 功能 / 外观 / 显示 / 浸液 / 其他 → 每项下TOP5商户。点击商户名下钻明细。</div>
       <div id="diffItems"></div>
     </div>
 
-    <div class="card col-6">
-      <h3>差异描述分析 <span class="hint">关键词归类·暂存追踪</span></h3>
-      <div class="csub">屏幕/外观/电池/摄像头/传感器/音频六类，含暂存统计。</div>
+    <div class="card col-12">
+      <h3>差异描述明细 <span class="hint">TOP50 · 含分类·商户·差异项</span></h3>
+      <div class="csub">按出现频次排序，彩色分类标签，显示主要商户与关联差异项。⏳=暂存待处理。</div>
       <div id="descAnalysis"></div>
     </div>
 
@@ -673,27 +673,53 @@ function renderDescAnalysis(){
   ];
   const pending=diff.filter(r=>r.reason.includes('暂存')).length;
   const colors=['var(--s6)','var(--s8)','var(--s2)','var(--s3)','var(--s5)','var(--s1)'];
-  let html='<div style=\"font-size:12px\">';
-  const bar=(v,max,w)=>[...Array(w)].map((_,i)=>(i+1)/w<=v/max?'█':'░').join('');
-  const maxCount=Math.max(1,...cats.map(cat=>diff.filter(r=>cat.kw.some(k=>r.reason.includes(k))).length));
-  let unclass=0;
-  cats.forEach((cat,i)=>{
-    const m=diff.filter(r=>cat.kw.some(k=>r.reason.includes(k)));
-    if(!m.length) return;
-    const p=m.filter(r=>r.reason.includes('暂存')).length;
-    const top=Object.entries(m.reduce((o,r)=>{const d=r.reason;o[d]=(o[d]||0)+1;return o;},{})).sort((a,b)=>b[1]-a[1]).slice(0,3);
-    html+='<div style=\"margin-bottom:10px;border-left:3px solid '+colors[i]+';padding-left:8px\">';
-    html+='<div style=\"font-weight:600;margin-bottom:3px\">'+cat.name+' <b style=\"color:'+colors[i]+'\">'+m.length+'台</b>'+(p>0?' <span style=\"color:var(--warn);font-size:10px\">⏳'+p+'</span>':'')+'</div>';
-    html+='<div style=\"height:4px;background:var(--track);border-radius:2px;margin-bottom:4px\"><div style=\"height:100%;width:'+(m.length/maxCount*100)+'%;background:'+colors[i]+';border-radius:2px;opacity:.5\"></div></div>';
-    html+='<div style=\"font-size:11px;color:var(--ink-2)\">'+top.map(([k,v])=>'<span title=\"'+k+'\">'+k.slice(0,12)+(k.length>12?'…':'')+'</span> <b style=\"color:var(--ink)\">'+v+'</b>').join(' · ')+'</div>';
-    html+='</div>';
-    m.forEach(r=>{r._classified=true;});
+
+  // 按描述聚合, TOP50
+  const descMap={};
+  diff.forEach(r=>{
+    const d=r.reason; if(!d) return;
+    const m=descMap[d]||(descMap[d]={cnt:0,pending:0,merchants:{},inspectors:{},diffs:{}});
+    m.cnt++; if(r.reason.includes('暂存')) m.pending++;
+    m.merchants[r.merchant]=(m.merchants[r.merchant]||0)+1;
+    m.inspectors[r.inspector]=(m.inspectors[r.inspector]||0)+1;
+    r.diffItems.forEach(it=>{ m.diffs[it]=(m.diffs[it]||0)+1; });
+    // 分类
+    const cat=cats.find(c=>c.kw.some(k=>d.includes(k)));
+    m.cat=cat?cat.name:'其他';
   });
-  diff.forEach(r=>{r._classified=r._classified||cats.some(c=>c.kw.some(k=>r.reason.includes(k)));});
-  const uncl=diff.filter(r=>!r._classified).length;
-  html+='<div style=\"margin-top:8px;padding-top:6px;border-top:1px solid var(--grid);font-size:11px;color:var(--muted);display:flex;justify-content:space-between\">';
-  html+='<span>⏳ 暂存 <b>'+pending+'</b> 台</span><span>📋 其他 <b>'+uncl+'</b> 台</span><span>📝 共 <b>'+diff.length+'</b> 台</span>';
-  html+='</div></div>';
+  const descs=Object.entries(descMap).map(([k,v])=>({desc:k,...v})).sort((a,b)=>b.cnt-a.cnt);
+  const top50=descs.slice(0,50);
+  const pendingTotal=descs.reduce((s,d)=>s+d.pending,0);
+
+  let html='';
+  if(state.hlDesc) html+='<div style=\"margin-bottom:6px;font-size:12px;color:var(--s1);cursor:pointer\" onclick=\"state.hlDesc=\\\'\\\';state.selMerchant=\\\'\\\';renderDescAnalysis();renderDiffItems();renderMerchantTop();\">🔍 筛选: '+state.hlDesc+' ✕</div>';
+  if(state.selMerchant) html+='<div style=\"margin-bottom:6px;font-size:12px;color:var(--s1);cursor:pointer\" onclick=\"state.selMerchant=\\\'\\\';renderDescAnalysis();renderDiffItems();renderMerchantTop();\">🏪 商户: '+state.selMerchant+' ✕</div>';
+
+  html+='<div style=\"display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;font-size:11px;color:var(--ink-2)\">';
+  html+='<span>📝 共 <b>'+diff.length+'</b> 台差异</span><span>|</span><span>📋 <b>'+descs.length+'</b> 种描述</span><span>|</span><span>⏳ 暂存 <b style=\"color:'+(pendingTotal>diff.length*0.2?'var(--crit)':'var(--warn)')+'\">'+pendingTotal+'</b> 台</span>';
+  html+='</div>';
+
+  html+='<div class=\"tablewrap scroll\" style=\"max-height:500px\"><table style=\"font-size:13px\"><thead><tr>';
+  html+='<th>#</th><th>差异描述</th><th>分类</th><th class=\"num\">台数</th><th class=\"num\">⏳暂存</th><th>差异项</th><th>主要商户</th></tr></thead><tbody>';
+
+  top50.forEach((d,i)=>{
+    const catColor=colors[cats.findIndex(c=>c.name===d.cat)]||'var(--muted)';
+    const topM=Object.entries(d.merchants).sort((a,b)=>b[1]-a[1]).slice(0,1)[0]||['—',0];
+    const topDiff=Object.entries(d.diffs).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([k,v])=>k).join('/')||'—';
+    const shortDesc=d.desc.length>40?'<span title=\"'+d.desc.replace(/\"/g,'&quot;')+'\">'+d.desc.slice(0,38)+'…</span>':d.desc;
+    const shortM=topM[0].length>18?'<span title=\"'+topM[0].replace(/\"/g,'&quot;')+'\">'+topM[0].slice(0,16)+'…</span>':topM[0];
+    const hl=state.hlDesc&&d.desc.includes(state.hlDesc);
+    html+='<tr style=\"'+(hl?'background:color-mix(in srgb,var(--s3) 12%,transparent)':'')+'\">';
+    html+='<td style=\"color:var(--muted);font-size:11px\">'+(i+1)+'</td>';
+    html+='<td>'+shortDesc+'</td>';
+    html+='<td><span style=\"display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;background:color-mix(in srgb,'+catColor+' 15%,transparent);color:'+catColor+'\">'+d.cat+'</span></td>';
+    html+='<td class=\"num tnum\" style=\"font-weight:600\">'+d.cnt+'</td>';
+    html+='<td class=\"num tnum\" style=\"color:'+(d.pending>0?'var(--warn)':'var(--muted)')+'\">'+(d.pending>0?d.pending:'—')+'</td>';
+    html+='<td style=\"font-size:11px;color:var(--ink-2)\">'+topDiff+'</td>';
+    html+='<td style=\"font-size:12px;color:var(--ink-2)\">'+shortM+'</td></tr>';
+  });
+  if(descs.length>50) html+='<tr><td colspan=\"7\" style=\"color:var(--muted);text-align:center;font-size:11px\">仅显示 TOP50，共 '+descs.length+' 种描述</td></tr>';
+  html+='</tbody></table></div>';
   document.getElementById('descAnalysis').innerHTML=html;
 }
 function splitBlock(title,keys,recs,fn,cols){
