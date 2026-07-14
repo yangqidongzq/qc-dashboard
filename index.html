@@ -547,31 +547,33 @@ function renderMerchantTop(){
   const f=getFiltered();
   const map={};
   for(const r of f){
-    const m=map[r.merchant]||(map[r.merchant]={region:r.region,center:r.center,diff:0,qty:0,items:{}});
+    const m=map[r.merchant]||(map[r.merchant]={region:r.region,center:r.center,diff:0,qty:0,items:{},pre:0,wh:0});
     m.qty+=r.qty; m.diff+=r.qtyDiff;
-    if(r.qtyDiff>0) r.diffItems.forEach(it=>{ m.items[it]=(m.items[it]||0)+1; });
+    if(r.qtyDiff>0){ r.diffItems.forEach(it=>{ m.items[it]=(m.items[it]||0)+1; }); if(r.bizline==='前置/后验') m.pre++; else m.wh++; }
   }
-  const arr=Object.entries(map).map(([k,v])=>({m:k,...v,rate:pct(v.diff,v.qty)})).sort((a,b)=>b.diff-a.diff);
+  const arr=Object.entries(map).map(([k,v])=>({m:k,...v,rate:pct(v.diff,v.qty),biz:(v.pre>0?'前'+v.pre:'')+(v.pre>0&&v.wh>0?'/':'')+(v.wh>0?'入'+v.wh:'')})).sort((a,b)=>b.diff-a.diff);
   const top20=arr.slice(0,20);
   let html='';
   if(!top20.length){ html='<div style=\"color:var(--muted);padding:16px 0\">当前筛选无差异商户</div>'; }
   else {
     html='<div style=\"font-size:12px;color:var(--muted);margin-bottom:8px\">共 '+arr.filter(a=>a.diff>0).length+' 家有差异商户，显示TOP20。点击行可筛选明细。</div>';
     html+='<div class=\"tablewrap\" style=\"max-height:480px;overflow:auto\"><table><thead><tr>';
-    html+='<th>#</th><th>商户</th><th class=\"num\">质检台</th><th class=\"num\">差异台</th><th class=\"num\">差异率</th><th>差异项</th>';
+    html+='<th>#</th><th>商户</th><th class=\"num\">质检台</th><th class=\"num\">差异台</th><th class=\"num\">差异率</th><th>差异项</th><th style=\"font-size:10px\">前置/入仓</th>';
     html+='</tr></thead><tbody>';
     top20.forEach((a,i)=>{
       const col=a.rate>=12?'var(--crit)':a.rate>=8?'var(--serious)':'var(--s1)';
       const itemBadges=Object.entries(a.items).sort((x,y)=>y[1]-x[1]).slice(0,4)
         .map(([k,v])=>`<span class=\"difftag\" data-dt=\"${k}\" style=\"display:inline-block;margin:1px 2px;padding:1px 6px;border-radius:4px;font-size:10px;background:color-mix(in srgb,${cssv('--s1')} 12%,transparent);color:${cssv('--ink-2')};cursor:pointer\" title=\"点击查看${k}的描述分析\">${k} ${v}</span>`).join('');
-      const shortName=a.m.length>24?'<span title=\"'+a.m.replace(/\"/g,'&quot;')+'\">'+a.m.slice(0,22)+'…</span>':a.m;
+      const shortName=a.m.length>22?'<span title=\"'+a.m.replace(/\"/g,'&quot;')+'\">'+a.m.slice(0,20)+'…</span>':a.m;
+      const bBreak=a.biz||'';
       html+=`<tr class=\"mclick\" data-m=\"${a.m.replace(/\"/g,'&quot;')}\" style=\"cursor:pointer\">
         <td style=\"color:var(--muted);font-size:11px\">${i+1}</td>
         <td>${shortName}</td>
         <td class=\"num tnum\">${fmt(a.qty)}</td>
         <td class=\"num tnum\" style=\"color:${col};font-weight:600\">${a.diff}</td>
         <td class=\"num tnum\" style=\"color:${a.rate>=8?'var(--crit)':'var(--ink)'}\">${a.rate.toFixed(1)}%</td>
-        <td>${itemBadges||'—'}</td></tr>`;
+        <td>${itemBadges||'—'}</td>
+        <td style=\"font-size:11px;color:var(--ink-2)\">${bBreak}</td></tr>`;
     });
     html+='</tbody></table></div>';
   }
@@ -950,7 +952,7 @@ function importCSV(text){
     const items=(get(c,'差异项')||'').split(/[、,;；\/]/).map(s=>s.trim()).filter(Boolean);
     recs.push({date:pd.norm, day:pd.day, center, region,
       merchant:get(c,'商户')||'—', category:get(c,'品类')||'—', model:get(c,'机型'), code:get(c,'质检码'),
-      inspector, source:get(c,'来源'), bizline:get(c,'业务线')||'—',
+      inspector, source:get(c,'来源'), bizline:(get(c,'业务线')||'—').replace(/^—$/,(get(c,'来源')||'').includes('邮件')?'前置/后验':(get(c,'来源')||'').includes('拦截')?'入仓质检':'—'),
       qty:1, qtyDiff:isDiff?1:0, diffItems:isDiff?items:[], reason:get(c,'差异原因描述'),
       subjObj:get(c,'主客观'), status:isDiff?'差异':(get(c,'差异')==='否'?'合格':'待验')});
   }
