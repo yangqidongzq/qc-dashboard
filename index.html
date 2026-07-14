@@ -199,34 +199,28 @@ svg{display:block; width:100%; height:auto}
       <div id="dailyChart"></div>
     </div>
 
-    <div class="card col-7">
+    <div class="card col-9">
       <h3>商户差异明细 TOP20 <span class="hint">含差异项拆分明细</span></h3>
-      <div class="csub">按差异台数排序，显示区域、差异率、差异项拆分。点击行下钻明细。</div>
+      <div class="csub">按差异台数排序，点击行下钻明细，点击差异标签联动描述。</div>
       <div id="merchantTop"></div>
     </div>
 
-    <div class="card col-5">
-      <h3>品类 · 来源 · 主客观 <span class="hint">三合一视图</span></h3>
-      <div class="csub">品类占比 + 差异来源 + 主客观归因。</div>
-      <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;margin-bottom:8px">
-        <div id="donut" style="width:60px;flex:none"></div>
-        <div class="legend" id="donutLegend" style="flex:1;min-width:120px"></div>
-      </div>
-      <div style="display:flex; gap:16px; flex-wrap:wrap;border-top:1px solid var(--grid);padding-top:8px">
-        <div id="sourceSplit" style="flex:1; min-width:120px"></div>
-        <div id="subjSplit" style="flex:1; min-width:120px"></div>
-      </div>
+    <div class="card col-3">
+      <h3>来源 · 主客观 <span class="hint">差异归因</span></h3>
+      <div class="csub">渠道来源 + 主客观归因。</div>
+      <div id="sourceSplit"></div>
+      <div style="border-top:1px solid var(--grid);margin-top:8px;padding-top:8px" id="subjSplit"></div>
     </div>
 
-    <div class="card col-12">
-      <h3>差异项分析 · 商户拆分 <span class="hint">各差异项下TOP5商户</span></h3>
-      <div class="csub">拆修 / 功能 / 外观 / 显示 / 浸液 / 其他 → 每项下TOP5商户。点击商户名下钻明细。</div>
+    <div class="card col-6">
+      <h3>差异项分析 <span class="hint">各差异项下TOP5商户</span></h3>
+      <div class="csub">拆修/功能/外观/显示/浸液/其他 → TOP商户。点击商户下钻。</div>
       <div id="diffItems"></div>
     </div>
 
-    <div class="card col-12">
-      <h3>差异描述明细 <span class="hint">TOP50 · 含分类·商户·差异项</span></h3>
-      <div class="csub">按出现频次排序，彩色分类标签，显示主要商户与关联差异项。⏳=暂存待处理。</div>
+    <div class="card col-6">
+      <h3>差异描述明细 <span class="hint">TOP50 · 含分类·商户</span></h3>
+      <div class="csub">按频次排序，彩色分类标签，⏳=暂存。</div>
       <div id="descAnalysis"></div>
     </div>
 
@@ -453,7 +447,7 @@ function deriveDims(){ if(typeof window!=='undefined' && window.QC_DATA && windo
    ========================================================= */
 function linkToDesc(dt){state.hlDesc=dt;var da=document.getElementById('descAnalysis');if(da)da.scrollIntoView({behavior:'smooth'});renderDescAnalysis();}
 function renderAll(){ renderKPIs(); renderDaily(); renderRegions();
-  renderMerchantTop(); renderDonut(); renderDiffItems(); renderSplits(); renderDescAnalysis(); renderInspectors(); renderDetail(); }
+  renderMerchantTop(); renderDiffItems(); renderSplits(); renderDescAnalysis(); renderInspectors(); renderDetail(); }
 
 function renderKPIs(){
   const f=getFiltered();
@@ -614,7 +608,7 @@ function renderDiffItems(){
   if(!arr.length){html='<div style="color:var(--muted);padding:16px 0">当前筛选无差异记录</div>';}
   else{
     if(state.selMerchant) html+='<div style="margin-bottom:8px;font-size:12px;color:var(--s1);cursor:pointer" onclick="state.selMerchant=\'\';renderDiffItems();renderDescAnalysis();renderMerchantTop();">🏪 商户: '+state.selMerchant+' ✕</div>';
-    html+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">';
+    html+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">';
     arr.forEach((a,i)=>{
       const topM=Object.entries(a.merchants).sort((x,y)=>y[1]-x[1]).slice(0,6);
       const maxM=Math.max(1,topM.length?topM[0][1]:0);
