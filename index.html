@@ -537,7 +537,7 @@ function renderRegions(){
     html+=`<div class="rcard" style="opacity:${active?1:.45}; ${state.region===reg?'border-color:'+col:''}">
       <div class="rt"><span class="dot" style="background:${col}"></span>${reg}</div>
       <div class="big tnum">${fmt(checked)}<span style="font-size:12px;color:var(--muted)"> 台</span></div>
-      <div class="small">占比 ${share.toFixed(1)}% · 差异率 ${pct1(pct(diff,checked))}</div>
+      <div class="small">占比 ${share.toFixed(1)}% · 差异率 ${pct1(pct(diff,checked))} · 差异 ${diff} 台</div>
       <div class="meter" style="margin-top:9px"><span style="width:${Math.min(share,100)}%;background:${col}"></span></div></div>`;
   }
   document.getElementById('regionGrid').innerHTML=html;
