@@ -209,6 +209,18 @@ svg{display:block; width:100%; height:auto}
     </div>
 
     <div class="card col-12">
+      <h3>巡检人员数据 <span class="hint">达成率 = 实际 / (100×出勤天)</span></h3>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+        <div class="csub" style="margin-bottom:0">按大区分组、每区带小计行与排名；组内按达成率排序。达成率≥100%绿、85%~100%常规、＜85%红。</div>
+        <div style="display:flex;gap:6px;flex:none">
+          <button class="chip" id="underFilter">⚡ 仅看未达标</button>
+          <button class="chip" id="inspExp">⬇ 导出分区小计</button>
+        </div>
+      </div>
+      <div class="tablewrap" style="margin-top:10px"><table id="inspectorTable"></table></div>
+    </div>
+
+    <div class="card col-12">
       <h3>商户差异明细 TOP20 <span class="hint">含差异项拆分明细</span></h3>
       <div class="csub">按差异台数排序，点击行下钻明细，点击差异标签联动描述。</div>
       <div id="merchantTop"></div>
@@ -232,17 +244,12 @@ svg{display:block; width:100%; height:auto}
       <div id="descAnalysis"></div>
     </div>
 
-    <div class="card col-12">
-      <h3>巡检人员数据 <span class="hint">达成率 = 实际 / (100×出勤天)</span></h3>
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
-        <div class="csub" style="margin-bottom:0">按大区分组、每区带小计行与排名；组内按达成率排序。达成率≥100%绿、85%~100%常规、＜85%红。</div>
-        <div style="display:flex;gap:6px;flex:none">
-          <button class="chip" id="underFilter">⚡ 仅看未达标</button>
-          <button class="chip" id="inspExp">⬇ 导出分区小计</button>
-        </div>
-      </div>
-      <div class="tablewrap" style="margin-top:10px"><table id="inspectorTable"></table></div>
+    <!-- ====== 差异分析模块 ====== -->
+    <div class="card col-12 ana-section">
+      <h2>🔬 差异标准对照 & 改善建议 <span class="hint" style="font-size:12px">通病匹配 · 响应筛选器</span></h2>
     </div>
+    <div class="card col-6"><h3>📱 高频差异机型 TOP 10 <span class="hint">匹配已知通病</span></h3><div class="csub">机型常见差异类型 & 12条已知通病自动匹配</div><div class="scroll" id="anaModel"></div></div>
+    <div class="card col-6"><h3>💡 改善方向 & 系统性问题</h3><div class="csub">基于差异模式+标准+通病综合分析，自动生成建议</div><div class="scroll" id="anaInsight"></div></div>
 
     <div class="card col-12">
       <h3>
@@ -259,13 +266,6 @@ svg{display:block; width:100%; height:auto}
       </div>
       <div class="tablewrap scroll"><table id="detailTable"></table></div>
     </div>
-
-    <!-- ====== 差异分析模块 ====== -->
-    <div class="card col-12 ana-section">
-      <h2>🔬 差异标准对照 & 改善建议 <span class="hint" style="font-size:12px">通病匹配 · 响应筛选器</span></h2>
-    </div>
-    <div class="card col-6"><h3>📱 高频差异机型 TOP 10 <span class="hint">匹配已知通病</span></h3><div class="csub">机型常见差异类型 & 12条已知通病自动匹配</div><div class="scroll" id="anaModel"></div></div>
-    <div class="card col-6"><h3>💡 改善方向 & 系统性问题</h3><div class="csub">基于差异模式+标准+通病综合分析，自动生成建议</div><div class="scroll" id="anaInsight"></div></div>
 
   </div>
 
