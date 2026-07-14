@@ -244,12 +244,20 @@ svg{display:block; width:100%; height:auto}
       <div id="descAnalysis"></div>
     </div>
 
-    <!-- ====== 差异分析模块 ====== -->
+    <!-- ====== 差异合理性分析 ====== -->
     <div class="card col-12 ana-section">
-      <h2>🔬 差异标准对照 & 改善建议 <span class="hint" style="font-size:12px">通病匹配 · 响应筛选器</span></h2>
+      <h2>🔬 差异合理性分析 <span class="hint" style="font-size:12px">基于品类标准 · 描述一致性判定 · 通病匹配</span></h2>
     </div>
-    <div class="card col-6"><h3>📱 高频差异机型 TOP 10 <span class="hint">匹配已知通病</span></h3><div class="csub">机型常见差异类型 & 12条已知通病自动匹配</div><div class="scroll" id="anaModel"></div></div>
-    <div class="card col-6"><h3>💡 改善方向 & 系统性问题</h3><div class="csub">基于差异模式+标准+通病综合分析，自动生成建议</div><div class="scroll" id="anaInsight"></div></div>
+    <div class="card col-6"><h3>📱 高频差异机型 TOP 10 <span class="hint">匹配已知通病</span></h3><div class="csub">机型常见差异 & 24条全品类通病自动匹配</div><div class="scroll" id="anaModel"></div></div>
+    <div class="card col-6"><h3>📊 判定质量 & 品类概览 <span class="hint">一致性+覆盖率+品类分布</span></h3><div class="scroll" id="anaOverview"></div></div>
+    <div class="card col-6"><h3>⚠️ 描述归类不一致 <span class="hint">关键词→差异项映射错误</span></h3><div class="csub">描述指向的标准类别 vs 实际勾选的差异项不匹配</div><div class="scroll" id="anaMismatch"></div></div>
+    <div class="card col-6"><h3>⚖️ 主观争议 & 高频缺陷 <span class="hint">争议度排行+TOP缺陷</span></h3><div class="scroll" id="anaSubjDefect"></div></div>
+
+    <!-- ====== 各仓诊断 & 改善方向 ====== -->
+    <div class="card col-12 ana-section" style="margin-top:4px">
+      <h2>🏢 各仓根因诊断 & 改善方向 <span class="hint" style="font-size:12px">执行问题/标准模糊/商户集中 → 针对性行动</span></h2>
+    </div>
+    <div class="card col-12"><div class="scroll" id="anaWarehouse"></div></div>
 
     <div class="card col-12">
       <h3>
@@ -479,215 +487,96 @@ function renderAnaModel(){
     h+='<tr><td>'+(idx+1)+'</td><td><b>'+e[0]+'</b></td><td class="num">'+e[1].d+'</td><td style="font-size:11px">'+(ti||'—')+'</td><td style="font-size:11px">'+(cm.length?cm.map(function(c){return '<span class="tag warn" title="'+c.dsc+'">'+c.iss+'</span>';}).join(' '):'<span style="color:var(--muted)">未匹配</span>')+'</td></tr>';});
   h+='</tbody></table>';var el=document.getElementById('anaModel');if(el)el.innerHTML=h;
 }
-function renderAnaInsight(){
+// ── 共享分析引擎 ──
+function _analyze(){
   var f=getFiltered(),dr=f.filter(function(r){return r.qtyDiff>0||(r.diffItems&&r.diffItems.length);});
-  var total=f.length,diffCount=dr.length;
-
-  // ═══ 核心分析：逐条差异描述 vs 标准 + 差异项归类一致性 ═══
-  var hasReason=dr.filter(function(r){return r.reason&&r.reason!=='—'&&r.reason!=='';});
-  var noReason=diffCount-hasReason.length;
-  // 逐条分析有描述的差异
-  var analysis={match:[],mismatch:[],vague:[],noReason:diffCount-hasReason.length};
-  hasReason.forEach(function(r){
-    (r.diffItems||[]).forEach(function(diffItem){
-      var kw=_tagKW(r.reason);
-      if(!kw){analysis.vague.push({r:r,di:diffItem});return;}
-      var expected=_catToDiff(kw.cat);
-      if(!expected||expected===diffItem){analysis.match.push({r:r,di:diffItem,kw:kw});}
-      else {analysis.mismatch.push({r:r,di:diffItem,kw:kw,expected:expected});}
-    });
-  });
-  var totalAnalyzed=analysis.match.length+analysis.mismatch.length+analysis.vague.length;
-  var matchRate=totalAnalyzed>0?analysis.match.length/totalAnalyzed*100:0;
-  var mismatchRate=totalAnalyzed>0?analysis.mismatch.length/totalAnalyzed*100:0;
-  var vagueRate=totalAnalyzed>0?analysis.vague.length/totalAnalyzed*100:0;
-
-  // 通病匹配
-  var cmc=0;dr.forEach(function(r){if(_findCM(r.model).length>0)cmc++;});
-  var commonRate=diffCount>0?cmc/diffCount*100:0;
-  // 差异项×主观客观交叉——哪些项主观判定最多？
-  var subjByItem={};dr.forEach(function(r){(r.diffItems||[]).forEach(function(i){subjByItem[i]=subjByItem[i]||{t:0,s:0};subjByItem[i].t++;if(r.subjObj==='主观')subjByItem[i].s++;});});
-  var subjRank=Object.entries(subjByItem).filter(function(e){return e[1].t>=3;}).sort(function(a,b){return(b[1].s/b[1].t)-(a[1].s/a[1].t);});
-  // 高频具体缺陷TOP8
-  var kwRank={};analysis.match.forEach(function(x){kwRank[x.kw.tag]=(kwRank[x.kw.tag]||0)+1;});
-  var topKW=Object.entries(kwRank).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
-
-  var bar=function(v,max,w,c){w=w||100;var p=Math.min(v/max*100,100);return '<div style="flex:1;height:6px;background:var(--track);border-radius:3px;overflow:hidden"><div style="width:'+p+'%;height:100%;background:'+(c||'var(--s1)')+';border-radius:3px"></div></div>';};
-  var pctFmt=function(v){return v.toFixed(1)+'%';};
-  var html='';
-
-  // 按品类统计差异
-  var catStats={};f.forEach(function(r){catStats[r.category]=catStats[r.category]||{t:0,d:0};catStats[r.category].t++;if(r.qtyDiff)catStats[r.category].d++;});
-  var catList=Object.entries(catStats).sort(function(a,b){return b[1].d-a[1].d;});
-
-  // ── KPI行 ──
-  html+='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">';
-  html+='<div style="flex:1;min-width:110px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center"><div style="font-size:22px;font-weight:700;color:'+(matchRate>70?'var(--good-ink)':matchRate>40?'var(--warn)':'var(--crit)')+'">'+pctFmt(matchRate)+'</div><div style="font-size:11px;color:var(--muted)">✅ 描述-项一致</div><div style="font-size:10px;color:var(--ink-2)">'+analysis.match.length+'条</div></div>';
-  html+='<div style="flex:1;min-width:110px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center"><div style="font-size:22px;font-weight:700;color:'+(mismatchRate<10?'var(--good-ink)':mismatchRate<25?'var(--warn)':'var(--crit)')+'">'+pctFmt(mismatchRate)+'</div><div style="font-size:11px;color:var(--muted)">⚠️ 归类不一致</div><div style="font-size:10px;color:var(--ink-2)">'+analysis.mismatch.length+'条</div></div>';
-  html+='<div style="flex:1;min-width:110px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center"><div style="font-size:22px;font-weight:700;color:'+(vagueRate<30?'var(--good-ink)':vagueRate<50?'var(--warn)':'var(--crit)')+'">'+pctFmt(vagueRate)+'</div><div style="font-size:11px;color:var(--muted)">🔍 描述模糊</div><div style="font-size:10px;color:var(--ink-2)">'+analysis.vague.length+'条</div></div>';
-  html+='<div style="flex:1;min-width:110px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center"><div style="font-size:22px;font-weight:700;color:'+(noReason===0?'var(--good-ink)':'var(--crit)')+'">'+noReason+'</div><div style="font-size:11px;color:var(--muted)">❌ 无描述</div><div style="font-size:10px;color:var(--ink-2)">'+(diffCount>0?pctFmt(noReason/diffCount*100):'0%')+'</div></div>';
-  html+='</div>';
-
-  // ── 全品类差异概览 ──
-  html+='<div style="margin-bottom:14px;background:var(--surface-1);border-radius:10px;padding:14px 16px">';
-  html+='<div style="font-weight:600;font-size:13px;margin-bottom:10px">📊 全品类差异概览（'+catList.length+'个品类）</div>';
-  catList.forEach(function(e){var r=e[1].d/e[1].t*100;var c=r>20?'var(--crit)':r>10?'var(--warn)':'var(--good-ink)';
-    html+='<div style="margin-bottom:7px;display:flex;align-items:center;gap:10px;font-size:12px"><span style="width:48px;font-weight:600">'+e[0]+'</span>'+bar(e[1].d,catList[0][1].d,160,'var(--s2)')+'<span style="width:44px;text-align:right;font-weight:600;color:'+c+'">'+pctFmt(r)+'</span><span style="color:var(--muted);font-size:10px;width:60px">'+e[1].d+'/'+e[1].t+'台</span></div>';
-  });
-  html+='</div>';
-
-  // ── 判定结论 ──
-  html+='<div style="font-weight:600;font-size:13px;margin-bottom:8px">📋 基于品类标准的差异合理性判定</div>';
-
-  // 归类不一致明细
-  if(analysis.mismatch.length>0){
-    html+='<div class="insight-box crit" style="margin-bottom:10px">';
-    html+='<div class="ititle">⚠️ 差异项归类不一致：'+analysis.mismatch.length+'条（标准关键词与实际差异项不匹配）</div>';
-    html+='<div class="ibody"><b>问题：</b>以下记录的差异原因描述指向的标准类别与勾选的差异项不符，可能导致成色定级偏差。<br>';
-    // 去重后展示TOP5不一致类型
-    var mmTypes={};
-    analysis.mismatch.forEach(function(x){var key=x.kw.tag+'('+x.kw.cat+')→误标为"'+x.di+'"应标"'+x.expected+'"';mmTypes[key]=(mmTypes[key]||0)+1;});
-    var topMM=Object.entries(mmTypes).sort(function(a,b){return b[1]-a[1];}).slice(0,5);
-    topMM.forEach(function(e){html+='<div style="font-size:12px;margin:3px 0">• '+e[0]+'：<b>'+e[1]+'次</b></div>';});
-    // 展示2条具体示例
-    var samples=analysis.mismatch.slice(0,2);
-    html+='<div style="font-size:11px;color:var(--muted);margin-top:6px"><b>示例：</b></div>';
-    samples.forEach(function(x){html+='<div style="font-size:11px;color:var(--ink-2);margin:2px 0">「'+x.r.reason+'」→ 关键词「'+x.kw.tag+'」属<b>'+x.kw.cat+'</b>应标<b>'+x.expected+'</b>，实际标<b>'+x.di+'</b></div>';});
-    html+='<b>建议：</b>① 质检APP增加实时校验——描述关键词自动建议差异项 ② 对归类不一致的'+analysis.mismatch.length+'条记录<b>回溯复核</b>成色等级 ③ 培训质检员使用标准关键词描述</div></div>';
-  }
-
-  // 描述模糊问题
-  if(analysis.vague.length>0){
-    var sev=vagueRate>40?'crit':'warn';
-    html+='<div class="insight-box '+sev+'" style="margin-bottom:10px">';
-    html+='<div class="ititle">🔍 描述模糊无法判定：'+analysis.vague.length+'条（'+(totalAnalyzed>0?pctFmt(vagueRate):'—')+'）</div>';
-    html+='<div class="ibody"><b>问题：</b>以下描述无法匹配到30项标准关键词，无法自动判定合理性。<br>';
-    // 展示模糊描述示例
-    var vagueSamples={};
-    analysis.vague.forEach(function(x){var d=x.r.reason;if(d)vagueSamples[d]=(vagueSamples[d]||0)+1;});
-    var topVague=Object.entries(vagueSamples).sort(function(a,b){return b[1]-a[1];}).slice(0,4);
-    topVague.forEach(function(e){html+='<div style="font-size:12px;margin:2px 0">• 「'+e[0]+'」：<b>'+e[1]+'台</b></div>';});
-    html+='<b>建议：</b>① 制定<b>30项标准关键词下拉菜单</b>强制选择 ② 模糊描述禁止提交（APP校验） ③ 对现有模糊描述人工补标</div></div>';
-  }
-
-  // 无描述
-  if(noReason>0){
-    html+='<div class="insight-box '+(noReason/diffCount>0.3?'crit':'warn')+'" style="margin-bottom:10px">';
-    html+='<div class="ititle">❌ 无原因描述：'+noReason+'台（'+pctFmt(noReason/diffCount*100)+'）</div>';
-    html+='<div class="ibody"><b>影响：</b>无法追溯差异根因，无法验证成色定级是否合理。<b>建议：</b>差异原因设为必填+30项标准关键词下拉+拍照强制留档</div></div>';
-  }
-
-  // 归类一致-良好
-  if(analysis.match.length>0){
-    html+='<div class="insight-box ok" style="margin-bottom:10px">';
-    html+='<div class="ititle">✅ 描述-差异项一致：'+analysis.match.length+'条（'+pctFmt(matchRate)+'）</div>';
-    html+='<div class="ibody">这些记录的差异描述关键词与勾选的差异项类别匹配，归类合理。常见关键词分布：';
-    var kwDist={};analysis.match.forEach(function(x){kwDist[x.kw.tag]=(kwDist[x.kw.tag]||0)+1;});
-    var topKW=Object.entries(kwDist).sort(function(a,b){return b[1]-a[1];}).slice(0,5);
-    topKW.forEach(function(e){html+='<span class="pattern-chip">'+e[0]+'<span class="n">'+e[1]+'</span></span> ';});
-    html+='</div></div>';
-  }
-
-  // ── 差异项主观/客观争议度 ──
-  html+='<div style="font-weight:600;font-size:13px;margin-bottom:8px;margin-top:4px">⚖️ 差异项主观争议度 & 高频缺陷</div>';
-  html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">';
-
-  // 左：主观争议排行
-  html+='<div class="insight-box" style="margin-bottom:0"><div class="ititle">⚖️ 主观判定率排行</div><div class="ibody" style="font-size:12px">';
-  if(subjRank.length){
-    var maxSubj=subjRank[0][1].s/subjRank[0][1].t*100;
-    subjRank.slice(0,6).forEach(function(e){
-      var r=e[1].s/e[1].t*100,color=r>60?'var(--crit)':r>40?'var(--warn)':'var(--s1)';
-      html+='<div style="margin:3px 0;display:flex;align-items:center;gap:6px;font-size:11px"><span style="width:36px;font-weight:600">'+e[0]+'</span>'+bar(r,100,90,color)+'<span style="width:38px;text-align:right;font-weight:600;color:'+color+'">'+pctFmt(r)+'</span><span style="color:var(--muted);font-size:10px">'+e[1].s+'/'+e[1].t+'</span></div>';
-    });
-    html+='<div style="font-size:10px;color:var(--muted);margin-top:4px">主观率>60%=争议大 → 建议增加客观判定标准</div>';
-  } else { html+='<span style="color:var(--muted)">数据不足</span>'; }
-  html+='</div></div>';
-
-  // 右：高频缺陷TOP8
-  html+='<div class="insight-box" style="margin-bottom:0"><div class="ititle">🔝 高频具体缺陷 TOP8</div><div class="ibody" style="font-size:12px">';
-  if(topKW.length){
-    var colors2=['var(--s6)','var(--s1)','var(--s8)','var(--s2)','var(--s5)','var(--s3)','var(--s7)','var(--s4)'];
-    topKW.forEach(function(e,idx){
-      var p=e[1]/analysis.match.length*100;
-      html+='<div style="margin:3px 0;display:flex;align-items:center;gap:6px;font-size:11px"><span style="color:var(--muted);width:16px">'+(idx+1)+'</span><span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+e[0]+'</span>'+bar(e[1],topKW[0][1],80,colors2[idx%colors2.length])+'<span style="font-weight:600;width:24px;text-align:right">'+e[1]+'</span></div>';
-    });
-    html+='<div style="font-size:10px;color:var(--muted);margin-top:4px">TOP1「'+topKW[0][0]+'」占缺陷总数'+pctFmt(topKW[0][1]/analysis.match.length*100)+'→列为重点改善项</div>';
-  } else { html+='<span style="color:var(--muted)">无匹配数据</span>'; }
-  html+='</div></div></div>';
-
-  // ── 各仓问题诊断 & 改善方向 ──
-  html+='<div style="font-weight:600;font-size:13px;margin-bottom:8px;margin-top:4px">🏢 各仓问题诊断 & 改善方向</div>';
-
-  // 逐仓分析
-  var ccData={};f.forEach(function(r){ccData[r.center]=ccData[r.center]||{t:0,d:0,dr:[],mismatchDr:[],vagueDr:[],subj:0,hasReason:0,merchants:{},items:{}};
-    ccData[r.center].t++; if(r.qtyDiff){ccData[r.center].d++;ccData[r.center].dr.push(r);
-      if(r.subjObj==='主观')ccData[r.center].subj++;
-      if(r.reason&&r.reason!=='—')ccData[r.center].hasReason++;
-      (r.diffItems||[]).forEach(function(i){ccData[r.center].items[i]=(ccData[r.center].items[i]||0)+1;});
-      ccData[r.center].merchants[r.merchant]=(ccData[r.center].merchants[r.merchant]||0)+1;
-    }});
-  // 匹配合并中心仓名（去掉城市前缀统一）
-  var ccShort={};Object.keys(ccData).forEach(function(c){var s=c.replace(/.*?(深圳|广州|长沙|南昌|上海|杭州|北京|天津|成都|重庆|西安|郑州)/,'$1');ccShort[c]=s;});
-  // 逐条分析归类不一致和模糊描述归属
-  analysis.mismatch.forEach(function(x){var c=x.r.center;if(ccData[c])ccData[c].mismatchDr.push(x);});
-  analysis.vague.forEach(function(x){var c=x.r.center;if(ccData[c])ccData[c].vagueDr.push(x);});
-
-  var ccRank=Object.entries(ccData).filter(function(e){return e[1].d>=3;}).sort(function(a,b){return(b[1].d/b[1].t)-(a[1].d/a[1].t);});
-
-  ccRank.forEach(function(e,idx){
-    var c=e[0],d=e[1],diffRate=d.d/d.t*100;
-    var reasonRate=d.dr.length>0?d.hasReason/d.dr.length*100:0;
-    var subjRate=d.dr.length>0?d.subj/d.dr.length*100:0;
-    var misRate=d.dr.length>0?d.mismatchDr.length/d.dr.length*100:0;
-    var vagueRateC=d.dr.length>0?d.vagueDr.length/d.dr.length*100:0;
-    // 根因判定
-    var rootCauses=[];
-    if(subjRate>50&&reasonRate>60)rootCauses.push({tag:'执行差异',desc:'描述清晰但主观率高→不同质检员对同一缺陷判定不一致'});
-    if(misRate>20)rootCauses.push({tag:'归类混乱',desc:'描述与差异项不匹配率高→需校准标准分类认知'});
-    if(vagueRateC>30)rootCauses.push({tag:'描述模糊',desc:'原因描述质量差→需强制使用标准关键词'});
-    if(reasonRate<40)rootCauses.push({tag:'记录缺失',desc:'多数差异无原因描述→无法追溯根因'});
-    // 商户集中度
-    var topM=Object.entries(d.merchants).sort(function(a,b){return b[1]-a[1];}).slice(0,2);
-    var topMShare=d.dr.length>0?topM.reduce(function(s,x){return s+x[1];},0)/d.dr.length*100:0;
-    if(topMShare>40)rootCauses.push({tag:'商户集中',desc:topM[0][0]+'贡献'+topMShare.toFixed(0)+'%差异→重点对接该商户'});
-    if(!rootCauses.length)rootCauses.push({tag:'正常',desc:'各项指标在合理范围内'});
-
-    var sev=diffRate>20?'crit':diffRate>12?'warn':'';
-    html+='<div class="insight-box '+sev+'" style="margin-bottom:10px">';
-    html+='<div class="ititle">'+(idx+1)+'. '+c+' <span style="font-weight:400;font-size:12px;color:var(--muted)">差异率'+pctFmt(diffRate)+'（'+d.d+'/'+d.t+'台） | 主观率'+subjRate.toFixed(0)+'% | 描述覆盖'+reasonRate.toFixed(0)+'%</span></div>';
-    html+='<div class="ibody">';
-    // 根因标签
-    html+='<div style="margin-bottom:6px">🔎 根因：';
-    rootCauses.forEach(function(rc){var cl=rc.tag==='正常'?'ok':rc.tag==='执行差异'||rc.tag==='归类混乱'?'crit':'warn';
-      html+='<span class="tag '+cl+'" style="margin-right:4px" title="'+rc.desc+'">'+rc.tag+'</span>';});
-    html+='</div>';
-    // 改善建议
-    var actions=[];
-    if(subjRate>50)actions.push('统一主观判定标准→明确量化阈值（如"磕碰≤0.5mm豁免"）');
-    if(misRate>20)actions.push('培训标准关键词→描述vs差异项对照表上墙');
-    if(vagueRateC>30)actions.push('APP端强制关键词下拉选择，禁止自由文本提交');
-    if(reasonRate<40)actions.push('差异原因列为必填项，未填写无法提交');
-    if(topMShare>40)actions.push('约谈'+topM[0][0]+'→回传差异明细要求入仓前自查');
-    if(actions.length){
-      html+='<div style="font-size:11px;margin-top:4px">📋 改善行动：'+actions.map(function(a,i){return '<div style="margin:2px 0">'+(i+1)+'. '+a+'</div>';}).join('')+'</div>';
-    }
-    html+='</div></div>';
-  });
-
-  // ── 全局改善路线图 ──
-  html+='<div class="insight-box ok" style="margin-top:10px">';
-  html+='<div class="ititle">🛤️ 全局改善路线图</div><div class="ibody">';
-  html+='<table style="font-size:12px;margin-top:6px"><thead><tr><th>阶段</th><th>定位</th><th>措施</th><th>解决什么问题</th></tr></thead><tbody>';
-  html+='<tr><td>🔴 紧急</td><td>系统+执行</td><td>差异原因必填+30项标准关键词下拉；APP校验模糊描述禁止提交</td><td>消除"无描述""描述模糊"→追溯率→90%+</td></tr>';
-  html+='<tr><td>🟡 短期</td><td>执行校准</td><td>按仓制定培训计划：高频主观项→量化判定标准上墙；关键词→差异项对照表人手一份</td><td>主观争议率→<30%；归类一致率→95%+</td></tr>';
-  html+='<tr><td>🟢 中期</td><td>标准优化</td><td>对归类混乱/主观率高的质检项→回溯标准文档→优化阈值描述（如"磕碰"增加"≤0.5mm/1-3mm/>3mm"三档图片示例）</td><td>标准定义模糊项→全部量化</td></tr>';
-  html+='<tr><td>🔵 长期</td><td>商户协同</td><td>高差异商户建立入仓预检机制+月度差异报告回传；12个月数据训练AI预判模型</td><td>商户端拦截+AI辅助→整体差异率降低30%</td></tr>';
-  html+='</tbody></table></div></div>';
-
-  var el=document.getElementById('anaInsight');if(el)el.innerHTML=html;
+  var total=f.length,diffCount=dr.length,hasReason=dr.filter(function(r){return r.reason&&r.reason!=='—'&&r.reason!=='';});
+  var analysis={match:[],mismatch:[],vague:[],noReason:diffCount-hasReason.length,diffCount:diffCount};
+  hasReason.forEach(function(r){(r.diffItems||[]).forEach(function(diffItem){
+    var kw=_tagKW(r.reason);
+    if(!kw){analysis.vague.push({r:r,di:diffItem});return;}
+    var expected=_catToDiff(kw.cat);
+    if(!expected||expected===diffItem){analysis.match.push({r:r,di:diffItem,kw:kw});}
+    else {analysis.mismatch.push({r:r,di:diffItem,kw:kw,expected:expected});}
+  });});
+  var ta=analysis.match.length+analysis.mismatch.length+analysis.vague.length;
+  analysis.matchRate=ta>0?analysis.match.length/ta*100:0;
+  analysis.mismatchRate=ta>0?analysis.mismatch.length/ta*100:0;
+  analysis.vagueRate=ta>0?analysis.vague.length/ta*100:0;
+  analysis.cats={};f.forEach(function(r){analysis.cats[r.category]=analysis.cats[r.category]||{t:0,d:0};analysis.cats[r.category].t++;if(r.qtyDiff)analysis.cats[r.category].d++;});
+  analysis.catList=Object.entries(analysis.cats).sort(function(a,b){return b[1].d-a[1].d;});
+  analysis.cmc=0;dr.forEach(function(r){if(_findCM(r.model).length>0)analysis.cmc++;});
+  var sbi={};dr.forEach(function(r){(r.diffItems||[]).forEach(function(i){sbi[i]=sbi[i]||{t:0,s:0};sbi[i].t++;if(r.subjObj==='主观')sbi[i].s++;});});
+  analysis.subjRank=Object.entries(sbi).filter(function(e){return e[1].t>=3;}).sort(function(a,b){return(b[1].s/b[1].t)-(a[1].s/a[1].t);});
+  var kwR={};analysis.match.forEach(function(x){kwR[x.kw.tag]=(kwR[x.kw.tag]||0)+1;});
+  analysis.topKW=Object.entries(kwR).sort(function(a,b){return b[1]-a[1];}).slice(0,8);
+  var cc={};f.forEach(function(r){cc[r.center]=cc[r.center]||{t:0,d:0,dr:[],subj:0,hr:0,mm:[],vg:[],merchants:{}};cc[r.center].t++;if(r.qtyDiff){cc[r.center].d++;cc[r.center].dr.push(r);if(r.subjObj==='主观')cc[r.center].subj++;if(r.reason&&r.reason!=='—')cc[r.center].hr++;(r.diffItems||[]).forEach(function(i){});cc[r.center].merchants[r.merchant]=(cc[r.center].merchants[r.merchant]||0)+1;}});
+  analysis.mismatch.forEach(function(x){var c=x.r.center;if(cc[c])cc[c].mm.push(x);});
+  analysis.vague.forEach(function(x){var c=x.r.center;if(cc[c])cc[c].vg.push(x);});
+  analysis.ccRank=Object.entries(cc).filter(function(e){return e[1].d>=3;}).sort(function(a,b){return(b[1].d/b[1].t)-(a[1].d/a[1].t);});
+  return analysis;
 }
-function renderAnalysisAll(){try{renderAnaModel();renderAnaInsight();}catch(e){}}
+var _bar=function(v,max,w,c){w=w||100;var p=Math.min(v/max*100,100);return '<div style="flex:1;height:6px;background:var(--track);border-radius:3px;overflow:hidden"><div style="width:'+p+'%;height:100%;background:'+(c||'var(--s1)')+';border-radius:3px"></div></div>';};
+var _pct=function(v){return v.toFixed(1)+'%';};
+
+function renderAnaOverview(){
+  var a=_analyze();var html='';
+  html+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">';
+  html+='<div style="flex:1;min-width:85px;background:var(--surface-1);border-radius:8px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:700;color:'+(a.matchRate>70?'var(--good-ink)':a.matchRate>40?'var(--warn)':'var(--crit)')+'">'+_pct(a.matchRate)+'</div><div style="font-size:10px;color:var(--muted)">一致</div><div style="font-size:10px;color:var(--ink-2)">'+a.match.length+'条</div></div>';
+  html+='<div style="flex:1;min-width:85px;background:var(--surface-1);border-radius:8px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:700;color:'+(a.mismatchRate<10?'var(--good-ink)':a.mismatchRate<25?'var(--warn)':'var(--crit)')+'">'+_pct(a.mismatchRate)+'</div><div style="font-size:10px;color:var(--muted)">不一致</div><div style="font-size:10px;color:var(--ink-2)">'+a.mismatch.length+'条</div></div>';
+  html+='<div style="flex:1;min-width:85px;background:var(--surface-1);border-radius:8px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:700;color:'+(a.vagueRate<30?'var(--good-ink)':a.vagueRate<50?'var(--warn)':'var(--crit)')+'">'+_pct(a.vagueRate)+'</div><div style="font-size:10px;color:var(--muted)">模糊</div><div style="font-size:10px;color:var(--ink-2)">'+a.vague.length+'条</div></div>';
+  html+='<div style="flex:1;min-width:85px;background:var(--surface-1);border-radius:8px;padding:10px;text-align:center"><div style="font-size:18px;font-weight:700;color:'+(a.noReason===0?'var(--good-ink)':'var(--crit)')+'">'+a.noReason+'</div><div style="font-size:10px;color:var(--muted)">无描述</div><div style="font-size:10px;color:var(--ink-2)">'+_pct(a.noReason/(a.diffCount||1)*100)+'</div></div>';
+  html+='</div>';
+  if(a.catList.length>1){html+='<div style="font-weight:600;font-size:12px;margin-bottom:6px">品类差异率</div>';
+    a.catList.forEach(function(e){var r=e[1].d/e[1].t*100,c=r>20?'var(--crit)':r>10?'var(--warn)':'var(--good-ink)';
+      html+='<div style="margin:3px 0;display:flex;align-items:center;gap:6px;font-size:11px"><span style="width:40px;font-weight:600">'+e[0]+'</span>'+_bar(e[1].d,a.catList[0][1].d,100,'var(--s2)')+'<span style="font-weight:600;color:'+c+';width:36px;text-align:right">'+_pct(r)+'</span></div>';});
+  }
+  var el=document.getElementById('anaOverview');if(el)el.innerHTML=html;
+}
+function renderAnaMismatch(){
+  var a=_analyze();var html='';
+  if(a.mismatch.length>0){
+    var mmTypes={};a.mismatch.forEach(function(x){var key=x.kw.tag+'误标"'+x.di+'"应标"'+x.expected+'"';mmTypes[key]=(mmTypes[key]||0)+1;});
+    var topMM=Object.entries(mmTypes).sort(function(a,b){return b[1]-a[1];}).slice(0,5);
+    topMM.forEach(function(e){html+='<div style="font-size:12px;margin:4px 0"> '+e[0]+'：<b>'+e[1]+'次</b></div>';});
+    var samples=a.mismatch.slice(0,2);
+    html+='<div style="font-size:11px;color:var(--muted);margin-top:6px"><b>示例：</b></div>';
+    samples.forEach(function(x){html+='<div style="font-size:11px;color:var(--ink-2);margin:2px 0">'+x.r.reason+' 属<b>'+x.kw.cat+'</b>应标<b>'+x.expected+'</b></div>';});
+    html+='<div style="font-size:11px;margin-top:8px;color:var(--warn)">APP增加关键词差异项自动建议；回溯复核'+a.mismatch.length+'条</div>';
+  } else { html='<div style="color:var(--muted);padding:12px 0;text-align:center">无归类不一致记录</div>'; }
+  var el=document.getElementById('anaMismatch');if(el)el.innerHTML=html;
+}
+function renderAnaSubjDefect(){
+  var a=_analyze();var html='';
+  html+='<div style="font-weight:600;font-size:12px;margin-bottom:6px">主观判定率排行</div>';
+  if(a.subjRank.length){a.subjRank.slice(0,5).forEach(function(e){var r=e[1].s/e[1].t*100,c=r>60?'var(--crit)':r>40?'var(--warn)':'var(--s1)';html+='<div style="margin:3px 0;display:flex;align-items:center;gap:5px;font-size:11px"><span style="width:32px;font-weight:600">'+e[0]+'</span>'+_bar(r,100,80,c)+'<span style="width:34px;text-align:right;font-weight:600;color:'+c+'">'+_pct(r)+'</span></div>';});html+='<div style="font-size:10px;color:var(--muted);margin-bottom:10px">主观>60%=争议大</div>';}
+  html+='<div style="font-weight:600;font-size:12px;margin-bottom:6px;margin-top:12px">高频缺陷 TOP8</div>';
+  if(a.topKW.length){var c2=['var(--s6)','var(--s1)','var(--s8)','var(--s2)','var(--s5)','var(--s3)','var(--s7)','var(--s4)'];a.topKW.forEach(function(e,idx){html+='<div style="margin:3px 0;display:flex;align-items:center;gap:5px;font-size:11px"><span style="color:var(--muted);width:14px">'+(idx+1)+'</span><span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+e[0]+'</span>'+_bar(e[1],a.topKW[0][1],65,c2[idx%c2.length])+'<span style="font-weight:600;width:20px;text-align:right">'+e[1]+'</span></div>';});html+='<div style="font-size:10px;color:var(--muted);margin-top:4px">TOP1占'+_pct(a.topKW[0][1]/a.match.length*100)+'</div>';}
+  var el=document.getElementById('anaSubjDefect');if(el)el.innerHTML=html;
+}
+function renderAnaWarehouse(){
+  var a=_analyze();var html='';
+  a.ccRank.forEach(function(e,idx){
+    var c=e[0],d=e[1],dr=d.d/d.t*100,sr=d.dr.length>0?d.subj/d.dr.length*100:0,rr=d.dr.length>0?d.hr/d.dr.length*100:0;
+    var mr=d.dr.length>0?d.mm.length/d.dr.length*100:0,vr=d.dr.length>0?d.vg.length/d.dr.length*100:0;
+    var rc=[];if(sr>50&&rr>60)rc.push({t:'执行差异',cl:'crit',d:'主观率高+描述清晰'});if(mr>20)rc.push({t:'归类混乱',cl:'crit',d:'描述与差异项不匹配'});if(vr>30)rc.push({t:'描述模糊',cl:'warn',d:'需强制关键词'});if(rr<40)rc.push({t:'记录缺失',cl:'warn',d:'无原因描述'});var tm=Object.entries(d.merchants).sort(function(a,b){return b[1]-a[1];}).slice(0,2);var tms=d.dr.length>0?tm.reduce(function(s,x){return s+x[1];},0)/d.dr.length*100:0;if(tms>40)rc.push({t:'商户集中',cl:'warn',d:tm[0][0]+'贡献'+tms.toFixed(0)+'%'});if(!rc.length)rc.push({t:'正常',cl:'ok',d:''});
+    var sev=dr>20?'crit':dr>12?'warn':'';
+    html+='<div class="insight-box '+sev+'" style="margin-bottom:8px"><div class="ititle">'+(idx+1)+'. '+c+' <span style="font-weight:400;font-size:11px;color:var(--muted)">差异率'+_pct(dr)+' | 主观率'+sr.toFixed(0)+'% | 描述覆盖'+rr.toFixed(0)+'%</span></div><div class="ibody">';
+    html+='<div style="margin-bottom:4px">'+rc.map(function(x){return '<span class="tag '+x.cl+'" style="margin-right:3px" title="'+x.d+'">'+x.t+'</span>';}).join('')+'</div>';
+    var acts=[];if(sr>50)acts.push('统一主观标准量化阈值');if(mr>20)acts.push('培训标准关键词对照表');if(vr>30)acts.push('APP强制关键词下拉');if(rr<40)acts.push('差异原因必填');if(tms>40)acts.push('约谈'+tm[0][0]);
+    if(acts.length)html+='<div style="font-size:11px">'+acts.map(function(x,i){return (i+1)+'. '+x;}).join(' | ')+'</div>';
+    html+='</div></div>';
+  });
+  html+='<div class="insight-box ok" style="margin-top:8px"><div class="ititle">全局改善路线图</div><div class="ibody">';
+  html+='<table style="font-size:11px;margin-top:4px"><thead><tr><th>阶段</th><th>定位</th><th>措施</th><th>目标</th></tr></thead><tbody>';
+  html+='<tr><td>紧急</td><td>系统+执行</td><td>差异原因必填+30项标准关键词下拉；APP校验模糊描述禁止提交</td><td>消除无描述/模糊</td></tr>';
+  html+='<tr><td>短期</td><td>执行校准</td><td>按仓制定培训：高频主观项量化标准上墙；关键词对照表人手一份</td><td>主观率30% 一致率95%+</td></tr>';
+  html+='<tr><td>中期</td><td>标准优化</td><td>归类混乱/主观率高项回溯标准文档优化阈值描述+图片示例</td><td>标准模糊项全部量化</td></tr>';
+  html+='<tr><td>长期</td><td>商户协同</td><td>高差异商户入仓预检+月度报告回传；12个月数据训练AI预判</td><td>整体差异率降低30%</td></tr>';
+  html+='</tbody></table></div></div>';
+  var el=document.getElementById('anaWarehouse');if(el)el.innerHTML=html;
+}
+function renderAnalysisAll(){try{renderAnaModel();renderAnaOverview();renderAnaMismatch();renderAnaSubjDefect();renderAnaWarehouse();}catch(e){}}
 /* ====== 差异分析模块 END ====== */
 
 function renderAll(){ renderKPIs(); renderDaily(); renderRegions();
