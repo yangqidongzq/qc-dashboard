@@ -187,16 +187,16 @@ svg{display:block; width:100%; height:auto}
       <div class="regiongrid" id="regionGrid"></div>
     </div>
 
-    <div class="card col-7">
-      <h3>每日质检量 · 单人明细（台）<span class="hint">热力图</span></h3>
-      <div class="csub">日期×巡检人员交叉表，颜色深度=台数。横向合计=当日总量，纵向合计=个人总量。</div>
+    <div class="card col-12">
+      <h3>运营全景 · 每日单人明细 + 中心仓达成 <span class="hint">100台/人/日 · 达标绿色 · 品类分布</span></h3>
+      <div style="display:flex;gap:16px;align-items:stretch;flex-wrap:wrap;margin-bottom:10px">
+        <div id="centerBar" style="flex:1;min-width:300px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px"></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;border-left:1px solid var(--grid);padding-left:14px">
+          <span style="color:var(--muted)">品类</span>
+          <span id="catBar" style="display:flex;gap:6px;flex-wrap:wrap"></span>
+        </div>
+      </div>
       <div id="dailyChart"></div>
-    </div>
-
-    <div class="card col-5">
-      <h3>中心仓达成 <span class="hint">100×人日</span></h3>
-      <div class="csub">各仓实际 vs 目标。</div>
-      <div id="progress"></div>
     </div>
 
     <div class="card col-7">
@@ -502,7 +502,7 @@ function renderDaily(){
     html+='<tr><td class="tnum" style="font-weight:600">'+d+'日</td>';
     inspOrder.forEach(n=>{
       const v=data[d][n]||0;
-      html+='<td class="num tnum" style="background:'+heat(v)+';color:'+tc(v)+'">'+(v>0?v:'<span style="font-size:10px;color:var(--muted)">休</span>')+'</td>';
+      html+='<td class="num tnum" style="background:'+heat(v)+'">'+(v>0?'<span style="color:'+(v>=CFG.dailyTarget?"var(--good-ink)":"var(--crit)")+'">'+v+'</span>':'<span style="font-size:10px;color:var(--muted)">休</span>')+'</td>';
     });
     html+='<td class="num tnum" style="font-weight:600;background:var(--surface-1)">'+dTotals[d]+'</td></tr>';
   });
