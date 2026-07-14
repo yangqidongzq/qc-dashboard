@@ -610,48 +610,35 @@ function renderDiffItems(){
   let f=getFiltered().filter(r=>r.qtyDiff>0);
   if(state.selMerchant) f=f.filter(r=>r.merchant===state.selMerchant);
   const map={};
-  for(const r of f){
-    if(!r.diffItems.length) continue;
-    for(const it of r.diffItems){
-      const m=map[it]||(map[it]={total:0,merchants:{}});
-      m.total++; m.merchants[r.merchant]=(m.merchants[r.merchant]||0)+1;
-    }
-  }
+  for(const r of f){if(!r.diffItems.length) continue;for(const it of r.diffItems){const m=map[it]||(map[it]={total:0,merchants:{}});m.total++;m.merchants[r.merchant]=(m.merchants[r.merchant]||0)+1;}}
   const arr=CFG.diffTypes.map(k=>({k,...(map[k]||{total:0,merchants:{}})})).filter(a=>a.total>0).sort((a,b)=>b.total-a.total);
-  const colors=[cssv('--s6'),cssv('--s1'),cssv('--s8'),cssv('--s2'),cssv('--s5'),cssv('--s3')];
+  const cols=[cssv('--s6'),cssv('--s1'),cssv('--s8'),cssv('--s2'),cssv('--s5'),cssv('--s3')];
   let html='';
-  if(!arr.length){ html='<div style="color:var(--muted);padding:16px 0">当前筛选无差异记录</div>'; }
-  else {
-    html='<div class="scroll" style="max-height:520px">';
+  if(!arr.length){html='<div style="color:var(--muted);padding:16px 0">当前筛选无差异记录</div>';}
+  else{
+    if(state.selMerchant) html+='<div style="margin-bottom:8px;font-size:12px;color:var(--s1);cursor:pointer" onclick="state.selMerchant=\'\';renderDiffItems();renderDescAnalysis();renderMerchantTop();">🏪 商户: '+state.selMerchant+' ✕</div>';
+    html+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">';
     arr.forEach((a,i)=>{
-      const topM=Object.entries(a.merchants).sort((x,y)=>y[1]-x[1]).slice(0,5);
-      const maxM=Math.max(1,...topM.map(x=>x[1]));
-      html+='<div style="margin-bottom:16px;border-left:3px solid '+colors[i%colors.length]+';padding-left:10px">';
-      html+='<div style="font-weight:600;font-size:14px;margin-bottom:6px">'+a.k+' <span style="font-size:12px;color:'+cssv('--ink-2')+';font-weight:400">共 '+a.total+' 台</span></div>';
-      if(!topM.length){ html+='<div style="font-size:12px;color:'+cssv('--muted')+'">（无商户明细）</div>'; }
+      const topM=Object.entries(a.merchants).sort((x,y)=>y[1]-x[1]).slice(0,6);
+      const maxM=Math.max(1,topM.length?topM[0][1]:0);
+      html+='<div style="background:'+cssv('--surface-1')+';border-radius:10px;padding:12px 14px;border-top:3px solid '+cols[i%cols.length]+'">';
+      html+='<div style="font-weight:600;font-size:15px;margin-bottom:2px">'+a.k+'</div>';
+      html+='<div style="font-size:24px;font-weight:700;color:'+cols[i%cols.length]+';margin-bottom:8px">'+a.total+'<span style="font-size:12px;color:'+cssv('--ink-2')+';font-weight:400"> 台</span></div>';
+      if(!topM.length) html+='<div style="font-size:12px;color:'+cssv('--muted')+'">（无商户明细）</div>';
       topM.forEach(([mer,ct])=>{
-        const short=mer.length>18?mer.slice(0,16)+'…':mer;
-        html+='<div style="font-size:12px;margin:3px 0;color:'+cssv('--ink-2')+';cursor:pointer" class="diffmclick" data-m="'+mer.replace(/"/g,'&quot;')+'" title="'+mer+': '+ct+'台">'+
-          '<span style="display:inline-block;width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle">'+short+'</span> '+
-          '<span style="display:inline-block;width:'+(ct/maxM*120)+'px;height:12px;background:'+colors[i%colors.length]+';border-radius:0 3px 3px 0;vertical-align:middle;opacity:.7"></span> '+
-          '<b style="color:'+cssv('--ink')+'">'+ct+'</b></div>';
+        const short=mer.length>16?mer.slice(0,14)+'…':mer;
+        const bars='█'.repeat(Math.round(ct/maxM*8))+'░'.repeat(Math.max(0,8-Math.round(ct/maxM*8)));
+        html+='<div style="font-size:12px;margin:4px 0;cursor:pointer;display:flex;align-items:center;gap:6px" class="diffmclick" data-m="'+mer.replace(/"/g,'&quot;')+'" title="'+mer+': '+ct+'台">'+
+          '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:'+cssv('--ink-2')+'">'+short+'</span>'+
+          '<span style="color:'+cssv('--ink-2')+';font-size:10px;font-family:monospace">'+bars+'</span>'+
+          '<b style="color:'+cssv('--ink')+';min-width:22px;text-align:right">'+ct+'</b></div>';
       });
       html+='</div>';
     });
     html+='</div>';
   }
-  const host=document.getElementById('diffItems'); host.innerHTML=html;
-  host.querySelectorAll('.diffmclick').forEach(el=>{
-    el.addEventListener('click',()=>{
-      const m=el.dataset.m;
-      document.getElementById('detailTable')?.scrollIntoView({behavior:'smooth'});
-      setTimeout(()=>{
-        document.querySelectorAll('#detailTable tbody tr').forEach(r=>{
-          r.style.background=r.textContent.includes(m)?'color-mix(in srgb,var(--s3) 18%,transparent)':'';
-        });
-      },200);
-    });
-  });
+  const host=document.getElementById('diffItems');host.innerHTML=html;
+  host.querySelectorAll('.diffmclick').forEach(el=>{el.addEventListener('click',()=>{const m=el.dataset.m;document.getElementById('detailTable')?.scrollIntoView({behavior:'smooth'});setTimeout(()=>{document.querySelectorAll('#detailTable tbody tr').forEach(r=>{r.style.background=r.textContent.includes(m)?'color-mix(in srgb,var(--s3) 18%,transparent)':'';});},200);});});
 }
 
 function renderSplits(){
