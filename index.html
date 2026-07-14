@@ -460,12 +460,12 @@ function renderKPIs(){
       <div class="klabel">目标完成率 · ${CFG.dailyTarget}台/人/日</div>
       <div class="kval">${comp.toFixed(1)}<span class="kunit">%</span></div>
       <div class="meter"><span style="width:${Math.min(comp,100)}%;background:${bar}"></span></div>
-      <div class="kdelta ${comp>=100?'up':'down'}">${fmt(checked)} / ${fmt(target)} 台 · ${insDays} 人日</div>
+      <div class="kdelta ${comp>=100?'up':'down'}">${fmt(checked)} / ${fmt(target)} 台 · ${insDays} 个人日 · ${uniq(f,r=>r.inspector)} 人在岗</div>
     </div>
     ${tile('累计质检台数', fmt(checked),'台',`日均 ${daysActive?Math.round(checked/daysActive):0} 台`, false)}
     ${tile('差异台数', fmt(diff),'台',`差异率 ${pct1(pct(diff,checked))}`, false, true)}
     ${tile('覆盖商户', uniq(f,r=>r.merchant),'家',`中心仓 ${uniq(f,r=>r.center)} 个`, true)}
-    ${tile('巡检人员', uniq(f,r=>r.inspector),'人',`出勤 ${insDays} 人日`, true)}`;
+    ${tile('巡检人日', insDays,'人日',`共 ${uniq(f,r=>r.inspector)} 人在岗`, true)}`;
 }
 function tile(l,v,u,d,good,bad){ return `<div class="kpi"><div class="klabel">${l}</div>
   <div class="kval tnum">${v}<span class="kunit">${u}</span></div>
