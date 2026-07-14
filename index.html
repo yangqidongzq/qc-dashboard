@@ -260,13 +260,15 @@ svg{display:block; width:100%; height:auto}
       <div class="tablewrap scroll"><table id="detailTable"></table></div>
     </div>
 
-    <!-- ====== 差异分析模块（优化合并版） ====== -->
+    <!-- ====== 差异分析模块 ====== -->
     <div class="card col-12 ana-section">
-      <h2>🔬 差异标准对照 & 改善建议 <span class="hint" style="font-size:12px">统一关键词体系 · 响应筛选器 · 通病匹配</span></h2>
+      <h2>🔬 差异合理性分析 & 改善建议 <span class="hint" style="font-size:12px">基于质检标准 · 通病匹配 · 自动判定</span></h2>
     </div>
-    <div class="card col-6"><h3>📋 差异项→标准对照 <span class="hint">关键词+阈值自动匹配</span></h3><div class="csub">从原因描述中提取关键词→匹配标准项→显示阈值范围</div><div class="scroll" id="anaStandard"></div></div>
-    <div class="card col-6"><h3>📱 高频差异机型 TOP 10 <span class="hint">匹配已知通病</span></h3><div class="csub">机型常见差异类型 & 12条已知通病自动匹配</div><div class="scroll" id="anaModel"></div></div>
-    <div class="card col-12"><h3>💡 改善方向 & 系统性问题</h3><div class="csub">基于差异模式+标准+通病综合分析，自动生成改善建议</div><div class="scroll" id="anaInsight"></div></div>
+    <div class="card col-6"><h3>📋 差异项标准对照 <span class="hint">标准阈值 vs 实际判定</span></h3><div class="csub">差异项与对应品类质检标准阈值比对</div><div class="scroll" id="anaStandard"></div></div>
+    <div class="card col-6"><h3>🏭 高差异商户 TOP 12 <span class="hint">按差异率排序 · 三级风险</span></h3><div class="csub">差异率=差异台/送检台，>30%红色预警</div><div class="scroll" id="anaMerchant"></div></div>
+    <div class="card col-6"><h3>📱 高频差异机型 TOP 10 <span class="hint">匹配已知通病</span></h3><div class="csub">最常见差异类型 & 已知通病提示</div><div class="scroll" id="anaModel"></div></div>
+    <div class="card col-6"><h3>💡 改善方向 & 系统性问题</h3><div class="csub">基于差异模式+标准+通病综合分析</div><div class="scroll" id="anaInsight"></div></div>
+    <div class="card col-12"><h3>📝 差异原因描述质控 <span class="hint">关键词提取 → 标准项映射</span></h3><div class="csub">提取原因关键词→映射标准质检项→评估描述可判定性</div><div class="scroll" id="anaReason"></div></div>
 
   </div>
 
@@ -462,44 +464,44 @@ function deriveDims(){ if(typeof window!=='undefined' && window.QC_DATA && windo
    4. 渲染
    ========================================================= */
 function linkToDesc(dt){state.hlDesc=dt;var da=document.getElementById('descAnalysis');if(da)da.scrollIntoView({behavior:'smooth'});renderDescAnalysis();}
-/* ====== 差异分析模块（优化合并版） ====== */
-// — 标准知识库 —
-var _KW=[{re:/屏幕碎|屏碎|碎裂|crack/i,cat:'屏幕外观',tag:'屏幕碎裂'},{re:/划痕|划伤|刮痕/i,cat:'屏幕外观',tag:'屏幕划痕'},{re:/外壳碎|后壳碎|后盖碎|背板碎/i,cat:'外壳外观',tag:'外壳碎裂'},{re:/外壳划|后壳划|边框划|中框划/i,cat:'外壳外观',tag:'外壳划痕'},{re:/磕碰|磕伤|碰伤/i,cat:'外壳外观',tag:'外壳磕碰'},{re:/弯曲|变形|弯/i,cat:'外壳外观',tag:'机身弯曲'},{re:/脱胶|开胶|缝隙|翘起/i,cat:'外壳外观',tag:'脱胶缝隙'},{re:/漏液|液晶漏|屏幕漏/i,cat:'屏幕显示',tag:'屏幕漏液'},{re:/坏点|亮点|亮斑|暗点/i,cat:'屏幕显示',tag:'坏点/亮点'},{re:/透图|烧屏|残影|烙印/i,cat:'屏幕显示',tag:'透图/烧屏'},{re:/泛红|泛黄|发红|发黄|偏色/i,cat:'屏幕显示',tag:'屏幕偏色'},{re:/气泡|屏幕泡/i,cat:'屏幕显示',tag:'屏幕气泡'},{re:/进灰|灰尘|有灰/i,cat:'屏幕显示',tag:'屏幕进灰'},{re:/色斑|白斑|黑斑/i,cat:'屏幕显示',tag:'色斑'},{re:/无信号|不读卡|信号弱|无服务/i,cat:'功能',tag:'SIM信号'},{re:/不充电|充不了|无法充电|充电异常/i,cat:'功能',tag:'充电异常'},{re:/外放|扬声器|喇叭|声音小|无声|杂音/i,cat:'功能',tag:'扬声器'},{re:/听筒|接听/i,cat:'功能',tag:'听筒'},{re:/WiFi|wifi|无线网|WLAN/i,cat:'功能',tag:'WiFi'},{re:/面容|face.?id|人脸|面部/i,cat:'功能',tag:'面容识别'},{re:/指纹|touch.?id/i,cat:'功能',tag:'指纹'},{re:/摄像头|相机|后摄|前摄|镜头/i,cat:'功能',tag:'摄像头'},{re:/闪光灯|手电筒/i,cat:'功能',tag:'闪光灯'},{re:/按键|电源键|音量键|home键/i,cat:'功能',tag:'按键'},{re:/浸液|进水|受潮|发霉|生锈|防水标/i,cat:'拆修',tag:'浸液'},{re:/拆修|拆过|维修|更换|换过|非原装|组装/i,cat:'拆修',tag:'拆修痕迹'},{re:/电池|健康度|电池效率/i,cat:'功能',tag:'电池健康'},{re:/触摸|触控|触屏|断触|不灵敏|失灵/i,cat:'功能',tag:'触控'},{re:/重启|死机|卡死|自动关机|反复重启/i,cat:'功能',tag:'重启死机'},{re:/拍照|对焦|不对焦|模糊/i,cat:'功能',tag:'拍照'}];
-var _STD_THRESHOLD={屏幕碎裂:'≤1.5mm×1→7 | >5mm→不进',外壳碎裂:'≤2mm→8 | >10mm→不进',外壳划痕:'≤3mm→99 | >20mm→8',外壳磕碰:'≤0.5mm→99 | >3mm→不进',机身弯曲:'<1mm→99 | >2mm→不进',脱胶缝隙:'<0.3mm→99 | ≥0.3mm→不进',屏幕漏液:'→不进卖场',坏点亮点:'≤0.5×3→9 | 超标→不进',透图烧屏:'状态栏可拍→95 | >30mm→不进',屏幕偏色:'轻微→99 | 明显可拍→8 | 满屏→不进',充电异常:'接触不良/异常→不进卖场',扬声器:'轻微杂音→9 | 无声→不进',摄像头:'有斑→9+ | 异常→不进',SIM信号:'不读卡/信号弱→不进卖场',WiFi:'异常→不进卖场',指纹:'无法录入→7',面容识别:'无法录入→7',浸液:'→不进卖场',拆修痕迹:'材质不符→7~不进',电池健康:'<70%→不进卖场',触控:'异常→不进卖场'};
-var _CM=[{re:/iPhone\s*X\b/i,iss:'屏幕偏光老化/透图',dsc:'iPhone X OLED通病，使用2-3年后状态栏透图常见'},{re:/iPhone\s*1[1-3]/i,iss:'屏幕泛黄/原彩缺失',dsc:'LCD背光老化泛黄，换屏后原彩功能丢失'},{re:/iPhone\s*12/i,iss:'听筒无声/音小',dsc:'12系列听筒模块故障召回关联，需检测听筒'},{re:/iPhone\s*1[3-4].*Pro/i,iss:'屏幕绿线/白屏',dsc:'OLED面板批次通病，部分出现绿线或白屏'},{re:/华为.*Mate\s*30/i,iss:'按键弹性差/老化',dsc:'使用2年+后按键橡胶老化常见'},{re:/华为.*折叠|Mate\s*X/i,iss:'折痕/转轴松动',dsc:'折叠屏折痕随使用加深，转轴为机械磨损'},{re:/小米.*1[1-3]/i,iss:'尾插松动/充电断续',dsc:'Type-C接口长期使用后焊点疲劳'},{re:/OPPO.*Find\s*X/i,iss:'升降摄像头卡顿',dsc:'升降机构进灰/润滑不足'},{re:/三星.*Fold|三星.*Flip/i,iss:'折痕/贴膜起泡',dsc:'UTG玻璃折痕不可逆，贴膜需定期更换'},{re:/华为.*P\d+/i,iss:'电池鼓包/健康下降',dsc:'非原装充电器加速电池老化'},{re:/iPad/i,iss:'屏幕白斑/老化',dsc:'长期高亮度使用导致背光老化'},{re:/MacBook/i,iss:'屏幕涂层脱落',dsc:'Retina屏幕防眩光涂层老化通病'}];
+/* ====== 差异分析模块 ====== */
+var _STD={phone:{screen:{crack:[{r:'无',g:'99'},{r:'≤1.5mm×1',g:'7'},{r:'1.5-5mm×1',g:'7-'},{r:'>5mm或>1',g:'不进'}],scratch_deep:[{r:'无(≤2/≤1mm)',g:'99'},{r:'1-3mm或3-5条',g:'95'},{r:'3-10mm或6-10条',g:'9'},{r:'>10mm或>10条',g:'不进'}]},housing:{crack:[{r:'无',g:'99'},{r:'≤2mm',g:'8'},{r:'2-10mm',g:'7'},{r:'>10mm',g:'不进'}],scratch:[{r:'无(≤2/≤3mm)',g:'99'},{r:'3-10mm或3-5',g:'95'},{r:'10-20或6-10',g:'9'},{r:'>20或>10',g:'8'}],bump:[{r:'无(≤1/≤0.5mm)',g:'99'},{r:'0.5-1mm或2-5',g:'95'},{r:'1-3或6-10',g:'9'},{r:'>3或>10',g:'不进'}],bend:[{r:'无(<1mm)',g:'99'},{r:'1-2mm',g:'8'},{r:'>2mm',g:'不进'}],debond:[{r:'无(<0.3mm)',g:'99'},{r:'≥0.3mm',g:'不进'}]},display:{leak:[{r:'无',g:'99'},{r:'漏液/压伤/条纹',g:'不进'}],bright_spot:[{r:'无',g:'99'},{r:'≤2mm≤5个',g:'95'},{r:'超标',g:'不进'}],dead_pixel:[{r:'无',g:'99'},{r:'≤0.5≤3',g:'9'},{r:'超标',g:'不进'}],red_yellow:[{r:'无',g:'99'},{r:'轻微不可拍',g:'99'},{r:'明显可拍',g:'8'},{r:'满屏',g:'不进'}],burn_in:[{r:'无',g:'99'},{r:'状态栏可拍',g:'95'},{r:'状态栏外可拍',g:'8'},{r:'>30mm或>10处',g:'不进'}]},func:{touch:[{r:'正常',g:'99'},{r:'异常',g:'不进'}],speaker:[{r:'正常',g:'99'},{r:'轻微杂音',g:'9'},{r:'音量小',g:'7-'},{r:'无声/明显杂音',g:'不进'}],charge_wired:[{r:'正常',g:'99'},{r:'接触不良/异常',g:'不进'}],camera:[{r:'正常',g:'99'},{r:'无法打开/画面异常',g:'不进'},{r:'有斑',g:'9+'},{r:'坏点',g:'7'}],battery:[{r:'95-100%',g:'99'},{r:'90-95%',g:'95'},{r:'85-90%',g:'9'},{r:'80-85%',g:'8'},{r:'70-80%',g:'7'},{r:'<70%',g:'不进'}],sim:[{r:'正常',g:'99'},{r:'不读卡/信号弱',g:'不进'}],wifi:[{r:'正常',g:'99'},{r:'异常',g:'不进'}],fingerprint:[{r:'正常',g:'99'},{r:'无法录入',g:'7'}],face_id:[{r:'正常',g:'99'},{r:'无法录入',g:'7'}],mic:[{r:'正常',g:'99'},{r:'送话弱/无声',g:'不进'}]},repair:{screen:[{r:'无',g:'99'},{r:'材质不符/未知部件/胶水/黑边缺失',g:'7~不进'}],housing:[{r:'无',g:'99'},{r:'闪光灯偏移/开孔不符/溢胶',g:'7~95'}],battery:[{r:'无',g:'99'},{r:'鼓包/松动/第三方电池',g:'95~不进'}],liquid:[{r:'无',g:'99'},{r:'防水标红/发霉/生锈',g:'不进'}]}}};
+var _DM={拆修:{cat:'repair',sub:'screen',desc:'拆修痕迹→屏幕/后壳/主板维修项'},功能:{cat:'func',sub:null,desc:'功能异常→按键/充电/传感器/摄像头/无线等'},外观:{cat:'housing',sub:'scratch',desc:'外观→碎裂/划痕/磕碰/掉漆/弯曲/脱胶'},显示:{cat:'display',sub:'leak',desc:'显示异常→漏液/压伤/坏点/透图/偏色'},浸液:{cat:'repair',sub:'liquid',desc:'浸液→防水标红/发霉生锈→不进卖场'},其他:{cat:null,sub:null,desc:'需人工细分类'}};
+var _CM=[{re:/iPhone\s*X/i,iss:'屏幕偏光老化/透图',cat:'显示',dsc:'iPhone X OLED通病，2-3年状态栏透图'},{re:/iPhone\s*1[1-3]/i,iss:'屏幕泛黄/原彩缺失',cat:'显示',dsc:'LCD背光老化泛黄'},{re:/iPhone\s*12/i,iss:'听筒无声/音小',cat:'功能',dsc:'12系列听筒模块召回关联'},{re:/iPhone\s*1[3-4].*Pro/i,iss:'屏幕绿线/白屏',cat:'显示',dsc:'OLED面板批次通病'},{re:/华为.*Mate\s*30/i,iss:'按键弹性差/老化',cat:'功能',dsc:'使用2年+按键橡胶老化'},{re:/华为.*折叠|Mate\s*X/i,iss:'折痕/转轴松动',cat:'外观',dsc:'折叠屏机械磨损'},{re:/小米.*1[1-3]/i,iss:'尾插松动/充电断续',cat:'功能',dsc:'Type-C焊点疲劳'},{re:/OPPO.*Find\s*X/i,iss:'升降摄像头卡顿',cat:'功能',dsc:'升降机构进灰'},{re:/三星.*Fold|三星.*Flip/i,iss:'折痕/贴膜起泡',cat:'外观',dsc:'UTG玻璃折痕不可逆'},{re:/华为.*P\d+/i,iss:'电池鼓包/健康下降',cat:'功能',dsc:'非原装充电器加速'},{re:/iPad/i,iss:'屏幕白斑/老化',cat:'显示',dsc:'长期高亮度背光老化'},{re:/MacBook/i,iss:'屏幕涂层脱落',cat:'外观',dsc:'Retina涂层老化'}];
+var _KW=[{re:/屏幕碎|屏碎|碎裂/i,cat:'screen',sub:'crack',tag:'屏幕碎裂'},{re:/划痕|划伤|刮痕/i,cat:'screen',sub:'scratch_deep',tag:'屏幕划痕'},{re:/外壳碎|后壳碎|后盖碎|背板碎/i,cat:'housing',sub:'crack',tag:'外壳碎裂'},{re:/外壳划|后壳划|边框划|中框划/i,cat:'housing',sub:'scratch',tag:'外壳划痕'},{re:/磕碰|磕伤|碰伤/i,cat:'housing',sub:'bump',tag:'外壳磕碰'},{re:/弯曲|变形|弯/i,cat:'housing',sub:'bend',tag:'机身弯曲'},{re:/脱胶|开胶|缝隙|翘起/i,cat:'housing',sub:'debond',tag:'脱胶缝隙'},{re:/漏液|液晶漏|屏幕漏/i,cat:'display',sub:'leak',tag:'屏幕漏液'},{re:/坏点|亮点|亮斑|暗点/i,cat:'display',sub:'dead_pixel',tag:'坏点亮点'},{re:/透图|烧屏|残影|烙印/i,cat:'display',sub:'burn_in',tag:'透图烧屏'},{re:/泛红|泛黄|发红|发黄|偏色/i,cat:'display',sub:'red_yellow',tag:'屏幕偏色'},{re:/气泡|屏幕泡/i,cat:'display',sub:'bubble',tag:'屏幕气泡'},{re:/进灰|灰尘|有灰/i,cat:'display',sub:'dust',tag:'屏幕进灰'},{re:/无信号|不读卡|信号弱|无服务/i,cat:'func',sub:'sim',tag:'SIM信号'},{re:/不充电|充不了|无法充电|充电异常/i,cat:'func',sub:'charge_wired',tag:'充电异常'},{re:/外放|扬声器|喇叭|声音小|无声|杂音/i,cat:'func',sub:'speaker',tag:'扬声器'},{re:/听筒|接听/i,cat:'func',sub:'speaker',tag:'听筒'},{re:/WiFi|wifi|无线网|WLAN/i,cat:'func',sub:'wifi',tag:'WiFi'},{re:/面容|face.?id|人脸|面部/i,cat:'func',sub:'face_id',tag:'面容识别'},{re:/指纹|touch.?id/i,cat:'func',sub:'fingerprint',tag:'指纹'},{re:/摄像头|相机|拍照|后摄|前摄|镜头/i,cat:'func',sub:'camera',tag:'摄像头'},{re:/闪光灯|手电筒/i,cat:'func',sub:'flash',tag:'闪光灯'},{re:/按键|电源键|音量键|home键|静音键/i,cat:'func',sub:'button',tag:'按键'},{re:/浸液|进水|受潮|发霉|生锈|防水标/i,cat:'repair',sub:'liquid',tag:'浸液'},{re:/拆修|拆过|维修|更换|换过|非原装|组装/i,cat:'repair',sub:'screen',tag:'拆修'},{re:/电池|健康度|电池效率/i,cat:'func',sub:'battery',tag:'电池健康'},{re:/触摸|触控|触屏|断触|不灵敏|失灵/i,cat:'func',sub:'touch',tag:'触控'},{re:/重启|死机|卡死|自动关机|反复重启/i,cat:'func',sub:'sim',tag:'重启死机'}];
 function _tagKW(t){for(var i=0;i<_KW.length;i++){if(_KW[i].re.test(t||''))return _KW[i];}return null;}
 function _findCM(m){var r=[];for(var i=0;i<_CM.length;i++){if(_CM[i].re.test(m||''))r.push(_CM[i]);}return r;}
-// — 渲染函数（统一使用 getFiltered） —
+function _stdTier(cat,sub){var s=_STD.phone;if(!s[cat])return'?';if(sub&&s[cat]&&s[cat][sub]){var it=s[cat][sub];return it[0].g+'~'+it[it.length-1].g;}return'多子项';}
 function renderAnaStandard(){
-  var f=getFiltered(),dr=f.filter(function(r){return r.qtyDiff>0||(r.diffItems&&r.diffItems.length);});var t=dr.length||1;
-  var classes={'屏幕外观':'var(--s6)','屏幕显示':'var(--s1)','外壳外观':'var(--s8)','功能':'var(--s2)','拆修':'var(--s5)','其他':'var(--muted)'};
-  var h='<table><thead><tr><th>差异项</th><th>台数</th><th>占比</th><th style="width:60%">标准对照 & 阈值</th><th>描述</th></tr></thead><tbody>';
-  (CFG.diffTypes||['拆修','功能','外观','显示','浸液','其他']).forEach(function(it){
+  var dr=RECORDS.filter(function(r){return r.qtyDiff>0||(r.diffItems&&r.diffItems.length);});var t=dr.length||1;
+  var h='<table><thead><tr><th>差异项</th><th>台数</th><th>占比</th><th>标准对照</th><th>标准阈值</th><th>描述</th></tr></thead><tbody>';
+  ['拆修','功能','外观','显示','浸液','其他'].forEach(function(it){
     var rs=dr.filter(function(r){return r.diffItems&&r.diffItems.indexOf(it)>=0;});if(!rs.length)return;
-    var wr=rs.filter(function(r){return r.reason&&r.reason!=='—'&&r.reason!=='';}).length;
-    // 提取该差异项最常见的关键词匹配
-    var kc={};wr&&rs.forEach(function(r){var m=_tagKW(r.reason);if(m)kc[m.tag]=(kc[m.tag]||0)+1;});
-    var tk=Object.entries(kc).sort(function(a,b){return b[1]-a[1];}).slice(0,3);
-    var kwStr=tk.map(function(x){return '<span class="pattern-chip">'+x[0]+'<span class="n">'+x[1]+'</span></span>';}).join('');
-    // 取最主要关键词的标准阈值
-    var mainKW=tk[0]?tk[0][0]:'';
-    var th=_STD_THRESHOLD[mainKW]||'参见各子项标准';
-    var cat=tk[0]?_tagKW(rs.find(function(r){return _tagKW(r.reason)&&_tagKW(r.reason).tag===mainKW;})?.reason||'')?.cat:'';
-    h+='<tr><td><b>'+it+'</b></td><td class="num" style="font-weight:600">'+rs.length+'</td><td class="num">'+(rs.length/t*100).toFixed(1)+'%</td><td>'+kwStr+'<span style="font-size:10px;color:var(--muted);display:block;margin-top:2px">'+th+'</span></td><td><span class="tag '+(wr/rs.length>0.5?'ok':'warn')+'">'+wr+'/'+rs.length+'</span></td></tr>';
+    var m=_DM[it]||{};var wr=rs.filter(function(r){return r.reason&&r.reason!=='—'&&r.reason!=='';}).length;
+    h+='<tr><td><b>'+it+'</b></td><td class="num">'+rs.length+'</td><td class="num">'+(rs.length/t*100).toFixed(1)+'%</td><td><span class="tag info">'+(m.desc||'—')+'</span></td><td style="font-size:11px;color:var(--muted)">'+(m.sub?_stdTier(m.cat,m.sub):'多子项')+'</td><td><span class="tag '+(wr/rs.length>0.6?'ok':'warn')+'">'+wr+'/'+rs.length+'</span></td></tr>';
   });h+='</tbody></table>';var el=document.getElementById('anaStandard');if(el)el.innerHTML=h;
 }
+function renderAnaMerchant(){
+  var dr=RECORDS.filter(function(r){return r.qtyDiff>0||(r.diffItems&&r.diffItems.length);});
+  var mm={};RECORDS.forEach(function(r){mm[r.merchant]=mm[r.merchant]||{t:0,d:0,it:{}};mm[r.merchant].t++;if(r.qtyDiff){mm[r.merchant].d++;(r.diffItems||[]).forEach(function(i){mm[r.merchant].it[i]=(mm[r.merchant].it[i]||0)+1;});}});
+  var rk=Object.entries(mm).filter(function(e){return e[1].t>=3;}).sort(function(a,b){return(b[1].d/b[1].t)-(a[1].d/a[1].t);}).slice(0,12);
+  var h='<table><thead><tr><th>#</th><th>商户</th><th>送检</th><th>差异</th><th>差异率</th><th>主要差异</th><th>风险</th></tr></thead><tbody>';
+  rk.forEach(function(e,idx){var rate=e[1].d/e[1].t*100;var ti=Object.entries(e[1].it).sort(function(a,b){return b[1]-a[1];}).slice(0,3).map(function(x){return x[0]+'('+x[1]+')';}).join(' ');var risk=rate>30?'crit':rate>15?'warn':'ok';
+    h+='<tr><td>'+(idx+1)+'</td><td>'+e[0]+'</td><td class="num">'+e[1].t+'</td><td class="num">'+e[1].d+'</td><td class="num"><span class="tag '+risk+'">'+rate.toFixed(1)+'%</span></td><td style="font-size:11px">'+(ti||'—')+'</td><td>'+(rate>30?'🔴 重点':rate>15?'🟡 关注':'🟢 正常')+'</td></tr>';});
+  h+='</tbody></table>';var el=document.getElementById('anaMerchant');if(el)el.innerHTML=h;
+}
 function renderAnaModel(){
-  var f=getFiltered(),dr=f.filter(function(r){return r.qtyDiff>0||(r.diffItems&&r.diffItems.length);});
+  var dr=RECORDS.filter(function(r){return r.qtyDiff>0||(r.diffItems&&r.diffItems.length);});
   var md={};dr.forEach(function(r){var m=r.model||'未知';md[m]=md[m]||{d:0,it:{}};md[m].d++;(r.diffItems||[]).forEach(function(i){md[m].it[i]=(md[m].it[i]||0)+1;});});
   var rk=Object.entries(md).sort(function(a,b){return b[1].d-a[1].d;}).slice(0,10);
-  var h='<table><thead><tr><th>#</th><th>机型</th><th>差异</th><th>通病匹配</th><th>主要差异</th></tr></thead><tbody>';
+  var h='<table><thead><tr><th>#</th><th>机型</th><th>差异台</th><th>主要差异</th><th>已知通病</th></tr></thead><tbody>';
   rk.forEach(function(e,idx){var ti=Object.entries(e[1].it).sort(function(a,b){return b[1]-a[1];}).slice(0,2).map(function(x){return x[0]+'('+x[1]+')';}).join(' · ');var cm=_findCM(e[0]);
-    h+='<tr><td>'+(idx+1)+'</td><td><b>'+e[0]+'</b></td><td class="num">'+e[1].d+'</td><td style="font-size:11px">'+(cm.length?cm.map(function(c){return '<span class="tag warn" title="'+c.dsc+'">'+c.iss+'</span>';}).join(' '):'<span style="color:var(--muted);font-size:11px">未匹配</span>')+'</td><td style="font-size:11px">'+(ti||'—')+'</td></tr>';});
+    h+='<tr><td>'+(idx+1)+'</td><td><b>'+e[0]+'</b></td><td class="num">'+e[1].d+'</td><td style="font-size:11px">'+(ti||'—')+'</td><td style="font-size:11px">'+(cm.length?cm.map(function(c){return '<span class="tag warn" title="'+c.dsc+'">'+c.iss+'</span>';}).join(' '):'<span style="color:var(--muted)">未匹配</span>')+'</td></tr>';});
   h+='</tbody></table>';var el=document.getElementById('anaModel');if(el)el.innerHTML=h;
 }
 function renderAnaInsight(){
-  var f=getFiltered(),dr=f.filter(function(r){return r.qtyDiff>0||(r.diffItems&&r.diffItems.length);});
-  var total=f.length,ins=[];
+  var dr=RECORDS.filter(function(r){return r.qtyDiff>0||(r.diffItems&&r.diffItems.length);});
+  var total=RECORDS.length,ins=[];
   var id={};dr.forEach(function(r){(r.diffItems||[]).forEach(function(i){id[i]=(id[i]||0)+1;});});
   var ti=Object.entries(id).sort(function(a,b){return b[1]-a[1];})[0];
   var nr=dr.filter(function(r){return!r.reason||r.reason==='—'||r.reason==='';}).length;
@@ -507,65 +509,33 @@ function renderAnaInsight(){
   var xd={};dr.forEach(function(r){xd[r.merchant]=(xd[r.merchant]||0)+1;});
   var tm=Object.entries(xd).sort(function(a,b){return b[1]-a[1];}).slice(0,3);
   var tms=tm.reduce(function(s,e){return s+e[1];},0);
-  // 中心仓差异率对比
-  var cc={};f.forEach(function(r){cc[r.center]=cc[r.center]||{t:0,d:0};cc[r.center].t++;if(r.qtyDiff)cc[r.center].d++;});
+  var cc={};RECORDS.forEach(function(r){cc[r.center]=cc[r.center]||{t:0,d:0};cc[r.center].t++;if(r.qtyDiff)cc[r.center].d++;});
   var cr=Object.entries(cc).filter(function(e){return e[1].t>=10;}).sort(function(a,b){return(b[1].d/b[1].t)-(a[1].d/a[1].t);});
 
-  ins.push({ic:'📊',ti:'差异分布：'+dr.length.toLocaleString()+'条（'+(dr.length/total*100).toFixed(1)+'%）',bd:'最大差异项：<b>'+(ti?ti[0]:'—')+'</b>（'+ti[1]+'台，占差异'+(ti[1]/dr.length*100).toFixed(1)+'%）',cl:''});
-  if(nr/dr.length>0.2)ins.push({ic:'⚠️',ti:'原因描述缺失率 '+(nr/dr.length*100).toFixed(1)+'%',bd:nr+'条无描述→建议<b>APP必填+下拉选项</b>代替自由文本',cl:'crit'});
-  if(cmc/dr.length>0.1)ins.push({ic:'🔍',ti:(cmc/dr.length*100).toFixed(1)+'% 差异匹配已知通病',bd:cmc+'条→建议<b>高频通病机型专项抽检</b>，商户送检前告知通病',cl:''});
-  if(tms/dr.length>0.3)ins.push({ic:'🏭',ti:'差异集中在少数商户（'+(tms/dr.length*100).toFixed(1)+'%）',bd:'TOP3：'+tm.map(function(e){return '<b>'+e[0]+'</b>('+e[1]+'台)';}).join(' · ')+' → 建议<b>回传差异数据给商户</b>',cl:'crit'});
-  if(cr.length>1&&(cr[0][1].d/cr[0][1].t-cr[cr.length-1][1].d/cr[cr.length-1][1].t>0.08))ins.push({ic:'🏢',ti:'中心仓差异率差距',bd:'最高：<b>'+cr[0][0]+'</b> '+(cr[0][1].d/cr[0][1].t*100).toFixed(1)+'% · 最低：<b>'+cr[cr.length-1][0]+'</b> '+(cr[cr.length-1][1].d/cr[cr.length-1][1].t*100).toFixed(1)+'%→建议<b>经验分享+培训检查</b>',cl:''});
-  ins.push({ic:'💡',ti:'改善路线图',bd:'<b>短期：</b>差异描述模板标准化（6→20+子项）<br><b>中期：</b>机型×通病×标准自动判定引擎<br><b>长期：</b>数据训练差异预测模型',cl:'ok'});
+  ins.push({ic:'📊',ti:'差异分布：'+dr.length.toLocaleString()+'条（'+(dr.length/total*100).toFixed(1)+'%）',bd:'最大差异项：<b>'+(ti?ti[0]:'—')+'</b>（'+ti[1]+'台）',cl:''});
+  if(nr/dr.length>0.2)ins.push({ic:'⚠️',ti:'原因描述缺失率 '+(nr/dr.length*100).toFixed(1)+'%',bd:nr+'条差异无描述→建议<b>APP必填</b>+下拉选项代替自由文本',cl:'crit'});
+  if(cmc/dr.length>0.1)ins.push({ic:'🔍',ti:(cmc/dr.length*100).toFixed(1)+'% 差异匹配已知通病',bd:cmc+'条→建议<b>高频通病机型专项抽检</b>，商户送检前通病告知',cl:''});
+  if(tms/dr.length>0.3)ins.push({ic:'🏭',ti:'差异集中在少数商户（'+(tms/dr.length*100).toFixed(1)+'%）',bd:'TOP3：'+tm.map(function(e){return '<b>'+e[0]+'</b>('+e[1]+'台)';}).join(' · ')+' → 建议<b>回传差异数据给商户</b>，高差异商户入仓预检',cl:'crit'});
+  if(cr.length>1&&(cr[0][1].d/cr[0][1].t-cr[cr.length-1][1].d/cr[cr.length-1][1].t>0.08))ins.push({ic:'🏢',ti:'中心仓差异率差距',bd:'最高：<b>'+cr[0][0]+'</b> '+(cr[0][1].d/cr[0][1].t*100).toFixed(1)+'% · 最低：<b>'+cr[cr.length-1][0]+'</b> '+(cr[cr.length-1][1].d/cr[cr.length-1][1].t*100).toFixed(1)+'%→建议经验分享+培训检查',cl:''});
+  ins.push({ic:'💡',ti:'改善路线图',bd:'<b>短期：</b>差异描述模板6→20+子项标准化<br><b>中期：</b>机型×通病×标准自动判定引擎<br><b>长期：</b>差异预测模型',cl:'ok'});
 
   var h=ins.map(function(x){return '<div class="insight-box '+x.cl+'"><div class="ititle">'+x.ic+' '+x.ti+'</div><div class="ibody">'+x.bd+'</div></div>';}).join('');
   var el=document.getElementById('anaInsight');if(el)el.innerHTML=h;
 }
-/* — 增强商户分析（合并 anaMerchant 风险标签到 merchantTop） — */
-var _origRenderMerchantTop=renderMerchantTop;
-renderMerchantTop=function(){
-  _origRenderMerchantTop();
-  // 追加风险摘要行
-  var f=getFiltered(),dr=f.filter(function(r){return r.qtyDiff>0;});
-  var mm={};f.forEach(function(r){mm[r.merchant]=mm[r.merchant]||{t:0,d:0};mm[r.merchant].t++;if(r.qtyDiff)mm[r.merchant].d++;});
-  var highRisk=Object.entries(mm).filter(function(e){return e[1].t>=5&&e[1].d/e[1].t>0.15;}).sort(function(a,b){return(b[1].d/b[1].t)-(a[1].d/a[1].t);});
-  if(highRisk.length){
-    var host=document.getElementById('merchantTop');
-    var summary='<div style="margin-top:10px;padding:8px 12px;background:color-mix(in srgb,var(--crit) 6%,transparent);border-radius:8px;font-size:12px"><b>⚠️ 高风险商户（差异率>15%）：</b> ';
-    summary+=highRisk.slice(0,5).map(function(e){return e[0]+' <b style="color:var(--crit)">'+(e[1].d/e[1].t*100).toFixed(1)+'%</b>';}).join(' · ');
-    if(highRisk.length>5)summary+=' …等'+highRisk.length+'家';
-    summary+='</div>';
-    host.insertAdjacentHTML('beforeend',summary);
-  }
-};
-/* — 增强描述分析（合并 anaReason 关键词到 descAnalysis） — */
-var _origRenderDescAnalysis=renderDescAnalysis;
-renderDescAnalysis=function(){
-  // 先用统一关键词体系重写分类
-  var f=getFiltered(),diff=f.filter(function(r){return r.qtyDiff>0&&r.reason&&r.reason!=='—';});
-  if(!diff.length){document.getElementById('descAnalysis').innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px 0">无差异描述</div>';return;}
-  var descMap={};diff.forEach(function(r){var d=r.reason;if(!d)return;var m=descMap[d]||(descMap[d]={cnt:0,merchants:{},diffs:{},kw:null});m.cnt++;m.merchants[r.merchant]=(m.merchants[r.merchant]||0)+1;r.diffItems.forEach(function(it){m.diffs[it]=(m.diffs[it]||0)+1;});if(!m.kw)m.kw=_tagKW(d);});
-  var descs=Object.entries(descMap).map(function(e){return{desc:e[0],cnt:e[1].cnt,merchants:e[1].merchants,diffs:e[1].diffs,kw:e[1].kw};}).sort(function(a,b){return b.cnt-a.cnt;});
-  var topN=descs.slice(0,15),catColors={'屏幕外观':'var(--s6)','屏幕显示':'var(--s1)','外壳外观':'var(--s8)','功能':'var(--s2)','拆修':'var(--s5)','其他':'var(--muted)'};
-
-  var html='';if(state.hlDesc)html+='<div style="margin-bottom:6px;font-size:12px;color:var(--s1);cursor:pointer" onclick="state.hlDesc=\\'\\';state.selMerchant=\\'\\';renderDescAnalysis();renderDiffItems();renderMerchantTop();">🔍 筛选: '+state.hlDesc+' ✕</div>';
-  // 质控统计
-  var autoCount=descs.filter(function(d){return d.kw!==null;}).reduce(function(s,d){return s+d.cnt;},0);
-  html+='<div style="display:flex;gap:10px;margin-bottom:8px;flex-wrap:wrap;font-size:11px;color:var(--ink-2)"><span>📝 <b>'+diff.length+'</b>台差异</span><span>|</span><span>📋 <b>'+descs.length+'</b>种描述</span><span>|</span><span>🤖 可解析 <b style="color:'+(autoCount/diff.length>0.5?'var(--good-ink)':'var(--warn)')+'">'+autoCount+'</b>台 ('+(autoCount/diff.length*100).toFixed(0)+'%)</span></div>';
-
-  html+='<div class="tablewrap scroll" style="max-height:500px"><table style="font-size:12px"><thead><tr><th>#</th><th>差异描述</th><th>标准分类</th><th class="num">台数</th><th>差异项</th><th>主要商户</th></tr></thead><tbody>';
-  topN.forEach(function(d,i){
-    var cat=d.kw?d.kw.cat:'其他',catColor=catColors[cat]||'var(--muted)';
-    var topM=Object.entries(d.merchants).sort(function(a,b){return b[1]-a[1];}).slice(0,2).map(function(e){return e[0].length>14?e[0].slice(0,12)+'…':e[0];}).join(' · ')||'—';
-    var topDiff=Object.entries(d.diffs).sort(function(a,b){return b[1]-a[1];}).slice(0,2).map(function(e){return e[0];}).join('/')||'—';
-    var shortDesc=d.desc.length>38?'<span title="'+d.desc.replace(/"/g,'&quot;')+'">'+d.desc.slice(0,36)+'…</span>':d.desc;
-    html+='<tr><td style="color:var(--muted);font-size:11px">'+(i+1)+'</td><td>'+shortDesc+'</td><td><span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;background:color-mix(in srgb,'+catColor+' 15%,transparent);color:'+catColor+'">'+(d.kw?d.kw.tag:cat)+'</span></td><td class="num tnum" style="font-weight:600">'+d.cnt+'</td><td style="font-size:11px;color:var(--ink-2)">'+topDiff+'</td><td style="font-size:11px;color:var(--ink-2)">'+topM+'</td></tr>';
-  });
-  if(descs.length>15)html+='<tr><td colspan="6" style="color:var(--muted);text-align:center;font-size:11px">仅显示 TOP15，共 '+descs.length+' 种描述</td></tr>';
-  html+='</tbody></table></div>';
-  document.getElementById('descAnalysis').innerHTML=html;
-};
-function renderAnalysisAll(){try{renderAnaStandard();renderAnaModel();renderAnaInsight();}catch(e){}}
+function renderAnaReason(){
+  var dr=RECORDS.filter(function(r){return r.qtyDiff>0||(r.diffItems&&r.diffItems.length);});
+  var g={};dr.forEach(function(r){(r.diffItems||[]).forEach(function(it){g[it]=g[it]||[];g[it].push(r);});});
+  var h='<table><thead><tr><th>差异项</th><th>台数</th><th>有描述</th><th>可解析</th><th>TOP关键词</th><th>典型描述</th></tr></thead><tbody>';
+  Object.entries(g).sort(function(a,b){return b[1].length-a[1].length;}).forEach(function(e){
+    var rs=e[1];var wr=rs.filter(function(r){return r.reason&&r.reason!=='—'&&r.reason!=='';});
+    var au=wr.filter(function(r){return _tagKW(r.reason)!==null;});
+    var kc={};wr.forEach(function(r){var m=_tagKW(r.reason);if(m)kc[m.tag]=(kc[m.tag]||0)+1;});
+    var tk=Object.entries(kc).sort(function(a,b){return b[1]-a[1];}).slice(0,4);
+    var sm=wr.slice(0,2).map(function(r){var s=r.reason;return'"'+(s.length>30?s.substring(0,30)+'…':s)+'"';}).join('<br>');
+    h+='<tr><td><b>'+e[0]+'</b></td><td class="num">'+rs.length+'</td><td class="num">'+wr.length+' <span style="color:var(--muted)">('+(wr.length/rs.length*100).toFixed(0)+'%)</span></td><td class="num"><span class="tag '+(au.length/rs.length>0.5?'ok':'warn')+'">'+au.length+' ('+(au.length/rs.length*100).toFixed(0)+'%)</span></td><td style="font-size:11px">'+tk.map(function(x){return '<span class="pattern-chip">'+x[0]+'<span class="n">'+x[1]+'</span></span>';}).join('')+'</td><td style="font-size:11px;max-width:260px;color:var(--ink-2)">'+(sm||'无描述')+'</td></tr>';
+  });h+='</tbody></table>';var el=document.getElementById('anaReason');if(el)el.innerHTML=h;
+}
+function renderAnalysisAll(){try{renderAnaStandard();renderAnaMerchant();renderAnaModel();renderAnaInsight();renderAnaReason();}catch(e){}}
 /* ====== 差异分析模块 END ====== */
 
 function renderAll(){ renderKPIs(); renderDaily(); renderRegions();
