@@ -477,26 +477,135 @@ function renderAnaModel(){
 }
 function renderAnaInsight(){
   var f=getFiltered(),dr=f.filter(function(r){return r.qtyDiff>0||(r.diffItems&&r.diffItems.length);});
-  var total=f.length,ins=[];
+  var total=f.length,diffCount=dr.length,diffRate=total>0?diffCount/total*100:0;
+  // 按差异项统计
   var id={};dr.forEach(function(r){(r.diffItems||[]).forEach(function(i){id[i]=(id[i]||0)+1;});});
-  var ti=Object.entries(id).sort(function(a,b){return b[1]-a[1];})[0];
-  var nr=dr.filter(function(r){return!r.reason||r.reason==='—'||r.reason==='';}).length;
+  var ti=Object.entries(id).sort(function(a,b){return b[1]-a[1];});
+  // 描述缺失统计
+  var hasReason=dr.filter(function(r){return r.reason&&r.reason!=='—'&&r.reason!=='';}).length;
+  var noReason=diffCount-hasReason,reasonCover=diffCount>0?hasReason/diffCount*100:0;
+  // 通病匹配统计
   var cmc=0;dr.forEach(function(r){if(_findCM(r.model).length>0)cmc++;});
+  var commonRate=diffCount>0?cmc/diffCount*100:0;
+  // 商户集中度
   var xd={};dr.forEach(function(r){xd[r.merchant]=(xd[r.merchant]||0)+1;});
-  var tm=Object.entries(xd).sort(function(a,b){return b[1]-a[1];}).slice(0,3);
-  var tms=tm.reduce(function(s,e){return s+e[1];},0);
+  var tm=Object.entries(xd).sort(function(a,b){return b[1]-a[1];}).slice(0,5);
+  // 主观vs客观
+  var subj=dr.filter(function(r){return r.subjObj==='主观';}).length;
+  var obj=dr.filter(function(r){return r.subjObj==='客观';}).length;
+  var subjRate=diffCount>0?subj/diffCount*100:0;
+  // 中心仓差异率
   var cc={};f.forEach(function(r){cc[r.center]=cc[r.center]||{t:0,d:0};cc[r.center].t++;if(r.qtyDiff)cc[r.center].d++;});
   var cr=Object.entries(cc).filter(function(e){return e[1].t>=10;}).sort(function(a,b){return(b[1].d/b[1].t)-(a[1].d/a[1].t);});
+  // 业务线差异率
+  var bl={};f.forEach(function(r){bl[r.bizline]=bl[r.bizline]||{t:0,d:0};bl[r.bizline].t++;if(r.qtyDiff)bl[r.bizline].d++;});
 
-  ins.push({ic:'📊',ti:'差异分布：'+dr.length.toLocaleString()+'条（'+(dr.length/total*100).toFixed(1)+'%）',bd:'最大差异项：<b>'+(ti?ti[0]:'—')+'</b>（'+ti[1]+'台）',cl:''});
-  if(nr/dr.length>0.2)ins.push({ic:'⚠️',ti:'原因描述缺失率 '+(nr/dr.length*100).toFixed(1)+'%',bd:nr+'条差异无描述→建议<b>APP必填</b>+下拉选项代替自由文本',cl:'crit'});
-  if(cmc/dr.length>0.1)ins.push({ic:'🔍',ti:(cmc/dr.length*100).toFixed(1)+'% 差异匹配已知通病',bd:cmc+'条→建议<b>高频通病机型专项抽检</b>，商户送检前通病告知',cl:''});
-  if(tms/dr.length>0.3)ins.push({ic:'🏭',ti:'差异集中在少数商户（'+(tms/dr.length*100).toFixed(1)+'%）',bd:'TOP3：'+tm.map(function(e){return '<b>'+e[0]+'</b>('+e[1]+'台)';}).join(' · ')+' → 建议<b>回传差异数据给商户</b>，高差异商户入仓预检',cl:'crit'});
-  if(cr.length>1&&(cr[0][1].d/cr[0][1].t-cr[cr.length-1][1].d/cr[cr.length-1][1].t>0.08))ins.push({ic:'🏢',ti:'中心仓差异率差距',bd:'最高：<b>'+cr[0][0]+'</b> '+(cr[0][1].d/cr[0][1].t*100).toFixed(1)+'% · 最低：<b>'+cr[cr.length-1][0]+'</b> '+(cr[cr.length-1][1].d/cr[cr.length-1][1].t*100).toFixed(1)+'%→建议经验分享+培训检查',cl:''});
-  ins.push({ic:'💡',ti:'改善路线图',bd:'<b>短期：</b>差异描述模板6→20+子项标准化<br><b>中期：</b>机型×通病×标准自动判定引擎<br><b>长期：</b>差异预测模型',cl:'ok'});
+  var bar=function(v,max,w,color){w=w||100;var p=Math.min(v/max*100,100);return '<div class="match-bar"><div class="bar-track" style="width:'+w+'px"><div class="bar-fill" style="width:'+p+'%;background:'+(color||'var(--s1)')+'"></div></div></div>';};
+  var pctFmt=function(v){return v.toFixed(1)+'%';};
+  var kpiCard=function(icon,label,val,unit,sub,color,good){
+    return '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:11px 14px;text-align:center;min-width:100px;flex:1">'+
+      '<div style="font-size:20px;margin-bottom:3px">'+icon+'</div>'+
+      '<div style="font-size:22px;font-weight:700;color:'+(color||'var(--ink)')+'">'+val+'<span style="font-size:12px;font-weight:400;color:var(--muted);margin-left:2px">'+unit+'</span></div>'+
+      '<div style="font-size:11px;color:var(--muted);margin-bottom:2px">'+label+'</div>'+
+      '<div style="font-size:11px;color:'+(good?'var(--good-ink)':'var(--ink-2)')+'">'+sub+'</div></div>';
+  };
 
-  var h=ins.map(function(x){return '<div class="insight-box '+x.cl+'"><div class="ititle">'+x.ic+' '+x.ti+'</div><div class="ibody">'+x.bd+'</div></div>';}).join('');
-  var el=document.getElementById('anaInsight');if(el)el.innerHTML=h;
+  var html='';
+
+  // ── KPI行 ──
+  html+='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">';
+  html+=kpiCard('📦','差异台数',diffCount,'台','差异率 '+pctFmt(diffRate),diffRate>20?'var(--crit)':diffRate>10?'var(--warn)':'var(--good-ink)',diffRate<10);
+  html+=kpiCard('📝','描述覆盖',Math.round(reasonCover),'%',hasReason+'/'+diffCount+'台',reasonCover>70?'var(--good-ink)':reasonCover>40?'var(--warn)':'var(--crit)',reasonCover>70);
+  html+=kpiCard('🔍','通病匹配',Math.round(commonRate),'%',cmc+'/'+diffCount+'台',commonRate>20?'var(--warn)':'var(--s1)');
+  html+=kpiCard('⚖️','主观占比',Math.round(subjRate),'%','主观'+subj+' · 客观'+obj,subjRate>60?'var(--warn)':subjRate<40?'var(--good-ink)':'var(--s1)');
+  html+='</div>';
+
+  // ── 差异项分布 ──
+  html+='<div style="margin-bottom:14px;background:var(--surface-1);border-radius:10px;padding:14px 16px">';
+  html+='<div style="font-weight:600;font-size:13px;margin-bottom:10px">📊 差异项分布</div>';
+  var colors=['var(--s6)','var(--s1)','var(--s8)','var(--s2)','var(--s5)','var(--s3)'];
+  ti.forEach(function(e,idx){
+    var p=e[1]/diffCount*100;
+    html+='<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span>'+e[0]+'</span><span style="font-weight:600">'+e[1]+'台 <span style="color:var(--muted);font-weight:400">'+pctFmt(p)+'</span></span></div>';
+    html+='<div class="meter" style="height:8px"><span style="width:'+Math.min(p,100)+'%;background:'+colors[idx%colors.length]+'"></span></div></div>';
+  });
+  html+='</div>';
+
+  // ── 改善方向卡片 ──
+  html+='<div style="font-weight:600;font-size:13px;margin-bottom:8px">🎯 改善方向 & 行动建议</div>';
+
+  // 1. 描述缺失
+  if(noReason>0){
+    var sev=reasonCover<30?'crit':reasonCover<60?'warn':'';
+    html+='<div class="insight-box '+sev+'" style="margin-bottom:10px">';
+    html+='<div class="ititle">⚠️ 差异原因描述缺失：'+noReason+'台（'+pctFmt(100-reasonCover)+'）</div>';
+    html+='<div class="ibody">';
+    html+='<b>现状：</b>'+diffCount+'条差异中'+noReason+'条无原因说明，无法追溯根因。<br>';
+    html+='<b>建议：</b>① APP端"差异原因"设为<b>必填项</b> ② 提供下拉选择（屏幕碎裂/外壳划痕/充电异常等30项标准关键词）替代自由输入 ③ 拍照模板增加"一图一描述"强制校验<br>';
+    html+='<b>模板：</b>描述覆盖率 → 90%+</div></div>';
+  }
+
+  // 2. 通病匹配
+  if(cmc>0){
+    html+='<div class="insight-box" style="margin-bottom:10px">';
+    html+='<div class="ititle">🔍 已知通病匹配：'+cmc+'台（'+pctFmt(commonRate)+'）</div>';
+    html+='<div class="ibody">';
+    html+='<b>现状：</b>'+cmc+'台差异与机型通病库匹配（如iPhone X透图、Mate30按键老化等）<br>';
+    html+='<b>建议：</b>① 对<b>高频通病机型建立专项抽检清单</b>，送检前商户收到通病告知 ② 通病项自动标注"客观"减少争议 ③ 收集更多机型通病数据持续扩充通病库<br>';
+    html+='<b>模板：</b>通病匹配差异 → 自动判定客观，减少主观争议</div></div>';
+  }
+
+  // 3. 中心仓对比
+  if(cr.length>1){
+    var best=cr[cr.length-1],worst=cr[0];
+    var gap=worst[1].d/worst[1].t*100-best[1].d/best[1].t*100;
+    var sev2=gap>15?'crit':gap>8?'warn':'';
+    html+='<div class="insight-box '+sev2+'" style="margin-bottom:10px">';
+    html+='<div class="ititle">🏢 中心仓差异率对比（差距'+pctFmt(gap)+'）</div>';
+    html+='<div class="ibody">';
+    cr.forEach(function(e){
+      var r=e[1].d/e[1].t*100,maxR=worst[1].d/worst[1].t*100;
+      html+='<div style="margin:4px 0;display:flex;align-items:center;gap:8px;font-size:12px"><span style="width:70px;text-align:right">'+e[0]+'</span>'+bar(r,maxR,140,'var(--s2)')+'<span style="font-weight:600;width:44px">'+pctFmt(r)+'</span><span style="color:var(--muted);font-size:10px">'+e[1].d+'/'+e[1].t+'台</span></div>';
+    });
+    html+='<b>建议：</b>① '+worst[0]+'差异率最高→<b>组织专项培训</b>，对照SOP重新校准 ② '+best[0]+'差异率最低→<b>提炼经验分享</b>给其他仓 ③ 每月做一次跨仓校准会议</div></div>';
+  }
+
+  // 4. 商户集中度
+  if(tm.length>0){
+    var top3Sum=tm.slice(0,3).reduce(function(s,e){return s+e[1];},0);
+    var sev3=top3Sum/diffCount>0.4?'crit':top3Sum/diffCount>0.25?'warn':'';
+    html+='<div class="insight-box '+sev3+'" style="margin-bottom:10px">';
+    html+='<div class="ititle">🏭 商户差异集中度：TOP5贡献'+top3Sum+'台（'+pctFmt(top3Sum/diffCount*100)+'）</div>';
+    html+='<div class="ibody">';
+    tm.forEach(function(e,idx){
+      var p=e[1]/diffCount*100;
+      html+='<div style="margin:4px 0;display:flex;align-items:center;gap:8px;font-size:12px"><span style="width:16px;color:var(--muted)">'+(idx+1)+'</span><span style="width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+e[0]+'</span>'+bar(e[1],tm[0][1],120,'var(--s8)')+'<span style="font-weight:600">'+e[1]+'台</span></div>';
+    });
+    html+='<b>建议：</b>① 对TOP3商户<b>回传差异明细</b>，要求入仓前自查 ② 高差异商户设置<b>入仓预检门槛</b> ③ 连续3个月高差异→<b>降级或暂停合作</b></div></div>';
+  }
+
+  // 5. 业务线对比
+  if(Object.keys(bl).length>1){
+    html+='<div class="insight-box" style="margin-bottom:10px">';
+    html+='<div class="ititle">📋 业务线差异率对比</div>';
+    html+='<div class="ibody">';
+    var blEntries=Object.entries(bl).sort(function(a,b){return(b[1].d/b[1].t)-(a[1].d/a[1].t);});
+    blEntries.forEach(function(e){var r=e[1].d/e[1].t*100;html+='<span style="margin-right:16px"><b>'+e[0]+'</b>：'+pctFmt(r)+'（'+e[1].d+'/'+e[1].t+'）</span>';});
+    html+='</div></div>';
+  }
+
+  // 6. 改善路线图
+  html+='<div class="insight-box ok" style="margin-top:10px">';
+  html+='<div class="ititle">🛤️ 改善路线图</div>';
+  html+='<div class="ibody">';
+  html+='<table style="font-size:12px;margin-top:6px"><thead><tr><th>阶段</th><th>时间</th><th>措施</th><th>预期效果</th></tr></thead><tbody>';
+  html+='<tr><td>🔴 紧急</td><td>1-2周</td><td>APP差异原因改为必填+30项标准关键词下拉；拍照模板增加描述校验</td><td>描述覆盖率→80%+</td></tr>';
+  html+='<tr><td>🟡 短期</td><td>1个月</td><td>高差异商户回传明细+入仓预检；高频通病机型专项抽检清单上线</td><td>通病项主观→客观自动判定</td></tr>';
+  html+='<tr><td>🟢 中期</td><td>1-2个月</td><td>建立机型×通病×标准阈值自动判定引擎；跨仓校准会议制度化</td><td>中心仓间差异率差距<5%</td></tr>';
+  html+='<tr><td>🔵 长期</td><td>季度</td><td>收集12个月数据训练差异预测模型；商户送检前自动预估高风险项</td><td>整体差异率降低30%</td></tr>';
+  html+='</tbody></table></div></div>';
+
+  var el=document.getElementById('anaInsight');if(el)el.innerHTML=html;
 }
 function renderAnalysisAll(){try{renderAnaModel();renderAnaInsight();}catch(e){}}
 /* ====== 差异分析模块 END ====== */
