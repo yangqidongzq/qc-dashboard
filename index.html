@@ -64,7 +64,7 @@ h1,h2,h3{margin:0; font-weight:600}
 @media(max-width:640px){.col-3{grid-column:span 12}}
 
 .kpis{display:grid; grid-template-columns:1.3fr repeat(4,1fr); gap:16px; margin-bottom:18px}
-@media(max-width:1080px){.kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:1080px){.kpis{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:520px){.kpis{grid-template-columns:1fr}}
 .kpi{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:15px 17px; box-shadow:var(--shadow)}
 .kpi .klabel{font-size:12px; color:var(--muted); margin-bottom:7px}
@@ -199,28 +199,28 @@ svg{display:block; width:100%; height:auto}
       <div id="dailyChart"></div>
     </div>
 
-    <div class="card col-9">
+    <div class="card col-7">
       <h3>商户差异明细 TOP20 <span class="hint">含差异项拆分明细</span></h3>
       <div class="csub">按差异台数排序，点击行下钻明细，点击差异标签联动描述。</div>
       <div id="merchantTop"></div>
     </div>
 
-    <div class="card col-3">
+    <div class="card col-5">
       <h3>来源 · 主客观 <span class="hint">差异归因</span></h3>
       <div class="csub">渠道来源 + 主客观归因。</div>
       <div id="sourceSplit"></div>
       <div style="border-top:1px solid var(--grid);margin-top:8px;padding-top:8px" id="subjSplit"></div>
     </div>
 
-    <div class="card col-6">
-      <h3>差异项分析 <span class="hint">各差异项下TOP5商户</span></h3>
-      <div class="csub">拆修/功能/外观/显示/浸液/其他 → TOP商户。点击商户下钻。</div>
+    <div class="card col-12">
+      <h3>差异项分析 · 商户拆分 <span class="hint">各差异项下TOP5商户</span></h3>
+      <div class="csub">拆修/功能/外观/显示/浸液/其他 → 每项下TOP5商户。点击商户名下钻明细。</div>
       <div id="diffItems"></div>
     </div>
 
-    <div class="card col-6">
-      <h3>差异描述明细 <span class="hint">TOP50 · 含分类·商户</span></h3>
-      <div class="csub">按频次排序，彩色分类标签，⏳=暂存。</div>
+    <div class="card col-12">
+      <h3>差异描述明细 <span class="hint">TOP50 · 含分类·商户·差异项</span></h3>
+      <div class="csub">按出现频次排序，彩色分类标签，显示主要商户与关联差异项。⏳=暂存待处理。</div>
       <div id="descAnalysis"></div>
     </div>
 
