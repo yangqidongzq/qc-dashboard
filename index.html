@@ -452,7 +452,7 @@ function deriveDims(){ if(typeof window!=='undefined' && window.QC_DATA && windo
    4. 渲染
    ========================================================= */
 function linkToDesc(dt){state.hlDesc=dt;var da=document.getElementById('descAnalysis');if(da)da.scrollIntoView({behavior:'smooth'});renderDescAnalysis();}
-function renderAll(){ renderKPIs(); renderDaily(); renderProgress(); renderRegions();
+function renderAll(){ renderKPIs(); renderDaily(); renderRegions();
   renderMerchantTop(); renderDonut(); renderDiffItems(); renderSplits(); renderDescAnalysis(); renderInspectors(); renderDetail(); }
 
 function renderKPIs(){
