@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-palette="#2a78d6,#1baf7a,#eda100,#008300,#4a3aa7,#e34948,#e87ba4,#eb6834">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>质检差异分析 & 改善建议 · 标准对照引擎</title>
+<style>
+:root{
+  --surface-1:#fcfcfb; --page:#f9f9f7; --card:#ffffff;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,0.10);
+  --s1:#2a78d6; --s2:#1baf7a; --s3:#eda100; --s4:#008300; --s5:#4a3aa7; --s6:#e34948; --s7:#e87ba4; --s8:#eb6834;
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+  --good-ink:#006300; --track:#eef1f4;
+  --shadow:0 1px 2px rgba(11,11,11,.05),0 4px 16px rgba(11,11,11,.05);
+}
+[data-theme="dark"]{
+  --surface-1:#1a1a19; --page:#0d0d0d; --card:#1a1a19;
+  --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+  --s1:#3987e5; --s2:#199e70; --s3:#c98500; --s4:#008300; --s5:#9085e9; --s6:#e66767; --s7:#d55181; --s8:#d95926;
+  --good-ink:#0ca30c; --track:#262624;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--page); color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif; font-size:14px; line-height:1.45;}
+h1,h2,h3{margin:0; font-weight:600}
+.wrap{max-width:1480px; margin:0 auto; padding:18px 22px 60px}
+.tnum{font-variant-numeric:tabular-nums}
+
+.topbar{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:16px}
+.brand{display:flex; align-items:center; gap:11px}
+.logo{width:34px; height:34px; border-radius:9px; background:linear-gradient(135deg,var(--s5),var(--s3)); display:grid; place-items:center; color:#fff; font-weight:700}
+.brand h1{font-size:18px; letter-spacing:.3px}
+.brand .sub{font-size:12px; color:var(--muted)}
+.spacer{flex:1}
+.btn{border:1px solid var(--border); background:var(--card); color:var(--ink); border-radius:9px; padding:8px 13px; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-family:inherit}
+.btn:hover{border-color:var(--s1)}
+.btn.primary{background:var(--s1); color:#fff; border-color:var(--s1)}
+.grid2{display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin-bottom:18px}
+.grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:18px}
+@media(max-width:860px){.grid2,.grid3{grid-template-columns:1fr}}
+.card{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px 18px; box-shadow:var(--shadow); min-width:0}
+.card h3{font-size:14px; display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:4px}
+.card .hint{font-size:11px; color:var(--muted); font-weight:400}
+.card .csub{font-size:12px; color:var(--muted); margin-bottom:12px}
+
+.kpi-row{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:18px}
+@media(max-width:860px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:15px 17px; box-shadow:var(--shadow)}
+.kpi .klabel{font-size:12px; color:var(--muted); margin-bottom:7px}
+.kpi .kval{font-size:28px; font-weight:600; letter-spacing:-.5px; line-height:1}
+.kpi .kunit{font-size:13px; color:var(--ink-2); font-weight:500; margin-left:2px}
+.kpi .ksub{font-size:12px; color:var(--ink-2); margin-top:6px}
+
+.tag{display:inline-block; padding:2px 8px; border-radius:6px; font-size:11px; font-weight:600}
+.tag.ok{background:color-mix(in srgb,var(--good) 16%,transparent); color:var(--good-ink)}
+.tag.warn{background:color-mix(in srgb,var(--warn) 18%,transparent); color:#8b6300}
+.tag.crit{background:color-mix(in srgb,var(--crit) 14%,transparent); color:var(--crit)}
+.tag.info{background:color-mix(in srgb,var(--s1) 14%,transparent); color:var(--s1)}
+
+table{width:100%; border-collapse:collapse; font-size:12.5px}
+th,td{text-align:left; padding:8px 9px; border-bottom:1px solid var(--grid)}
+th{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; font-weight:600}
+td.num{text-align:right; font-variant-numeric:tabular-nums}
+tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
+
+.scroll{max-height:420px; overflow:auto}
+
+.insight-box{border-left:3px solid var(--s3); background:color-mix(in srgb,var(--s3) 6%,transparent); border-radius:0 10px 10px 0; padding:12px 15px; margin:10px 0; font-size:13px}
+.insight-box.crit{border-left-color:var(--crit); background:color-mix(in srgb,var(--crit) 6%,transparent)}
+.insight-box.ok{border-left-color:var(--good); background:color-mix(in srgb,var(--good) 6%,transparent)}
+.insight-box .ititle{font-weight:600; margin-bottom:4px; display:flex; align-items:center; gap:6px}
+.insight-box .ibody{color:var(--ink-2); line-height:1.6}
+
+.pattern-chip{display:inline-flex; align-items:center; gap:4px; padding:5px 10px; border-radius:20px; font-size:12px; border:1px solid var(--border); margin:3px}
+.pattern-chip .n{font-weight:600}
+
+.match-bar{display:flex; align-items:center; gap:8px; margin:3px 0}
+.match-bar .bar-track{flex:1; height:6px; background:var(--track); border-radius:3px; overflow:hidden}
+.match-bar .bar-fill{height:100%; border-radius:3px}
+.match-bar .bar-val{font-size:11px; color:var(--muted); width:48px; text-align:right}
+
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px}
+.status-dot.g{background:var(--good)}.status-dot.y{background:var(--warn)}.status-dot.r{background:var(--crit)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">析</div>
+      <div><h1>差异合理性分析 & 改善建议</h1>
+        <div class="sub">基于质检标准 · 差异模式识别 · 通病匹配 · 改善方向推荐</div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <span style="font-size:12px;color:var(--muted)" id="dataStatus">等待数据…</span>
+    <button class="btn" id="reloadBtn">🔄 刷新数据</button>
+    <button class="btn" id="themeBtn">🌙 深色</button>
+  </div>
+
+  <div class="kpi-row" id="kpiRow"></div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>📋 差异项标准对照分析 <span class="hint">标准阈值 vs 实际判定</span></h3>
+      <div class="csub">每条差异项与对应品类质检标准进行阈值比对，标注"合理/偏低/偏高/不在标准内"</div>
+      <div class="scroll" id="standardMatch"></div>
+    </div>
+    <div class="card">
+      <h3>🏭 高差异商户 TOP 15 <span class="hint">按差异率排序</span></h3>
+      <div class="csub">差异率 = 差异台数 / 送检台数，标注高风险商户的差异集中类型</div>
+      <div class="scroll" id="merchantRank"></div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>📱 高频差异机型 TOP 10 <span class="hint">按差异台数排序</span></h3>
+      <div class="csub">标注该机型最常见的差异类型及可能的通病</div>
+      <div class="scroll" id="modelRank"></div>
+    </div>
+    <div class="card">
+      <h3>🔍 差异模式识别 & 改善方向</h3>
+      <div class="csub">基于标准+数据的综合分析，识别系统性问题并给出改善建议</div>
+      <div class="scroll" id="insights"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:18px">
+    <h3>📊 差异原因描述分类 & 标准解读 <span class="hint">从模糊描述到结构化标准项映射</span></h3>
+    <div class="csub">将原始"差异原因描述"提取关键词并映射到对应的标准质检项，判断语句是否清晰可判定</div>
+    <div class="scroll" id="reasonAnalysis"></div>
+  </div>
+
+</div>
+
+<script>
+/* ============================
+   1. 标准知识库（内嵌）
+   ============================ */
+const QC_STANDARDS = {
+  phone: {
+    name:'手机', catKey:'手机',
+    screen: {
+      crack: [
+        {range:'无', grade:'99', desc:'屏幕无碎裂'},
+        {range:'≤1.5mm且数量=1', grade:'7', desc:'碎裂直径≤1.5mm且数量=1'},
+        {range:'1.5-5mm且数量=1', grade:'7-', desc:'碎裂1.5<直径≤5mm且数量=1'},
+        {range:'>5mm或数量>1', grade:'不进卖场', desc:'碎裂直径>5mm或数量>1'}
+      ],
+      scratch_shallow: [
+        {range:'无(≤2条)', grade:'99', desc:'浅划痕≤2条'},
+        {range:'3-5条', grade:'99-', desc:'浅划痕3-5条'},
+        {range:'6-10条', grade:'95', desc:'浅划痕6-10条'},
+        {range:'>10条', grade:'9', desc:'浅划痕>10条'}
+      ],
+      scratch_deep: [
+        {range:'无(≤2条/≤1mm)', grade:'99', desc:'深划痕豁免'},
+        {range:'1-3mm或3-5条', grade:'95', desc:'轻微深划痕'},
+        {range:'3-10mm或6-10条', grade:'9', desc:'明显深划痕'},
+        {range:'>10mm或>10条', grade:'不进卖场', desc:'深划痕超限'}
+      ]
+    },
+    housing: {
+      crack: [
+        {range:'无', grade:'99'},
+        {range:'≤2mm', grade:'8'},
+        {range:'2-10mm', grade:'7'},
+        {range:'>10mm', grade:'不进卖场'}
+      ],
+      scratch: [
+        {range:'无(≤2条/≤3mm)', grade:'99'},
+        {range:'3-10mm或3-5条', grade:'95'},
+        {range:'10-20mm或6-10条', grade:'9'},
+        {range:'>20mm或>10条', grade:'8'}
+      ],
+      bump: [
+        {range:'无(≤1个/≤0.5mm)', grade:'99'},
+        {range:'0.5-1mm或2-5个', grade:'95'},
+        {range:'1-3mm或6-10个', grade:'9'},
+        {range:'>3mm或>10个', grade:'不进卖场'}
+      ],
+      bend: [
+        {range:'无(<1mm)', grade:'99'},
+        {range:'1-2mm', grade:'8'},
+        {range:'>2mm', grade:'不进卖场'}
+      ],
+      debond: [
+        {range:'无(<0.3mm)', grade:'99'},
+        {range:'≥0.3mm', grade:'不进卖场'}
+      ]
+    },
+    display: {
+      dust:[{range:'无', grade:'99'},{range:'≤0.5mm≤3粒', grade:'99'},{range:'超标', grade:'9~不进卖场'}],
+      bright_spot:[{range:'无', grade:'99'},{range:'≤2mm≤5个', grade:'95'},{range:'超标', grade:'不进卖场'}],
+      dead_pixel:[{range:'无', grade:'99'},{range:'≤0.5mm≤3个', grade:'9'},{range:'超标', grade:'不进卖场'}],
+      red_yellow:[{range:'无', grade:'99'},{range:'轻微不可拍', grade:'99'},{range:'明显可拍', grade:'8'},{range:'满屏', grade:'不进卖场'}],
+      burn_in:[{range:'无', grade:'99'},{range:'状态栏可拍', grade:'95'},{range:'状态栏外可拍', grade:'8'},{range:'>30mm或>10处', grade:'不进卖场'}],
+      bubble:[{range:'无', grade:'99'},{range:'≤1mm≤3个', grade:'9'},{range:'超标', grade:'不进卖场'}],
+      color_spot:[{range:'无', grade:'99'},{range:'≤5mm', grade:'9'},{range:'>5mm', grade:'不进卖场'}],
+      leak:[{range:'无', grade:'99'},{range:'漏液/压伤/条纹/花屏/无法显示', grade:'不进卖场'}]
+    },
+    function: {
+      touch:[{range:'正常', grade:'99'},{range:'异常', grade:'不进卖场'}],
+      button_power:[{range:'正常', grade:'99'},{range:'失灵/凹陷', grade:'不进卖场'}],
+      button_vol:[{range:'正常', grade:'99'},{range:'凹陷/弹性差', grade:'7'},{range:'失灵', grade:'7-'}],
+      fingerprint:[{range:'正常', grade:'99'},{range:'无法录入/解锁', grade:'7'}],
+      face_id:[{range:'正常', grade:'99'},{range:'无法录入/解锁', grade:'7'}],
+      gravity:[{range:'正常', grade:'99'},{range:'异常', grade:'不进卖场'}],
+      compass:[{range:'正常', grade:'99'},{range:'异常', grade:'7-'}],
+      distance:[{range:'正常', grade:'99'},{range:'异常', grade:'7-'}],
+      light:[{range:'正常', grade:'99'},{range:'异常', grade:'7-'}],
+      wifi:[{range:'正常', grade:'99'},{range:'异常', grade:'不进卖场'}],
+      bluetooth:[{range:'正常', grade:'99'},{range:'异常', grade:'不进卖场'}],
+      speaker:[{range:'正常', grade:'99'},{range:'轻微杂音', grade:'9'},{range:'音量小', grade:'7-'},{range:'无声/明显杂音', grade:'不进卖场'}],
+      mic:[{range:'正常', grade:'99'},{range:'送话弱/杂音/无声', grade:'不进卖场'}],
+      charge_wired:[{range:'正常', grade:'99'},{range:'接触不良/异常/单边不充', grade:'不进卖场'}],
+      charge_wireless:[{range:'正常', grade:'99'},{range:'异常', grade:'7'}],
+      charge_fast:[{range:'正常', grade:'99'},{range:'无法触发/未达标', grade:'不进卖场'}],
+      sim:[{range:'正常', grade:'99'},{range:'不读卡/基带坏/信号弱', grade:'不进卖场'}],
+      camera_front:[{range:'正常', grade:'99'},{range:'无法打开/画面异常', grade:'不进卖场'},{range:'有斑', grade:'9+'},{range:'坏点', grade:'7'}],
+      camera_rear:[{range:'正常', grade:'99'},{range:'无法打开/画面异常', grade:'不进卖场'},{range:'有斑', grade:'9+'},{range:'坏点', grade:'7'}],
+      flash:[{range:'正常', grade:'99'},{range:'异常/无法打开', grade:'7'}],
+      battery_health:[{range:'95-100%', grade:'99'},{range:'90-95%', grade:'95'},{range:'85-90%', grade:'9'},{range:'80-85%', grade:'8'},{range:'70-80%', grade:'7'},{range:'<70%', grade:'不进卖场'}]
+    },
+    repair: {
+      screen_replace:[{range:'无', grade:'99'},{range:'屏幕材质不符/未知部件/感应孔不符/胶水溢出/黑边缺失', grade:'7~不进卖场'}],
+      housing_replace:[{range:'无', grade:'99'},{range:'闪光灯偏移/开孔不符/卡槽颜色异常/溢胶撬痕/样式不匹配', grade:'7~95'}],
+      battery_replace:[{range:'无', grade:'99'},{range:'正品部件弹窗/品牌电池/褶皱/鼓包/松动/第三方电池', grade:'95~不进卖场'}],
+      motherboard_repair:[{range:'无', grade:'99'},{range:'螺母柱缺失/屏蔽罩变形/扩容/焊接异常/飞线', grade:'不进卖场'}],
+      liquid_damage:[{range:'无', grade:'99'},{range:'防水标变红/发霉/生锈', grade:'不进卖场'}]
+    }
+  }
+};
+
+/* ============================
+   2. 差异项 → 标准映射规则
+   ============================ */
+const DIFF_TO_STANDARD = {
+  '拆修': {cat:'repair', sub:'screen_replace', desc:'非官方拆修痕迹——对应标准：屏幕/后壳维修痕迹检测'},
+  '功能': {cat:'function', sub:null, desc:'功能异常/主板虚焊——对应标准：各功能项（按键/充电/传感器/摄像头/无线等）'},
+  '外观': {cat:'housing', sub:'scratch', desc:'外观磕碰划痕——对应标准：外壳外观(A)碎裂/划痕/磕碰/掉漆'},
+  '显示': {cat:'display', sub:'leak', desc:'屏幕显示异常——对应标准：屏幕显示-漏液/压伤/条纹/坏点/透图等'},
+  '浸液': {cat:'repair', sub:'liquid_damage', desc:'设备有浸液痕迹——对应标准：防水标变红/内部发霉生锈→不进卖场'},
+  '其他': {cat:null, sub:null, desc:'其他差异——需进一步分类到具体标准项'}
+};
+
+// 通病数据库（机型+现象 → 已知通病）
+const COMMON_ISSUES = [
+  {modelPattern:/iPhone\s*X/i, issue:'屏幕偏光老化/透图', cat:'显示', note:'iPhone X系列OLED屏通病，使用2-3年后状态栏透图常见'},
+  {modelPattern:/iPhone\s*1[1-3]/i, issue:'屏幕泛黄/原彩缺失', cat:'显示', note:'LCD屏长期使用背光老化导致泛黄，原彩功能可能因换屏丢失'},
+  {modelPattern:/iPhone\s*12/i, issue:'听筒无声/音小', cat:'功能', note:'iPhone 12系列听筒模块故障召回相关，需检测听筒功能'},
+  {modelPattern:/iPhone\s*1[3-4].*Pro/i, issue:'屏幕绿线/白屏', cat:'显示', note:'OLED面板通病，部分批次出现绿线或白屏'},
+  {modelPattern:/华为.*Mate\s*30/i, issue:'音量键/电源键弹性差', cat:'功能', note:'华为Mate30系列使用2年后按键橡胶老化常见'},
+  {modelPattern:/华为.*折叠|Mate\s*X/i, issue:'折叠屏折痕/转轴松动', cat:'外观', note:'折叠屏折痕随使用时间加深，转轴松动为机械磨损'},
+  {modelPattern:/小米.*1[1-3]/i, issue:'尾插松动/充电断续', cat:'功能', note:'小米数字系列Type-C接口长期使用后焊点疲劳'},
+  {modelPattern:/OPPO.*Find\s*X/i, issue:'升降摄像头卡顿', cat:'功能', note:'Find X系列升降机构进灰/润滑不足导致卡顿'},
+  {modelPattern:/三星.*Fold|三星.*Flip/i, issue:'折叠屏折痕/贴膜起泡', cat:'外观', note:'三星折叠屏UTG玻璃特性，折痕不可逆，贴膜需定期更换'},
+  {modelPattern:/vivo.*NEX/i, issue:'升降摄像头异常', cat:'功能', note:'vivo NEX升降摄像头步进电机磨损'},
+  {modelPattern:/华为.*P\d+/i, issue:'电池鼓包/健康度下降快', cat:'功能', note:'使用非原装充电器加速电池老化'},
+  {modelPattern:/iPad/i, issue:'屏幕白斑/老化', cat:'显示', note:'iPad长期高亮度使用导致背光老化，出现白斑'},
+  {modelPattern:/MacBook/i, issue:'屏幕涂层脱落', cat:'外观', note:'MacBook Retina屏幕防眩光涂层老化脱落通病'},
+  {modelPattern:/Apple\s*Watch/i, issue:'电池健康<80%', cat:'功能', note:'Apple Watch电池容量小，循环次数多后健康度下降明显'}
+];
+
+// 差异原因描述关键词 → 标准项映射
+const REASON_KEYWORDS = {
+  '屏幕碎|屏碎|碎裂|crack': {cat:'screen', sub:'crack', tag:'屏幕碎裂'},
+  '划痕|划伤|刮痕': {cat:'screen', sub:'scratch_deep', tag:'屏幕划痕'},
+  '外壳碎|后壳碎|后盖碎|背板碎': {cat:'housing', sub:'crack', tag:'外壳碎裂'},
+  '外壳划|后壳划|边框划|中框划': {cat:'housing', sub:'scratch', tag:'外壳划痕'},
+  '磕碰|磕伤|碰伤|撞伤': {cat:'housing', sub:'bump', tag:'外壳磕碰'},
+  '弯曲|变形|弯': {cat:'housing', sub:'bend', tag:'机身弯曲'},
+  '脱胶|开胶|缝隙|翘起': {cat:'housing', sub:'debond', tag:'脱胶/缝隙'},
+  '漏液|液晶漏|屏幕漏': {cat:'display', sub:'leak', tag:'屏幕漏液'},
+  '坏点|亮点|亮斑|暗点': {cat:'display', sub:'dead_pixel', tag:'坏点/亮点'},
+  '透图|烧屏|残影|烙印': {cat:'display', sub:'burn_in', tag:'透图/烧屏'},
+  '泛红|泛黄|发红|发黄|偏色': {cat:'display', sub:'red_yellow', tag:'屏幕偏色'},
+  '气泡|屏幕泡': {cat:'display', sub:'bubble', tag:'屏幕气泡'},
+  '进灰|灰尘|有灰': {cat:'display', sub:'dust', tag:'屏幕进灰'},
+  '无信号|不读卡|信号弱|无服务': {cat:'function', sub:'sim', tag:'SIM卡信号'},
+  '不充电|充不了|无法充电|充电异常': {cat:'function', sub:'charge_wired', tag:'有线充电异常'},
+  '外放|扬声器|喇叭|声音小|无声|杂音': {cat:'function', sub:'speaker', tag:'扬声器异常'},
+  '听筒|接听|打电话听': {cat:'function', sub:'speaker', tag:'听筒异常'},
+  'WiFi|wifi|无线网|WLAN': {cat:'function', sub:'wifi', tag:'WiFi异常'},
+  '蓝牙|bluetooth': {cat:'function', sub:'bluetooth', tag:'蓝牙异常'},
+  '面容|face.?id|人脸|面部': {cat:'function', sub:'face_id', tag:'面容识别异常'},
+  '指纹|touch.?id|touchid': {cat:'function', sub:'fingerprint', tag:'指纹异常'},
+  '摄像头|相机|拍照|后摄|前摄|镜头': {cat:'function', sub:'camera_rear', tag:'摄像头异常'},
+  '闪光灯|手电筒': {cat:'function', sub:'flash', tag:'闪光灯异常'},
+  '按键|电源键|音量键|home键|静音键': {cat:'function', sub:'button_power', tag:'按键异常'},
+  '浸液|进水|受潮|发霉|生锈|防水标': {cat:'repair', sub:'liquid_damage', tag:'浸液痕迹'},
+  '拆修|拆过|维修|更换|换过|非原装|组装': {cat:'repair', sub:'screen_replace', tag:'拆修痕迹'},
+  '电池|健康度|电池效率': {cat:'function', sub:'battery_health', tag:'电池健康'},
+  '触摸|触控|触屏|断触|不灵敏|失灵': {cat:'function', sub:'touch', tag:'屏幕触控'},
+  '重启|死机|卡死|自动关机|反复重启': {cat:'function', sub:'sim', tag:'系统崩溃/重启'},
+};
+
+/* ============================
+   3. 数据加载与核心分析
+   ============================ */
+let RECORDS = [];
+
+function loadData(){
+  const dStatus = document.getElementById('dataStatus');
+  // 1. 优先读取 qc-data.js 中的 window.QC_DATA
+  if(typeof window.QC_DATA !== 'undefined' && window.QC_DATA.length){
+    RECORDS = window.QC_DATA;
+    dStatus.innerHTML = `✅ 已加载 <b>${RECORDS.length}</b> 条真实数据 (qc-data.js)`;
+  } else {
+    // 2. 尝试从 localStorage 桥接缓存读取（主看板写入）
+    try{
+      const bridge = localStorage.getItem('qc_bridge_data');
+      if(bridge){
+        const slim = JSON.parse(bridge);
+        RECORDS = slim.map(r=>({
+          day:r.d, date:r.dt, center:r.c, region:r.r, merchant:r.m,
+          category:r.cat, model:r.mod, inspector:r.ins, source:r.src,
+          bizline:r.biz, qty:1, qtyDiff:r.qd||0, diffItems:r.di||[],
+          reason:r.rs||'', subjObj:r.so||'', status:r.st||''
+        }));
+        const ts = parseInt(localStorage.getItem('qc_bridge_ts')||'0');
+        const age = ts ? Math.round((Date.now()-ts)/60000) : '?';
+        dStatus.innerHTML = `✅ 从主看板同步 <b>${RECORDS.length}</b> 条 (${age}分钟前)`;
+      }
+    }catch(e){}
+    // 3. 最后尝试 localStorage 缓存
+    if(!RECORDS.length){
+      try{
+        const cached = localStorage.getItem('qc_analysis_cache');
+        if(cached){ RECORDS = JSON.parse(cached); dStatus.innerHTML = `⚠️ 使用缓存数据 (${RECORDS.length}条)，建议从看板导入`; }
+      }catch(e){}
+    }
+    if(!RECORDS.length){
+      dStatus.innerHTML = '❌ 无数据 — 请在主看板打开后刷新，或手动拖入CSV';
+    }
+  }
+  if(RECORDS.length){
+    try{ localStorage.setItem('qc_analysis_cache', JSON.stringify(RECORDS.slice(0,5000))); }catch(e){}
+  }
+}
+
+function getDiffRecs(){ return RECORDS.filter(r=>r.qtyDiff>0||(r.diffItems&&r.diffItems.length)); }
+function getDiffByItem(itemName){ return getDiffRecs().filter(r=>r.diffItems&&r.diffItems.some(i=>i===itemName)); }
+
+function matchStandard(category, subcat, descText){
+  const std = QC_STANDARDS.phone;
+  if(!std[subcat]) return {match:false, grade:'?', note:'不在已知标准分类内'};
+  const rules = std[subcat];
+  // 尝试从desc提取数值
+  const nums = (descText||'').match(/(\d+(?:\.\d+)?)\s*(mm|cm|毫米|厘米|个|条|处|粒)/g)||[];
+  let bestMatch = null;
+  for(const [k, items] of Object.entries(rules)){
+    if(Array.isArray(items)){
+      for(const item of items){
+        if(nums.length && item.range && nums.some(n=>item.range.includes(n.split(/[a-z]/)[0]||n))){
+          bestMatch = {range:item.range, grade:item.grade, desc:item.desc}; break;
+        }
+      }
+    }
+    if(bestMatch) break;
+  }
+  if(!bestMatch) bestMatch = {range:'需人工对照', grade:'?', desc:'无法从描述中提取量化的阈值信息，建议补充具体尺寸/数量'};
+  return {match:true, ...bestMatch};
+}
+
+function analyzeReasonText(text){
+  if(!text||text==='—'||text==='') return {keywords:[], matched:null, quality:'无描述'};
+  const keywords=[];
+  for(const [pattern, info] of Object.entries(REASON_KEYWORDS)){
+    const re = new RegExp(pattern, 'i');
+    if(re.test(text)) keywords.push({...info, pattern});
+  }
+  return {
+    keywords,
+    matched: keywords.length>0 ? keywords[0] : null,
+    quality: keywords.length===0?'模糊(需补充标准术语)':keywords.length===1?'可判定':'多匹配(需人工确认)'
+  };
+}
+
+function findCommonIssues(model){
+  const matches=[];
+  for(const ci of COMMON_ISSUES){
+    if(ci.modelPattern.test(model||'')) matches.push(ci);
+  }
+  return matches;
+}
+
+/* ============================
+   4. 渲染函数
+   ============================ */
+function renderKPIs(){
+  const total=RECORDS.length, diff=sum(RECORDS,r=>r.qtyDiff);
+  const diffRecs=getDiffRecs();
+  const withReason=diffRecs.filter(r=>r.reason&&r.reason!=='—'&&r.reason!=='').length;
+  const reasonQuality=diffRecs.filter(r=>{
+    const a=analyzeReasonText(r.reason); return a.quality==='可判定';
+  }).length;
+  const models=uniq(RECORDS,r=>r.model);
+  const merchants=uniq(RECORDS,r=>r.merchant);
+  document.getElementById('kpiRow').innerHTML=`
+    <div class="kpi"><div class="klabel">📦 总检台数</div><div class="kval">${fmt(total)}<span class="kunit">台</span></div><div class="ksub">${merchants}家商户 · ${models}种机型</div></div>
+    <div class="kpi"><div class="klabel">⚠️ 差异台数</div><div class="kval" style="color:var(--crit)">${fmt(diff)}<span class="kunit">台</span></div><div class="ksub">差异率 ${pct1(pct(diff,total))}</div></div>
+    <div class="kpi"><div class="klabel">📝 有原因描述</div><div class="kval">${fmt(withReason)}<span class="kunit">条</span></div><div class="ksub">覆盖率 ${pct1(pct(withReason,diffRecs.length||1))}</div></div>
+    <div class="kpi"><div class="klabel">🎯 描述可判定率</div><div class="kval" style="color:${reasonQuality/diffRecs.length>0.7?'var(--good)':'var(--warn)'}">${pct1(pct(reasonQuality,diffRecs.length||1))}</div><div class="ksub">可自动匹配标准项</div></div>`;
+}
+
+function renderStandardMatch(){
+  const items=['拆修','功能','外观','显示','浸液'];
+  const diffRecs=getDiffRecs();
+  let html='<table><thead><tr><th>差异项</th><th>台数</th><th>占比</th><th>标准对照</th><th>标准阈值</th><th>判定建议</th></tr></thead><tbody>';
+  for(const item of items){
+    const recs=getDiffByItem(item);
+    if(!recs.length) continue;
+    const map=DIFF_TO_STANDARD[item]||{};
+    const pctVal=pct(recs.length, Math.max(diffRecs.length,1));
+    // 分析该差异项下的原因描述质量
+    const withReason=recs.filter(r=>r.reason&&r.reason!=='—').length;
+    const avgQuality=withReason/recs.length;
+    let suggest='';
+    if(avgQuality<0.3) suggest='⚠️ 原因描述不足，建议要求质检员补充具体尺寸/位置';
+    else if(avgQuality<0.7) suggest='💡 部分描述可改进，建议使用标准术语';
+    else suggest='✅ 描述质量较好';
+    html+=`<tr>
+      <td><b>${item}</b></td>
+      <td class="num">${recs.length}</td>
+      <td class="num">${pct1(pctVal)}</td>
+      <td><span class="tag info">${map.desc||'—'}</span></td>
+      <td style="font-size:11px;color:var(--muted)">${item==='外观'?'碎裂>10mm/弯曲>2mm/脱胶≥0.3mm→不进卖场':item==='显示'?'漏液/压伤/条纹→不进卖场':item==='功能'?'多项异常→不进卖场':item==='拆修'?'主板维修/进水→不进卖场':item==='浸液'?'防水标红/发霉→不进卖场':'—'}</td>
+      <td>${suggest}</td></tr>`;
+  }
+  html+='</tbody></table>';
+  document.getElementById('standardMatch').innerHTML=html;
+}
+
+function renderMerchantRank(){
+  const diffRecs=getDiffRecs();
+  const mm={};
+  RECORDS.forEach(r=>{
+    mm[r.merchant]=mm[r.merchant]||{total:0,diff:0,items:{},models:{}};
+    mm[r.merchant].total++;
+    if(r.qtyDiff){ mm[r.merchant].diff++; (r.diffItems||[]).forEach(i=>mm[r.merchant].items[i]=(mm[r.merchant].items[i]||0)+1); }
+    mm[r.merchant].models[r.model]=(mm[r.merchant].models[r.model]||0)+1;
+  });
+  const ranked=Object.entries(mm).filter(([k,v])=>v.total>=3).sort((a,b)=>(b[1].diff/b[1].total)-(a[1].diff/a[1].total)).slice(0,15);
+  let html='<table><thead><tr><th>#</th><th>商户</th><th>送检</th><th>差异</th><th>差异率</th><th>主要差异类型</th><th>风险</th></tr></thead><tbody>';
+  ranked.forEach(([name,data],idx)=>{
+    const rate=pct(data.diff,data.total);
+    const topItems=Object.entries(data.items).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k,v])=>`${k}(${v})`).join(' ');
+    const risk=rate>30?'crit':rate>15?'warn':'ok';
+    html+=`<tr>
+      <td>${idx+1}</td><td>${name}</td><td class="num">${data.total}</td><td class="num">${data.diff}</td>
+      <td class="num"><span class="tag ${risk}">${pct1(rate)}</span></td>
+      <td style="font-size:11px">${topItems||'—'}</td>
+      <td>${rate>30?'🔴 重点监控':rate>15?'🟡 关注':'🟢 正常'}</td></tr>`;
+  });
+  html+='</tbody></table>';
+  document.getElementById('merchantRank').innerHTML=html;
+}
+
+function renderModelRank(){
+  const diffRecs=getDiffRecs();
+  const md={};
+  diffRecs.forEach(r=>{
+    const m=r.model||'未知';
+    md[m]=md[m]||{diff:0,items:{}};
+    md[m].diff++;
+    (r.diffItems||[]).forEach(i=>md[m].items[i]=(md[m].items[i]||0)+1);
+  });
+  const ranked=Object.entries(md).sort((a,b)=>b[1].diff-a[1].diff).slice(0,10);
+  let html='<table><thead><tr><th>#</th><th>机型</th><th>差异台数</th><th>主要差异</th><th>已知通病</th></tr></thead><tbody>';
+  ranked.forEach(([model,data],idx)=>{
+    const topItems=Object.entries(data.items).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([k,v])=>`${k}(${v}台)`).join(' · ');
+    const issues=findCommonIssues(model);
+    html+=`<tr>
+      <td>${idx+1}</td><td><b>${model}</b></td><td class="num">${data.diff}</td>
+      <td style="font-size:11px">${topItems||'—'}</td>
+      <td style="font-size:11px">${issues.length?issues.map(i=>`<span class="tag warn">${i.issue}</span>`).join(' '):'<span style="color:var(--muted)">未匹配</span>'}</td></tr>`;
+  });
+  html+='</tbody></table>';
+  document.getElementById('modelRank').innerHTML=html;
+}
+
+function renderInsights(){
+  const diffRecs=getDiffRecs();
+  const total=RECORDS.length;
+  const insights=[];
+
+  // 1. 差异项分布
+  const itemDist={}; diffRecs.forEach(r=>(r.diffItems||[]).forEach(i=>itemDist[i]=(itemDist[i]||0)+1));
+  const topItem=Object.entries(itemDist).sort((a,b)=>b[1]-a[1])[0];
+
+  // 2. 数据质量问题
+  const noReason=diffRecs.filter(r=>!r.reason||r.reason==='—'||r.reason==='').length;
+  const noReasonRate=pct(noReason, diffRecs.length);
+
+  // 3. 商户集中度
+  const mDist={}; diffRecs.forEach(r=>mDist[r.merchant]=(mDist[r.merchant]||0)+1);
+  const topMerchants=Object.entries(mDist).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  const mc=sum(RECORDS,()=>1);
+  const topMShare=pct(sum(topMerchants,([,c])=>c), diffRecs.length);
+
+  // 4. 通病匹配率
+  let commonMatch=0;
+  diffRecs.forEach(r=>{ if(findCommonIssues(r.model).length>0) commonMatch++; });
+  const commonRate=pct(commonMatch, diffRecs.length);
+
+  // 5. 主观vs客观
+  const subj=diffRecs.filter(r=>r.subjObj==='主观').length;
+  const obj=diffRecs.filter(r=>r.subjObj==='客观').length;
+
+  // 6. 中心仓差异率差异
+  const cc={}; RECORDS.forEach(r=>{ cc[r.center]=cc[r.center]||{t:0,d:0}; cc[r.center].t++; if(r.qtyDiff)cc[r.center].d++; });
+  const ccRanked=Object.entries(cc).filter(([,v])=>v.t>=20).sort((a,b)=>(b[1].d/b[1].t)-(a[1].d/a[1].t));
+
+  // 生成改善建议
+  insights.push({
+    icon:'📊', title:`差异分布概览`,
+    body:`共<b>${fmt(diffRecs.length)}</b>条差异记录，占比 <b>${pct1(pct(diffRecs.length,total))}</b>。<br>
+    最大差异项：<b>${topItem?topItem[0]:'—'}</b>（${topItem?topItem[1]:0}台，占差异总数 ${topItem?pct1(pct(topItem[1],diffRecs.length)):'—'}）<br>
+    主观判定 <b>${subj}</b> 条 / 客观判定 <b>${obj}</b> 条`,
+    clazz:''
+  });
+
+  if(noReasonRate>20){
+    insights.push({
+      icon:'⚠️', title:`差异原因描述缺失率 ${pct1(noReasonRate)}`,
+      body:`${noReason}条差异记录无原因描述。建议：<br>① 质检APP增加"差异原因"必填校验<br>② 提供下拉选项（碎裂/划痕/磕碰/显示异常等）替代自由文本<br>③ 制定"一图一描述"拍照规范`,
+      clazz:'crit'
+    });
+  }
+
+  if(commonRate>20){
+    insights.push({
+      icon:'🔍', title:`${pct1(commonRate)} 差异与已知通病匹配`,
+      body:`${commonMatch}条记录匹配到机型通病库。建议：<br>① 对高频通病机型（iPhone X/11/12系列等）增加专项抽检<br>② 在商户送检前提供"机型通病告知"<br>③ 建立通病→标准→自动判定的闭环`,
+      clazz:''
+    });
+  }
+
+  if(topMShare>30){
+    insights.push({
+      icon:'🏭', title:`差异集中在少数商户`,
+      body:`TOP3商户贡献了${pct1(topMShare)}的差异：<br>${topMerchants.map(([n,c])=>`· <b>${n}</b>：${c}台 (${pct1(pct(c,diffRecs.length))})`).join('<br>')}<br>建议：① 对高差异商户增加入仓前预检要求 ② 回传差异数据给商户做针对性改善`,
+      clazz:'crit'
+    });
+  }
+
+  if(ccRanked.length>1){
+    const worst=ccRanked[0], best=ccRanked[ccRanked.length-1];
+    if(pct(worst[1].d,worst[1].t)-pct(best[1].d,best[1].t)>10){
+      insights.push({
+        icon:'🏢', title:`中心仓差异率差距显著`,
+        body:`最高：<b>${worst[0]}</b> ${pct1(pct(worst[1].d,worst[1].t))} · 最低：<b>${best[0]}</b> ${pct1(pct(best[1].d,best[1].t))}<br>
+        建议：① 组织低差异率中心仓分享操作经验 ② 检查高标准差异率中心仓的培训覆盖 ③ 确认SOP执行一致性`,
+        clazz:''
+      });
+    }
+  }
+
+  insights.push({
+    icon:'💡', title:`基于标准体系的改善方向`,
+    body:`<b>短期（1-2周）：</b>统一差异原因描述模板，将6大差异项细化为20+子项（对应标准分类），提升描述可判定率<br>
+    <b>中期（1-2月）：</b>建立机型×通病×标准阈值自动判定引擎，当差异描述+机型匹配通病时自动给出标准等级建议<br>
+    <b>长期（季度）：</b>收集足够数据后训练差异预测模型，对商户送检批次提前预估高风险项`,
+    clazz:'ok'
+  });
+
+  document.getElementById('insights').innerHTML=insights.map((ins,i)=>`
+    <div class="insight-box ${ins.clazz}">
+      <div class="ititle">${ins.icon} ${ins.title}</div>
+      <div class="ibody">${ins.body}</div>
+    </div>`).join('');
+}
+
+function renderReasonAnalysis(){
+  const diffRecs=getDiffRecs();
+  // 按差异项分组，分析原因描述质量
+  const groups={};
+  diffRecs.forEach(r=>{
+    (r.diffItems||[]).forEach(item=>{
+      groups[item]=groups[item]||[];
+      groups[item].push(r);
+    });
+  });
+
+  let html='<table><thead><tr><th>差异项</th><th>台数</th><th>有描述</th><th>可自动解析</th><th>TOP关键词</th><th>典型描述示例</th></tr></thead><tbody>';
+  for(const [item, recs] of Object.entries(groups).sort((a,b)=>b[1].length-a[1].length)){
+    const withR=recs.filter(r=>r.reason&&r.reason!=='—'&&r.reason!=='');
+    const auto=withR.filter(r=>analyzeReasonText(r.reason).quality==='可判定');
+    // 关键词统计
+    const kwCount={};
+    withR.forEach(r=>{
+      const a=analyzeReasonText(r.reason);
+      a.keywords.forEach(k=>kwCount[k.tag]=(kwCount[k.tag]||0)+1);
+    });
+    const topKW=Object.entries(kwCount).sort((a,b)=>b[1]-a[1]).slice(0,4);
+    // 典型描述
+    const samples=withR.slice(0,2).map(r=>r.reason).filter(Boolean);
+
+    html+=`<tr>
+      <td><b>${item}</b></td>
+      <td class="num">${recs.length}</td>
+      <td class="num">${withR.length} <span style="color:var(--muted)">(${pct1(pct(withR.length,recs.length))})</span></td>
+      <td class="num"><span class="tag ${auto.length/recs.length>0.6?'ok':'warn'}">${auto.length}条 (${pct1(pct(auto.length,recs.length))})</span></td>
+      <td style="font-size:11px">${topKW.map(([k,v])=>`<span class="pattern-chip">${k}<span class="n">${v}</span></span>`).join('')||'—'}</td>
+      <td style="font-size:11px;max-width:320px;color:var(--ink-2)">${samples.map(s=>`"${s.length>40?s.substring(0,40)+'...':s}"`).join('<br>')||'无描述'}</td></tr>`;
+  }
+  html+='</tbody></table>';
+  document.getElementById('reasonAnalysis').innerHTML=html;
+}
+
+/* ============================
+   5. 工具函数
+   ============================ */
+const fmt=n=>n.toLocaleString('zh-CN');
+const pct=(a,b)=>b>0?(a/b*100):0;
+const pct1=x=>x.toFixed(1)+'%';
+const sum=(arr,f)=>arr.reduce((s,x)=>s+f(x),0);
+const uniq=(arr,f)=>new Set(arr.map(f)).size;
+
+/* ============================
+   6. 启动
+   ============================ */
+function renderAll(){
+  loadData();
+  if(!RECORDS.length){
+    document.body.innerHTML='<div style="text-align:center;padding:100px 20px"><h2>📭 暂无数据</h2><p style="color:var(--muted)">请先在<a href="质检数据看板.html">主看板</a>中加载数据，然后刷新本页。<br>或者直接将CSV文件拖入下方区域：</p><div id="dropZone" style="border:2px dashed var(--border);border-radius:14px;padding:40px;margin:20px auto;max-width:500px;cursor:pointer">拖放CSV文件到此处</div><input type="file" id="fileInput" accept=".csv" style="display:none"></div>';
+    return;
+  }
+  renderKPIs();
+  renderStandardMatch();
+  renderMerchantRank();
+  renderModelRank();
+  renderInsights();
+  renderReasonAnalysis();
+}
+renderAll();
+
+document.getElementById('reloadBtn').onclick=renderAll;
+document.getElementById('themeBtn').onclick=function(){
+  const h=document.documentElement;
+  const cur=h.getAttribute('data-theme');
+  if(cur==='dark'){ h.removeAttribute('data-theme'); this.textContent='🌙 深色'; }
+  else { h.setAttribute('data-theme','dark'); this.textContent='☀️ 浅色'; }
+};
+</script>
+</body></html>
