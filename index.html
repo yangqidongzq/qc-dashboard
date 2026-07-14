@@ -616,14 +616,73 @@ function renderAnaInsight(){
   } else { html+='<span style="color:var(--muted)">无匹配数据</span>'; }
   html+='</div></div></div>';
 
-  // ── 改善路线图 ──
-  html+='<div class="insight-box ok">';
-  html+='<div class="ititle">🛤️ 改善路线图</div><div class="ibody">';
-  html+='<table style="font-size:12px;margin-top:6px"><thead><tr><th>阶段</th><th>时间</th><th>措施</th><th>模板</th></tr></thead><tbody>';
-  html+='<tr><td>🔴 紧急</td><td>1-2周</td><td>差异原因改为必填+30项标准关键词下拉；APP校验禁止模糊描述提交</td><td>描述覆盖率→90%+；模糊率→<10%</td></tr>';
-  html+='<tr><td>🟡 短期</td><td>1个月</td><td>关键词→差异项自动建议（消除归类不一致）；回溯复核'+analysis.mismatch.length+'条不一致记录</td><td>归类一致率→95%+</td></tr>';
-  html+='<tr><td>🟢 中期</td><td>1-2月</td><td>描述+关键词→自动匹配标准阈值→建议成色等级；高频缺陷项建立自动判定规则减少主观争议</td><td>主观率→<30%；归类一致率→95%+</td></tr>';
-  html+='<tr><td>🔵 长期</td><td>季度</td><td>12个月数据训练AI差异预测模型（机型+描述→预判差异项+等级）</td><td>整体差异率→降低30%</td></tr>';
+  // ── 各仓问题诊断 & 改善方向 ──
+  html+='<div style="font-weight:600;font-size:13px;margin-bottom:8px;margin-top:4px">🏢 各仓问题诊断 & 改善方向</div>';
+
+  // 逐仓分析
+  var ccData={};f.forEach(function(r){ccData[r.center]=ccData[r.center]||{t:0,d:0,dr:[],mismatchDr:[],vagueDr:[],subj:0,hasReason:0,merchants:{},items:{}};
+    ccData[r.center].t++; if(r.qtyDiff){ccData[r.center].d++;ccData[r.center].dr.push(r);
+      if(r.subjObj==='主观')ccData[r.center].subj++;
+      if(r.reason&&r.reason!=='—')ccData[r.center].hasReason++;
+      (r.diffItems||[]).forEach(function(i){ccData[r.center].items[i]=(ccData[r.center].items[i]||0)+1;});
+      ccData[r.center].merchants[r.merchant]=(ccData[r.center].merchants[r.merchant]||0)+1;
+    }});
+  // 匹配合并中心仓名（去掉城市前缀统一）
+  var ccShort={};Object.keys(ccData).forEach(function(c){var s=c.replace(/.*?(深圳|广州|长沙|南昌|上海|杭州|北京|天津|成都|重庆|西安|郑州)/,'$1');ccShort[c]=s;});
+  // 逐条分析归类不一致和模糊描述归属
+  analysis.mismatch.forEach(function(x){var c=x.r.center;if(ccData[c])ccData[c].mismatchDr.push(x);});
+  analysis.vague.forEach(function(x){var c=x.r.center;if(ccData[c])ccData[c].vagueDr.push(x);});
+
+  var ccRank=Object.entries(ccData).filter(function(e){return e[1].d>=3;}).sort(function(a,b){return(b[1].d/b[1].t)-(a[1].d/a[1].t);});
+
+  ccRank.forEach(function(e,idx){
+    var c=e[0],d=e[1],diffRate=d.d/d.t*100;
+    var reasonRate=d.dr.length>0?d.hasReason/d.dr.length*100:0;
+    var subjRate=d.dr.length>0?d.subj/d.dr.length*100:0;
+    var misRate=d.dr.length>0?d.mismatchDr.length/d.dr.length*100:0;
+    var vagueRateC=d.dr.length>0?d.vagueDr.length/d.dr.length*100:0;
+    // 根因判定
+    var rootCauses=[];
+    if(subjRate>50&&reasonRate>60)rootCauses.push({tag:'执行差异',desc:'描述清晰但主观率高→不同质检员对同一缺陷判定不一致'});
+    if(misRate>20)rootCauses.push({tag:'归类混乱',desc:'描述与差异项不匹配率高→需校准标准分类认知'});
+    if(vagueRateC>30)rootCauses.push({tag:'描述模糊',desc:'原因描述质量差→需强制使用标准关键词'});
+    if(reasonRate<40)rootCauses.push({tag:'记录缺失',desc:'多数差异无原因描述→无法追溯根因'});
+    // 商户集中度
+    var topM=Object.entries(d.merchants).sort(function(a,b){return b[1]-a[1];}).slice(0,2);
+    var topMShare=d.dr.length>0?topM.reduce(function(s,x){return s+x[1];},0)/d.dr.length*100:0;
+    if(topMShare>40)rootCauses.push({tag:'商户集中',desc:topM[0][0]+'贡献'+topMShare.toFixed(0)+'%差异→重点对接该商户'});
+    if(!rootCauses.length)rootCauses.push({tag:'正常',desc:'各项指标在合理范围内'});
+
+    var sev=diffRate>20?'crit':diffRate>12?'warn':'';
+    html+='<div class="insight-box '+sev+'" style="margin-bottom:10px">';
+    html+='<div class="ititle">'+(idx+1)+'. '+c+' <span style="font-weight:400;font-size:12px;color:var(--muted)">差异率'+pctFmt(diffRate)+'（'+d.d+'/'+d.t+'台） | 主观率'+subjRate.toFixed(0)+'% | 描述覆盖'+reasonRate.toFixed(0)+'%</span></div>';
+    html+='<div class="ibody">';
+    // 根因标签
+    html+='<div style="margin-bottom:6px">🔎 根因：';
+    rootCauses.forEach(function(rc){var cl=rc.tag==='正常'?'ok':rc.tag==='执行差异'||rc.tag==='归类混乱'?'crit':'warn';
+      html+='<span class="tag '+cl+'" style="margin-right:4px" title="'+rc.desc+'">'+rc.tag+'</span>';});
+    html+='</div>';
+    // 改善建议
+    var actions=[];
+    if(subjRate>50)actions.push('统一主观判定标准→明确量化阈值（如"磕碰≤0.5mm豁免"）');
+    if(misRate>20)actions.push('培训标准关键词→描述vs差异项对照表上墙');
+    if(vagueRateC>30)actions.push('APP端强制关键词下拉选择，禁止自由文本提交');
+    if(reasonRate<40)actions.push('差异原因列为必填项，未填写无法提交');
+    if(topMShare>40)actions.push('约谈'+topM[0][0]+'→回传差异明细要求入仓前自查');
+    if(actions.length){
+      html+='<div style="font-size:11px;margin-top:4px">📋 改善行动：'+actions.map(function(a,i){return '<div style="margin:2px 0">'+(i+1)+'. '+a+'</div>';}).join('')+'</div>';
+    }
+    html+='</div></div>';
+  });
+
+  // ── 全局改善路线图 ──
+  html+='<div class="insight-box ok" style="margin-top:10px">';
+  html+='<div class="ititle">🛤️ 全局改善路线图</div><div class="ibody">';
+  html+='<table style="font-size:12px;margin-top:6px"><thead><tr><th>阶段</th><th>定位</th><th>措施</th><th>解决什么问题</th></tr></thead><tbody>';
+  html+='<tr><td>🔴 紧急</td><td>系统+执行</td><td>差异原因必填+30项标准关键词下拉；APP校验模糊描述禁止提交</td><td>消除"无描述""描述模糊"→追溯率→90%+</td></tr>';
+  html+='<tr><td>🟡 短期</td><td>执行校准</td><td>按仓制定培训计划：高频主观项→量化判定标准上墙；关键词→差异项对照表人手一份</td><td>主观争议率→<30%；归类一致率→95%+</td></tr>';
+  html+='<tr><td>🟢 中期</td><td>标准优化</td><td>对归类混乱/主观率高的质检项→回溯标准文档→优化阈值描述（如"磕碰"增加"≤0.5mm/1-3mm/>3mm"三档图片示例）</td><td>标准定义模糊项→全部量化</td></tr>';
+  html+='<tr><td>🔵 长期</td><td>商户协同</td><td>高差异商户建立入仓预检机制+月度差异报告回传；12个月数据训练AI预判模型</td><td>商户端拦截+AI辅助→整体差异率降低30%</td></tr>';
   html+='</tbody></table></div></div>';
 
   var el=document.getElementById('anaInsight');if(el)el.innerHTML=html;
