@@ -579,7 +579,7 @@ function renderMerchantTop(){
   // 点击行 → 筛选明细
   host.querySelectorAll('.mclick').forEach(el=>{
     el.addEventListener('click',()=>{
-      const m=el.dataset.m; state.selMerchant=m; const tbl=document.getElementById("detailTable"); if(tbl){ tbl.scrollIntoView({behavior:"smooth"}); } setTimeout(()=>{ document.querySelectorAll("#detailTable tbody tr").forEach(r=>{ r.style.background=r.textContent.includes(m)?"color-mix(in srgb,var(--s3) 18%,transparent)":""; }); },200); renderDiffItems(); renderDescAnalysis(); });
+      const m=el.dataset.m; state.selMerchant=m; renderDiffItems(); renderDescAnalysis(); const di=document.getElementById("diffItems"); if(di){ di.scrollIntoView({behavior:"smooth"}); } setTimeout(()=>{ document.querySelectorAll("#detailTable tbody tr").forEach(r=>{ r.style.background=r.textContent.includes(m)?"color-mix(in srgb,var(--s3) 18%,transparent)":""; }); },300); });
   });
 }
 
@@ -628,7 +628,7 @@ function renderDiffItems(){
     html+='</div>';
   }
   const host=document.getElementById('diffItems');host.innerHTML=html;
-  host.querySelectorAll('.diffmclick').forEach(el=>{el.addEventListener('click',()=>{const m=el.dataset.m;document.getElementById('detailTable')?.scrollIntoView({behavior:'smooth'});setTimeout(()=>{document.querySelectorAll('#detailTable tbody tr').forEach(r=>{r.style.background=r.textContent.includes(m)?'color-mix(in srgb,var(--s3) 18%,transparent)':'';});},200);});});
+  host.querySelectorAll('.diffmclick').forEach(el=>{el.addEventListener('click',()=>{const m=el.dataset.m;linkToDesc(m);});});
 }
 
 function renderSplits(){
