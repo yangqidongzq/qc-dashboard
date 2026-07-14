@@ -495,7 +495,7 @@ function renderDaily(){
     html+='<tr><td class="tnum" style="font-weight:600">'+d+'日</td>';
     inspOrder.forEach(n=>{
       const v=data[d][n]||0;
-      html+='<td class="num tnum dayclick" data-d="'+d+'" data-n="'+n+'" style="cursor:pointer;background:'+heat(v)+'" title="点击查看'+n+' '+d+'日明细">'+(v>0?'<span style="color:'+(v>=CFG.dailyTarget?"var(--good-ink)":"var(--crit)")+'">'+v+'</span>':'<span style="font-size:10px;color:var(--muted)">休</span>')+'</td>';
+      html+='<td class="num tnum dayclick" data-d="'+d+'" data-n="'+n+'" style="cursor:pointer;background:'+heat(v)+'" title="点击查看'+n+' '+d+'日明细">'+(v>0?'<span style="color:'+(v>=CFG.dailyTarget?"var(--good-ink)":"var(--crit)")+'">'+v+'</span>':'<span style="font-size:12px;color:var(--muted);opacity:.6">休</span>')+'</td>';
     });
     html+='<td class="num tnum" style="font-weight:600;background:var(--surface-1)">'+dTotals[d]+'</td></tr>';
   });
