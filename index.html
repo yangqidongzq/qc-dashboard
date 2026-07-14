@@ -502,7 +502,7 @@ function renderDaily(){
     html+='<tr><td class="tnum" style="font-weight:600">'+d+'日</td>';
     inspOrder.forEach(n=>{
       const v=data[d][n]||0;
-      html+='<td class="num tnum" style="background:'+heat(v)+';color:'+tc(v)+'">'+(v>0?v:'')+'</td>';
+      html+='<td class="num tnum" style="background:'+heat(v)+';color:'+tc(v)+'">'+(v>0?v:'<span style="font-size:10px;color:var(--muted)">休</span>')+'</td>';
     });
     html+='<td class="num tnum" style="font-weight:600;background:var(--surface-1)">'+dTotals[d]+'</td></tr>';
   });
