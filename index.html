@@ -187,13 +187,16 @@ svg{display:block; width:100%; height:auto}
       <div class="regiongrid" id="regionGrid"></div>
     </div>
 
-    <div class="card col-12">
-      <h3>每日质检量 · 单人明细 + 中心仓达成 <span class="hint">热力图 · 100台/人/日</span></h3>
-      <div class="csub" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-        <span>日期×巡检人员交叉表，深色=台数多，浅色=台数少，休=当天休息。</span>
-        <span id="centerStats" style="font-size:12px;font-weight:600"></span>
-      </div>
+    <div class="card col-7">
+      <h3>每日质检量 · 单人明细（台）<span class="hint">热力图</span></h3>
+      <div class="csub">日期×巡检人员交叉表，颜色深度=台数。横向合计=当日总量，纵向合计=个人总量。</div>
       <div id="dailyChart"></div>
+    </div>
+
+    <div class="card col-5">
+      <h3>中心仓达成 <span class="hint">100×人日</span></h3>
+      <div class="csub">各仓实际 vs 目标。</div>
+      <div id="progress"></div>
     </div>
 
     <div class="card col-7">
