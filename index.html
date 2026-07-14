@@ -463,9 +463,13 @@ function deriveDims(){ if(typeof window!=='undefined' && window.QC_DATA && windo
 function linkToDesc(dt){state.hlDesc=dt;var da=document.getElementById('descAnalysis');if(da)da.scrollIntoView({behavior:'smooth'});renderDescAnalysis();}
 /* ====== 差异分析模块 ====== */
 var _CM=[{re:/iPhone\s*X/i,iss:'屏幕偏光老化/透图',dsc:'iPhone X OLED通病，2-3年状态栏透图'},{re:/iPhone\s*1[1-3]/i,iss:'屏幕泛黄/原彩缺失',dsc:'LCD背光老化泛黄'},{re:/iPhone\s*12/i,iss:'听筒无声/音小',dsc:'12系列听筒模块召回关联'},{re:/iPhone\s*1[3-4].*Pro/i,iss:'屏幕绿线/白屏',dsc:'OLED面板批次通病'},{re:/华为.*Mate\s*30/i,iss:'按键弹性差/老化',dsc:'使用2年+按键橡胶老化'},{re:/华为.*折叠|Mate\s*X/i,iss:'折痕/转轴松动',dsc:'折叠屏机械磨损'},{re:/小米.*1[1-3]/i,iss:'尾插松动/充电断续',dsc:'Type-C焊点疲劳'},{re:/OPPO.*Find\s*X/i,iss:'升降摄像头卡顿',dsc:'升降机构进灰'},{re:/三星.*Fold|三星.*Flip/i,iss:'折痕/贴膜起泡',dsc:'UTG玻璃折痕不可逆'},{re:/华为.*P\d+/i,iss:'电池鼓包/健康下降',dsc:'非原装充电器加速'},{re:/iPad/i,iss:'屏幕白斑/老化',dsc:'长期高亮度背光老化'},{re:/MacBook/i,iss:'屏幕涂层脱落',dsc:'Retina涂层老化'}];
-var _KW=[{re:/屏幕碎|屏碎|碎裂/i,cat:'屏幕外观',tag:'屏幕碎裂'},{re:/划痕|划伤|刮痕/i,cat:'屏幕外观',tag:'屏幕划痕'},{re:/外壳碎|后壳碎|后盖碎|背板碎/i,cat:'外壳外观',tag:'外壳碎裂'},{re:/外壳划|后壳划|边框划|中框划/i,cat:'外壳外观',tag:'外壳划痕'},{re:/磕碰|磕伤|碰伤/i,cat:'外壳外观',tag:'外壳磕碰'},{re:/弯曲|变形|弯/i,cat:'外壳外观',tag:'机身弯曲'},{re:/脱胶|开胶|缝隙|翘起/i,cat:'外壳外观',tag:'脱胶缝隙'},{re:/漏液|液晶漏|屏幕漏/i,cat:'屏幕显示',tag:'屏幕漏液'},{re:/坏点|亮点|亮斑|暗点/i,cat:'屏幕显示',tag:'坏点/亮点'},{re:/透图|烧屏|残影|烙印/i,cat:'屏幕显示',tag:'透图/烧屏'},{re:/泛红|泛黄|发红|发黄|偏色/i,cat:'屏幕显示',tag:'屏幕偏色'},{re:/气泡|屏幕泡/i,cat:'屏幕显示',tag:'屏幕气泡'},{re:/进灰|灰尘|有灰/i,cat:'屏幕显示',tag:'屏幕进灰'},{re:/色斑|白斑|黑斑/i,cat:'屏幕显示',tag:'色斑'},{re:/无信号|不读卡|信号弱|无服务/i,cat:'功能',tag:'SIM信号'},{re:/不充电|充不了|无法充电|充电异常/i,cat:'功能',tag:'充电异常'},{re:/外放|扬声器|喇叭|声音小|无声|杂音/i,cat:'功能',tag:'扬声器'},{re:/听筒|接听/i,cat:'功能',tag:'听筒'},{re:/WiFi|wifi|无线网|WLAN/i,cat:'功能',tag:'WiFi'},{re:/面容|face.?id|人脸|面部/i,cat:'功能',tag:'面容识别'},{re:/指纹|touch.?id/i,cat:'功能',tag:'指纹'},{re:/摄像头|相机|后摄|前摄|镜头/i,cat:'功能',tag:'摄像头'},{re:/闪光灯|手电筒/i,cat:'功能',tag:'闪光灯'},{re:/按键|电源键|音量键|home键/i,cat:'功能',tag:'按键'},{re:/浸液|进水|受潮|发霉|生锈|防水标/i,cat:'拆修',tag:'浸液'},{re:/拆修|拆过|维修|更换|换过|非原装|组装/i,cat:'拆修',tag:'拆修痕迹'},{re:/电池|健康度|电池效率/i,cat:'功能',tag:'电池健康'},{re:/触摸|触控|触屏|断触|不灵敏|失灵/i,cat:'功能',tag:'触控'},{re:/重启|死机|卡死|自动关机|反复重启/i,cat:'功能',tag:'重启死机'},{re:/拍照|对焦|不对焦|模糊/i,cat:'功能',tag:'拍照'}];
+var _KW=[{re:/屏幕碎|屏碎|碎裂|crack/i,cat:'屏幕外观',exp:'外观',tag:'屏幕碎裂',th:'≤1.5mm×1→7级 | >5mm→不进卖场'},{re:/划痕|划伤|刮痕/i,cat:'屏幕外观',exp:'外观',tag:'屏幕划痕',th:'无(≤2条)→99 | >10条→9级 | 深>10mm→不进'},{re:/外壳碎|后壳碎|后盖碎|背板碎/i,cat:'外壳外观',exp:'外观',tag:'外壳碎裂',th:'≤2mm→8级 | 2-10mm→7级 | >10mm→不进卖场'},{re:/外壳划|后壳划|边框划|中框划/i,cat:'外壳外观',exp:'外观',tag:'外壳划痕',th:'≤3mm→99 | >20mm→8级'},{re:/磕碰|磕伤|碰伤/i,cat:'外壳外观',exp:'外观',tag:'外壳磕碰',th:'≤0.5mm→99 | >3mm→不进卖场'},{re:/弯曲|变形|弯/i,cat:'外壳外观',exp:'外观',tag:'机身弯曲',th:'<1mm→99 | 1-2mm→8级 | >2mm→不进卖场'},{re:/脱胶|开胶|缝隙|翘起/i,cat:'外壳外观',exp:'外观',tag:'脱胶缝隙',th:'<0.3mm→99 | ≥0.3mm→不进卖场'},{re:/漏液|液晶漏|屏幕漏/i,cat:'屏幕显示',exp:'显示',tag:'屏幕漏液',th:'→不进卖场'},{re:/坏点|亮点|亮斑|暗点/i,cat:'屏幕显示',exp:'显示',tag:'坏点/亮点',th:'≤0.5mm×3→9级 | >6个→不进卖场'},{re:/透图|烧屏|残影|烙印/i,cat:'屏幕显示',exp:'显示',tag:'透图/烧屏',th:'状态栏可拍→95 | >30mm→不进卖场'},{re:/泛红|泛黄|发红|发黄|偏色/i,cat:'屏幕显示',exp:'显示',tag:'屏幕偏色',th:'轻微不可拍→99 | 明显可拍→8级'},{re:/气泡|屏幕泡/i,cat:'屏幕显示',exp:'显示',tag:'屏幕气泡',th:'≤1mm×3→9级 | 超标→不进卖场'},{re:/进灰|灰尘/i,cat:'屏幕显示',exp:'显示',tag:'屏幕进灰',th:'≤0.5mm×3→99 | 超标→9级'},{re:/色斑|白斑|黑斑/i,cat:'屏幕显示',exp:'显示',tag:'色斑',th:'≤5mm→9级 | >5mm→不进卖场'},{re:/无信号|不读卡|信号弱|无服务/i,cat:'功能',exp:'功能',tag:'SIM信号',th:'正常→99 | 不读卡/基带坏→不进卖场'},{re:/不充电|充不了|无法充电|充电异常/i,cat:'功能',exp:'功能',tag:'充电异常',th:'正常→99 | 接触不良/异常→不进卖场'},{re:/外放|扬声器|喇叭|声音小|无声|杂音/i,cat:'功能',exp:'功能',tag:'扬声器',th:'正常→99 | 轻微杂音→9级 | 无声→不进卖场'},{re:/听筒/i,cat:'功能',exp:'功能',tag:'听筒',th:'正常→99 | 音量小→7- | 无声→不进卖场'},{re:/WiFi|wifi|无线网|WLAN/i,cat:'功能',exp:'功能',tag:'WiFi',th:'正常→99 | 异常→不进卖场'},{re:/面容|face.?id|人脸|面部/i,cat:'功能',exp:'功能',tag:'面容识别',th:'正常→99 | 无法录入→7级'},{re:/指纹|touch.?id/i,cat:'功能',exp:'功能',tag:'指纹',th:'正常→99 | 无法录入→7级'},{re:/摄像头|相机|后摄|前摄|镜头/i,cat:'功能',exp:'功能',tag:'摄像头',th:'正常→99 | 有斑→9+ | 异常→不进卖场'},{re:/闪光灯|手电筒/i,cat:'功能',exp:'功能',tag:'闪光灯',th:'正常→99 | 异常→7级'},{re:/按键|电源键|音量键|home键/i,cat:'功能',exp:'功能',tag:'按键',th:'正常→99 | 凹陷弹性差→7 | 失灵→不进卖场'},{re:/浸液|进水|受潮|发霉|生锈|防水标/i,cat:'拆修',exp:'浸液',tag:'浸液',th:'→不进卖场'},{re:/拆修|拆过|维修|更换|换过|非原装|组装/i,cat:'拆修',exp:'拆修',tag:'拆修痕迹',th:'材质不符→7~不进 | 主板维修→不进卖场'},{re:/电池|健康度|电池效率/i,cat:'功能',exp:'功能',tag:'电池健康',th:'95-100%→99 | <70%→不进卖场'},{re:/触摸|触控|触屏|断触|不灵敏|失灵/i,cat:'功能',exp:'功能',tag:'触控',th:'正常→99 | 异常→不进卖场'},{re:/重启|死机|卡死|自动关机|反复重启/i,cat:'功能',exp:'功能',tag:'重启死机',th:'→不进卖场'},{re:/拍照|对焦|不对焦|模糊/i,cat:'功能',exp:'功能',tag:'拍照',th:'正常→99 | 有斑→9+ | 无法打开→不进卖场'}];
+// 标准阈值速查（用于判定合理性）
+var _STD={屏幕碎裂:{min:'无',g99:'≤1.5mm×1',g7:'1.5-5mm×1',block:'>5mm或>1'},外壳碎裂:{min:'无',g8:'≤2mm',g7:'2-10mm',block:'>10mm'},外壳磕碰:{min:'无',g99:'≤0.5mm×1',g95:'0.5-1mm或2-5',g9:'1-3mm或6-10',block:'>3mm或>10'},机身弯曲:{min:'无',g99:'<1mm',g8:'1-2mm',block:'>2mm'},脱胶缝隙:{min:'无',g99:'<0.3mm',block:'≥0.3mm'}};
 function _tagKW(t){for(var i=0;i<_KW.length;i++){if(_KW[i].re.test(t||''))return _KW[i];}return null;}
 function _findCM(m){var r=[];for(var i=0;i<_CM.length;i++){if(_CM[i].re.test(m||''))r.push(_CM[i]);}return r;}
+// 类别→差异项映射
+function _catToDiff(cat){if(cat==='屏幕外观'||cat==='外壳外观')return'外观';if(cat==='屏幕显示')return'显示';if(cat==='功能')return'功能';if(cat==='拆修')return'拆修';return null;}
 function renderAnaModel(){
   var f=getFiltered(),dr=f.filter(function(r){return r.qtyDiff>0||(r.diffItems&&r.diffItems.length);});
   var md={};dr.forEach(function(r){var m=r.model||'未知';md[m]=md[m]||{d:0,it:{}};md[m].d++;(r.diffItems||[]).forEach(function(i){md[m].it[i]=(md[m].it[i]||0)+1;});});
@@ -477,132 +481,116 @@ function renderAnaModel(){
 }
 function renderAnaInsight(){
   var f=getFiltered(),dr=f.filter(function(r){return r.qtyDiff>0||(r.diffItems&&r.diffItems.length);});
-  var total=f.length,diffCount=dr.length,diffRate=total>0?diffCount/total*100:0;
-  // 按差异项统计
-  var id={};dr.forEach(function(r){(r.diffItems||[]).forEach(function(i){id[i]=(id[i]||0)+1;});});
-  var ti=Object.entries(id).sort(function(a,b){return b[1]-a[1];});
-  // 描述缺失统计
-  var hasReason=dr.filter(function(r){return r.reason&&r.reason!=='—'&&r.reason!=='';}).length;
-  var noReason=diffCount-hasReason,reasonCover=diffCount>0?hasReason/diffCount*100:0;
-  // 通病匹配统计
+  var total=f.length,diffCount=dr.length;
+
+  // ═══ 核心分析：逐条差异描述 vs 标准 + 差异项归类一致性 ═══
+  var hasReason=dr.filter(function(r){return r.reason&&r.reason!=='—'&&r.reason!=='';});
+  var noReason=diffCount-hasReason.length;
+  // 逐条分析有描述的差异
+  var analysis={match:[],mismatch:[],vague:[],noReason:diffCount-hasReason.length};
+  hasReason.forEach(function(r){
+    (r.diffItems||[]).forEach(function(diffItem){
+      var kw=_tagKW(r.reason);
+      if(!kw){analysis.vague.push({r:r,di:diffItem});return;}
+      var expected=_catToDiff(kw.cat);
+      if(!expected||expected===diffItem){analysis.match.push({r:r,di:diffItem,kw:kw});}
+      else {analysis.mismatch.push({r:r,di:diffItem,kw:kw,expected:expected});}
+    });
+  });
+  var totalAnalyzed=analysis.match.length+analysis.mismatch.length+analysis.vague.length;
+  var matchRate=totalAnalyzed>0?analysis.match.length/totalAnalyzed*100:0;
+  var mismatchRate=totalAnalyzed>0?analysis.mismatch.length/totalAnalyzed*100:0;
+  var vagueRate=totalAnalyzed>0?analysis.vague.length/totalAnalyzed*100:0;
+
+  // 通病匹配
   var cmc=0;dr.forEach(function(r){if(_findCM(r.model).length>0)cmc++;});
   var commonRate=diffCount>0?cmc/diffCount*100:0;
-  // 商户集中度
-  var xd={};dr.forEach(function(r){xd[r.merchant]=(xd[r.merchant]||0)+1;});
-  var tm=Object.entries(xd).sort(function(a,b){return b[1]-a[1];}).slice(0,5);
-  // 主观vs客观
-  var subj=dr.filter(function(r){return r.subjObj==='主观';}).length;
-  var obj=dr.filter(function(r){return r.subjObj==='客观';}).length;
-  var subjRate=diffCount>0?subj/diffCount*100:0;
   // 中心仓差异率
   var cc={};f.forEach(function(r){cc[r.center]=cc[r.center]||{t:0,d:0};cc[r.center].t++;if(r.qtyDiff)cc[r.center].d++;});
   var cr=Object.entries(cc).filter(function(e){return e[1].t>=10;}).sort(function(a,b){return(b[1].d/b[1].t)-(a[1].d/a[1].t);});
-  // 业务线差异率
-  var bl={};f.forEach(function(r){bl[r.bizline]=bl[r.bizline]||{t:0,d:0};bl[r.bizline].t++;if(r.qtyDiff)bl[r.bizline].d++;});
 
-  var bar=function(v,max,w,color){w=w||100;var p=Math.min(v/max*100,100);return '<div class="match-bar"><div class="bar-track" style="width:'+w+'px"><div class="bar-fill" style="width:'+p+'%;background:'+(color||'var(--s1)')+'"></div></div></div>';};
+  var bar=function(v,max,w,c){w=w||100;var p=Math.min(v/max*100,100);return '<div style="flex:1;height:6px;background:var(--track);border-radius:3px;overflow:hidden"><div style="width:'+p+'%;height:100%;background:'+(c||'var(--s1)')+';border-radius:3px"></div></div>';};
   var pctFmt=function(v){return v.toFixed(1)+'%';};
-  var kpiCard=function(icon,label,val,unit,sub,color,good){
-    return '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:11px 14px;text-align:center;min-width:100px;flex:1">'+
-      '<div style="font-size:20px;margin-bottom:3px">'+icon+'</div>'+
-      '<div style="font-size:22px;font-weight:700;color:'+(color||'var(--ink)')+'">'+val+'<span style="font-size:12px;font-weight:400;color:var(--muted);margin-left:2px">'+unit+'</span></div>'+
-      '<div style="font-size:11px;color:var(--muted);margin-bottom:2px">'+label+'</div>'+
-      '<div style="font-size:11px;color:'+(good?'var(--good-ink)':'var(--ink-2)')+'">'+sub+'</div></div>';
-  };
-
   var html='';
 
   // ── KPI行 ──
-  html+='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">';
-  html+=kpiCard('📦','差异台数',diffCount,'台','差异率 '+pctFmt(diffRate),diffRate>20?'var(--crit)':diffRate>10?'var(--warn)':'var(--good-ink)',diffRate<10);
-  html+=kpiCard('📝','描述覆盖',Math.round(reasonCover),'%',hasReason+'/'+diffCount+'台',reasonCover>70?'var(--good-ink)':reasonCover>40?'var(--warn)':'var(--crit)',reasonCover>70);
-  html+=kpiCard('🔍','通病匹配',Math.round(commonRate),'%',cmc+'/'+diffCount+'台',commonRate>20?'var(--warn)':'var(--s1)');
-  html+=kpiCard('⚖️','主观占比',Math.round(subjRate),'%','主观'+subj+' · 客观'+obj,subjRate>60?'var(--warn)':subjRate<40?'var(--good-ink)':'var(--s1)');
+  html+='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">';
+  html+='<div style="flex:1;min-width:110px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center"><div style="font-size:22px;font-weight:700;color:'+(matchRate>70?'var(--good-ink)':matchRate>40?'var(--warn)':'var(--crit)')+'">'+pctFmt(matchRate)+'</div><div style="font-size:11px;color:var(--muted)">✅ 描述-差异项一致</div><div style="font-size:10px;color:var(--ink-2)">'+analysis.match.length+'条</div></div>';
+  html+='<div style="flex:1;min-width:110px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center"><div style="font-size:22px;font-weight:700;color:'+(mismatchRate<10?'var(--good-ink)':mismatchRate<25?'var(--warn)':'var(--crit)')+'">'+pctFmt(mismatchRate)+'</div><div style="font-size:11px;color:var(--muted)">⚠️ 归类不一致</div><div style="font-size:10px;color:var(--ink-2)">'+analysis.mismatch.length+'条</div></div>';
+  html+='<div style="flex:1;min-width:110px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center"><div style="font-size:22px;font-weight:700;color:'+(vagueRate<30?'var(--good-ink)':vagueRate<50?'var(--warn)':'var(--crit)')+'">'+pctFmt(vagueRate)+'</div><div style="font-size:11px;color:var(--muted)">🔍 描述模糊</div><div style="font-size:10px;color:var(--ink-2)">'+analysis.vague.length+'条</div></div>';
+  html+='<div style="flex:1;min-width:110px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;text-align:center"><div style="font-size:22px;font-weight:700;color:'+(noReason===0?'var(--good-ink)':'var(--crit)')+'">'+noReason+'</div><div style="font-size:11px;color:var(--muted)">❌ 无原因描述</div><div style="font-size:10px;color:var(--ink-2)">'+(diffCount>0?pctFmt(noReason/diffCount*100):'0%')+'</div></div>';
   html+='</div>';
 
-  // ── 差异项分布 ──
-  html+='<div style="margin-bottom:14px;background:var(--surface-1);border-radius:10px;padding:14px 16px">';
-  html+='<div style="font-weight:600;font-size:13px;margin-bottom:10px">📊 差异项分布</div>';
-  var colors=['var(--s6)','var(--s1)','var(--s8)','var(--s2)','var(--s5)','var(--s3)'];
-  ti.forEach(function(e,idx){
-    var p=e[1]/diffCount*100;
-    html+='<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span>'+e[0]+'</span><span style="font-weight:600">'+e[1]+'台 <span style="color:var(--muted);font-weight:400">'+pctFmt(p)+'</span></span></div>';
-    html+='<div class="meter" style="height:8px"><span style="width:'+Math.min(p,100)+'%;background:'+colors[idx%colors.length]+'"></span></div></div>';
-  });
-  html+='</div>';
+  // ── 判定结论 ──
+  html+='<div style="font-weight:600;font-size:13px;margin-bottom:8px">📋 基于品类标准的差异合理性判定</div>';
 
-  // ── 改善方向卡片 ──
-  html+='<div style="font-weight:600;font-size:13px;margin-bottom:8px">🎯 改善方向 & 行动建议</div>';
+  // 归类不一致明细
+  if(analysis.mismatch.length>0){
+    html+='<div class="insight-box crit" style="margin-bottom:10px">';
+    html+='<div class="ititle">⚠️ 差异项归类不一致：'+analysis.mismatch.length+'条（标准关键词与实际差异项不匹配）</div>';
+    html+='<div class="ibody"><b>问题：</b>以下记录的差异原因描述指向的标准类别与勾选的差异项不符，可能导致成色定级偏差。<br>';
+    // 去重后展示TOP5不一致类型
+    var mmTypes={};
+    analysis.mismatch.forEach(function(x){var key=x.kw.tag+'('+x.kw.cat+')→误标为"'+x.di+'"应标"'+x.expected+'"';mmTypes[key]=(mmTypes[key]||0)+1;});
+    var topMM=Object.entries(mmTypes).sort(function(a,b){return b[1]-a[1];}).slice(0,5);
+    topMM.forEach(function(e){html+='<div style="font-size:12px;margin:3px 0">• '+e[0]+'：<b>'+e[1]+'次</b></div>';});
+    // 展示2条具体示例
+    var samples=analysis.mismatch.slice(0,2);
+    html+='<div style="font-size:11px;color:var(--muted);margin-top:6px"><b>示例：</b></div>';
+    samples.forEach(function(x){html+='<div style="font-size:11px;color:var(--ink-2);margin:2px 0">「'+x.r.reason+'」→ 关键词「'+x.kw.tag+'」属<b>'+x.kw.cat+'</b>应标<b>'+x.expected+'</b>，实际标<b>'+x.di+'</b></div>';});
+    html+='<b>建议：</b>① 质检APP增加实时校验——描述关键词自动建议差异项 ② 对归类不一致的'+analysis.mismatch.length+'条记录<b>回溯复核</b>成色等级 ③ 培训质检员使用标准关键词描述</div></div>';
+  }
 
-  // 1. 描述缺失
-  if(noReason>0){
-    var sev=reasonCover<30?'crit':reasonCover<60?'warn':'';
+  // 描述模糊问题
+  if(analysis.vague.length>0){
+    var sev=vagueRate>40?'crit':'warn';
     html+='<div class="insight-box '+sev+'" style="margin-bottom:10px">';
-    html+='<div class="ititle">⚠️ 差异原因描述缺失：'+noReason+'台（'+pctFmt(100-reasonCover)+'）</div>';
-    html+='<div class="ibody">';
-    html+='<b>现状：</b>'+diffCount+'条差异中'+noReason+'条无原因说明，无法追溯根因。<br>';
-    html+='<b>建议：</b>① APP端"差异原因"设为<b>必填项</b> ② 提供下拉选择（屏幕碎裂/外壳划痕/充电异常等30项标准关键词）替代自由输入 ③ 拍照模板增加"一图一描述"强制校验<br>';
-    html+='<b>模板：</b>描述覆盖率 → 90%+</div></div>';
+    html+='<div class="ititle">🔍 描述模糊无法判定：'+analysis.vague.length+'条（'+(totalAnalyzed>0?pctFmt(vagueRate):'—')+'）</div>';
+    html+='<div class="ibody"><b>问题：</b>以下描述无法匹配到30项标准关键词，无法自动判定合理性。<br>';
+    // 展示模糊描述示例
+    var vagueSamples={};
+    analysis.vague.forEach(function(x){var d=x.r.reason;if(d)vagueSamples[d]=(vagueSamples[d]||0)+1;});
+    var topVague=Object.entries(vagueSamples).sort(function(a,b){return b[1]-a[1];}).slice(0,4);
+    topVague.forEach(function(e){html+='<div style="font-size:12px;margin:2px 0">• 「'+e[0]+'」：<b>'+e[1]+'台</b></div>';});
+    html+='<b>建议：</b>① 制定<b>30项标准关键词下拉菜单</b>强制选择 ② 模糊描述禁止提交（APP校验） ③ 对现有模糊描述人工补标</div></div>';
   }
 
-  // 2. 通病匹配
-  if(cmc>0){
-    html+='<div class="insight-box" style="margin-bottom:10px">';
-    html+='<div class="ititle">🔍 已知通病匹配：'+cmc+'台（'+pctFmt(commonRate)+'）</div>';
-    html+='<div class="ibody">';
-    html+='<b>现状：</b>'+cmc+'台差异与机型通病库匹配（如iPhone X透图、Mate30按键老化等）<br>';
-    html+='<b>建议：</b>① 对<b>高频通病机型建立专项抽检清单</b>，送检前商户收到通病告知 ② 通病项自动标注"客观"减少争议 ③ 收集更多机型通病数据持续扩充通病库<br>';
-    html+='<b>模板：</b>通病匹配差异 → 自动判定客观，减少主观争议</div></div>';
+  // 无描述
+  if(noReason>0){
+    html+='<div class="insight-box '+(noReason/diffCount>0.3?'crit':'warn')+'" style="margin-bottom:10px">';
+    html+='<div class="ititle">❌ 无原因描述：'+noReason+'台（'+pctFmt(noReason/diffCount*100)+'）</div>';
+    html+='<div class="ibody"><b>影响：</b>无法追溯差异根因，无法验证成色定级是否合理。<b>建议：</b>差异原因设为必填+30项标准关键词下拉+拍照强制留档</div></div>';
   }
 
-  // 3. 中心仓对比
-  if(cr.length>1){
-    var best=cr[cr.length-1],worst=cr[0];
-    var gap=worst[1].d/worst[1].t*100-best[1].d/best[1].t*100;
-    var sev2=gap>15?'crit':gap>8?'warn':'';
-    html+='<div class="insight-box '+sev2+'" style="margin-bottom:10px">';
-    html+='<div class="ititle">🏢 中心仓差异率对比（差距'+pctFmt(gap)+'）</div>';
-    html+='<div class="ibody">';
-    cr.forEach(function(e){
-      var r=e[1].d/e[1].t*100,maxR=worst[1].d/worst[1].t*100;
-      html+='<div style="margin:4px 0;display:flex;align-items:center;gap:8px;font-size:12px"><span style="width:70px;text-align:right">'+e[0]+'</span>'+bar(r,maxR,140,'var(--s2)')+'<span style="font-weight:600;width:44px">'+pctFmt(r)+'</span><span style="color:var(--muted);font-size:10px">'+e[1].d+'/'+e[1].t+'台</span></div>';
-    });
-    html+='<b>建议：</b>① '+worst[0]+'差异率最高→<b>组织专项培训</b>，对照SOP重新校准 ② '+best[0]+'差异率最低→<b>提炼经验分享</b>给其他仓 ③ 每月做一次跨仓校准会议</div></div>';
-  }
-
-  // 4. 商户集中度
-  if(tm.length>0){
-    var top3Sum=tm.slice(0,3).reduce(function(s,e){return s+e[1];},0);
-    var sev3=top3Sum/diffCount>0.4?'crit':top3Sum/diffCount>0.25?'warn':'';
-    html+='<div class="insight-box '+sev3+'" style="margin-bottom:10px">';
-    html+='<div class="ititle">🏭 商户差异集中度：TOP5贡献'+top3Sum+'台（'+pctFmt(top3Sum/diffCount*100)+'）</div>';
-    html+='<div class="ibody">';
-    tm.forEach(function(e,idx){
-      var p=e[1]/diffCount*100;
-      html+='<div style="margin:4px 0;display:flex;align-items:center;gap:8px;font-size:12px"><span style="width:16px;color:var(--muted)">'+(idx+1)+'</span><span style="width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+e[0]+'</span>'+bar(e[1],tm[0][1],120,'var(--s8)')+'<span style="font-weight:600">'+e[1]+'台</span></div>';
-    });
-    html+='<b>建议：</b>① 对TOP3商户<b>回传差异明细</b>，要求入仓前自查 ② 高差异商户设置<b>入仓预检门槛</b> ③ 连续3个月高差异→<b>降级或暂停合作</b></div></div>';
-  }
-
-  // 5. 业务线对比
-  if(Object.keys(bl).length>1){
-    html+='<div class="insight-box" style="margin-bottom:10px">';
-    html+='<div class="ititle">📋 业务线差异率对比</div>';
-    html+='<div class="ibody">';
-    var blEntries=Object.entries(bl).sort(function(a,b){return(b[1].d/b[1].t)-(a[1].d/a[1].t);});
-    blEntries.forEach(function(e){var r=e[1].d/e[1].t*100;html+='<span style="margin-right:16px"><b>'+e[0]+'</b>：'+pctFmt(r)+'（'+e[1].d+'/'+e[1].t+'）</span>';});
+  // 归类一致-良好
+  if(analysis.match.length>0){
+    html+='<div class="insight-box ok" style="margin-bottom:10px">';
+    html+='<div class="ititle">✅ 描述-差异项一致：'+analysis.match.length+'条（'+pctFmt(matchRate)+'）</div>';
+    html+='<div class="ibody">这些记录的差异描述关键词与勾选的差异项类别匹配，归类合理。常见关键词分布：';
+    var kwDist={};analysis.match.forEach(function(x){kwDist[x.kw.tag]=(kwDist[x.kw.tag]||0)+1;});
+    var topKW=Object.entries(kwDist).sort(function(a,b){return b[1]-a[1];}).slice(0,5);
+    topKW.forEach(function(e){html+='<span class="pattern-chip">'+e[0]+'<span class="n">'+e[1]+'</span></span> ';});
     html+='</div></div>';
   }
 
-  // 6. 改善路线图
-  html+='<div class="insight-box ok" style="margin-top:10px">';
-  html+='<div class="ititle">🛤️ 改善路线图</div>';
-  html+='<div class="ibody">';
-  html+='<table style="font-size:12px;margin-top:6px"><thead><tr><th>阶段</th><th>时间</th><th>措施</th><th>预期效果</th></tr></thead><tbody>';
-  html+='<tr><td>🔴 紧急</td><td>1-2周</td><td>APP差异原因改为必填+30项标准关键词下拉；拍照模板增加描述校验</td><td>描述覆盖率→80%+</td></tr>';
-  html+='<tr><td>🟡 短期</td><td>1个月</td><td>高差异商户回传明细+入仓预检；高频通病机型专项抽检清单上线</td><td>通病项主观→客观自动判定</td></tr>';
-  html+='<tr><td>🟢 中期</td><td>1-2个月</td><td>建立机型×通病×标准阈值自动判定引擎；跨仓校准会议制度化</td><td>中心仓间差异率差距<5%</td></tr>';
-  html+='<tr><td>🔵 长期</td><td>季度</td><td>收集12个月数据训练差异预测模型；商户送检前自动预估高风险项</td><td>整体差异率降低30%</td></tr>';
+  // ── 中心仓差异率对比 ──
+  if(cr.length>1){
+    var best=cr[cr.length-1],worst=cr[0];
+    var gap=worst[1].d/worst[1].t*100-best[1].d/best[1].t*100;
+    html+='<div class="insight-box '+(gap>15?'crit':gap>8?'warn':'')+'" style="margin-bottom:10px">';
+    html+='<div class="ititle">🏢 中心仓差异率（差距'+pctFmt(gap)+'）</div><div class="ibody">';
+    cr.forEach(function(e){var r=e[1].d/e[1].t*100;html+='<div style="margin:3px 0;display:flex;align-items:center;gap:8px;font-size:12px"><span style="width:72px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+e[0]+'</span>'+bar(r,worst[1].d/worst[1].t*100,120,'var(--s2)')+'<b>'+pctFmt(r)+'</b><span style="color:var(--muted);font-size:10px">'+e[1].d+'/'+e[1].t+'</span></div>';});
+    html+='<b>建议：</b>'+worst[0]+'差异率最高→<b>专项培训+对照SOP校准</b>；'+best[0]+'经验→提炼分享给其他仓</div></div>';
+  }
+
+  // ── 改善路线图 ──
+  html+='<div class="insight-box ok">';
+  html+='<div class="ititle">🛤️ 改善路线图</div><div class="ibody">';
+  html+='<table style="font-size:12px;margin-top:6px"><thead><tr><th>阶段</th><th>时间</th><th>措施</th><th>模板</th></tr></thead><tbody>';
+  html+='<tr><td>🔴 紧急</td><td>1-2周</td><td>差异原因改为必填+30项标准关键词下拉；APP校验禁止模糊描述提交</td><td>描述覆盖率→90%+；模糊率→<10%</td></tr>';
+  html+='<tr><td>🟡 短期</td><td>1个月</td><td>关键词→差异项自动建议（消除归类不一致）；回溯复核'+analysis.mismatch.length+'条不一致记录</td><td>归类一致率→95%+</td></tr>';
+  html+='<tr><td>🟢 中期</td><td>1-2月</td><td>描述+关键词→自动匹配标准阈值→建议成色等级；跨仓校准会议制度化</td><td>中心仓差异率差距→<5%</td></tr>';
+  html+='<tr><td>🔵 长期</td><td>季度</td><td>12个月数据训练AI差异预测模型（机型+描述→预判差异项+等级）</td><td>整体差异率→降低30%</td></tr>';
   html+='</tbody></table></div></div>';
 
   var el=document.getElementById('anaInsight');if(el)el.innerHTML=html;
