@@ -595,9 +595,9 @@ function renderAnaSubjDefect(){
 }
 function renderAnaWarehouse(){
   var a=_analyze();var html='';
+  if(!a.dr||!a.dr.length){var el=document.getElementById('anaWarehouse');if(el)el.innerHTML='<div style=\"color:var(--muted);padding:12px;text-align:center\">无差异数据</div>';return;}
 
   // ═══ 逐仓三类根因分析 ═══
-  // 对每条有描述的差异判定归属：漏测 / 隐性故障 / 商户质量
   var ccRoot={};
   a.dr.forEach(function(r){
     var c=r.center; ccRoot[c]=ccRoot[c]||{miss:[],hidden:[],merchant:[],unclear:[],total:0};
@@ -721,7 +721,7 @@ function renderAnaWarehouse(){
 
   var el=document.getElementById('anaWarehouse');if(el)el.innerHTML=html;
 }
-function renderAnalysisAll(){try{renderAnaModel();renderAnaOverview();renderAnaMismatch();renderAnaSubjDefect();renderAnaTopKW();renderAnaWarehouse();}catch(e){}}
+function renderAnalysisAll(){try{renderAnaModel();}catch(e){}try{renderAnaOverview();}catch(e){}try{renderAnaMismatch();}catch(e){}try{renderAnaSubjDefect();}catch(e){}try{renderAnaTopKW();}catch(e){}try{renderAnaWarehouse();}catch(e){}}
 /* ====== 差异分析模块 END ====== */
 
 function renderAll(){ renderKPIs(); renderDaily(); renderRegions();
