@@ -510,6 +510,7 @@ function _analyze(){
   analysis.mismatch.forEach(function(x){var c=x.r.center;if(cc[c])cc[c].mm.push(x);});
   analysis.vague.forEach(function(x){var c=x.r.center;if(cc[c])cc[c].vg.push(x);});
   analysis.ccRank=Object.entries(cc).filter(function(e){return e[1].d>=3;}).sort(function(a,b){return(b[1].d/b[1].t)-(a[1].d/a[1].t);});
+  analysis.dr=dr; analysis.f=f; analysis.total=total; analysis.ccData=cc;
   return analysis;
 }
 var _bar=function(v,max,w,c){w=w||100;var p=Math.min(v/max*100,100);return '<div style="flex:1;height:6px;background:var(--track);border-radius:3px;overflow:hidden"><div style="width:'+p+'%;height:100%;background:'+(c||'var(--s1)')+';border-radius:3px"></div></div>';};
