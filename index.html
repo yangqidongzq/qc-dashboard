@@ -239,7 +239,7 @@ svg{display:block; width:100%; height:auto}
     </div>
 
     <div class="card col-5">
-      <h3>差异描述 TOP15 <span class="hint">含分类·商户</span></h3>
+      <h3>差异描述 TOP20 <span class="hint">含分类·商户</span></h3>
       <div class="csub">按频次排序，彩色分类标签，⏳=暂存。</div>
       <div id="descAnalysis"></div>
     </div>
@@ -935,7 +935,7 @@ function renderDescAnalysis(){
   var descMap={};
   diff.forEach(function(r){var d=r.reason;if(!d)return;var m=descMap[d]||(descMap[d]={cnt:0,merchants:{},diffs:{},kw:null});m.cnt++;m.merchants[r.merchant]=(m.merchants[r.merchant]||0)+1;r.diffItems.forEach(function(it){m.diffs[it]=(m.diffs[it]||0)+1;});if(!m.kw)m.kw=_tagKW(d);});
   var descs=Object.entries(descMap).map(function(e){return{desc:e[0],cnt:e[1].cnt,merchants:e[1].merchants,diffs:e[1].diffs,kw:e[1].kw};}).sort(function(a,b){return b.cnt-a.cnt;});
-  var topN=descs.slice(0,15);
+  var topN=descs.slice(0,20);
   var autoCount=descs.filter(function(d){return d.kw!==null;}).reduce(function(s,d){return s+d.cnt;},0);
 
   var html='';
@@ -951,7 +951,7 @@ function renderDescAnalysis(){
     var sd=d.desc.length>38?'<span title="'+d.desc.replace(/"/g,'&quot;')+'">'+d.desc.slice(0,36)+'…</span>':d.desc;
     html+='<tr><td style="color:var(--muted);font-size:11px">'+(i+1)+'</td><td>'+sd+'</td><td><span style="display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;background:color-mix(in srgb,'+catCol+' 15%,transparent);color:'+catCol+'">'+(d.kw?d.kw.tag:cat)+'</span></td><td class="num tnum" style="font-weight:600">'+d.cnt+'</td><td style="font-size:11px;color:var(--ink-2)">'+topDiff+'</td><td style="font-size:11px;color:var(--ink-2)">'+topM+'</td></tr>';
   });
-  if(descs.length>15)html+='<tr><td colspan="6" style="color:var(--muted);text-align:center;font-size:11px">仅显示 TOP15，共 '+descs.length+' 种描述</td></tr>';
+  if(descs.length>20)html+='<tr><td colspan="6" style="color:var(--muted);text-align:center;font-size:11px">仅显示 TOP20，共 '+descs.length+' 种描述</td></tr>';
   html+='</tbody></table></div>';
   document.getElementById('descAnalysis').innerHTML=html;
 }
