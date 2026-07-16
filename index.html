@@ -250,7 +250,7 @@ svg{display:block; width:100%; height:auto}
     </div>
     <div class="card col-6"><h3>📱 高频差异机型 TOP 10 <span class="hint">24条全品类通病</span></h3><div class="csub">机型常见差异 & 已知通病自动匹配</div><div class="scroll" id="anaModel"></div></div>
     <div class="card col-6"><h3>📊 判定质量 & 品类概览 <span class="hint">一致性+覆盖率+品类分布</span></h3><div class="scroll" id="anaOverview"></div></div>
-
+    <div class="card col-12"><h3>📋 描述合理性判定 <span class="hint">归类不一致 · 描述模糊 · 无描述 · 一致记录</span></h3><div class="csub">逐条分析差异描述关键词→匹配标准类别→对比实际勾选差异项</div><div class="scroll" id="anaMismatch"></div></div>
     <div class="card col-6"><h3>⚖️ 主观争议排行 <span class="hint">争议度+量化建议</span></h3><div class="csub">主观率>60%的差异项需增加客观判定标准</div><div class="scroll" id="anaSubjDefect"></div></div>
     <div class="card col-6"><h3>🔝 高频缺陷 TOP8 <span class="hint">具体缺陷排名</span></h3><div class="csub">从描述中提取的最常见具体缺陷类型</div><div class="scroll" id="anaTopKW"></div></div>
     <div class="card col-12"><h3>🏢 各仓根因诊断 & 改善方向</h3><div class="csub">执行问题/标准模糊/商户集中 → 针对性改善行动</div><div class="scroll" id="anaWarehouse"></div></div>
@@ -530,7 +530,49 @@ function renderAnaOverview(){
   }
   var el=document.getElementById('anaOverview');if(el)el.innerHTML=html;
 }
+function renderAnaMismatch(){
+  var a=_analyze();var html='';
 
+  // ── 归类不一致 ──
+  html+='<div style="font-weight:600;font-size:13px;margin-bottom:8px">⚠️ 归类不一致：'+a.mismatch.length+'条</div>';
+  if(a.mismatch.length>0){
+    var mmTypes={};a.mismatch.forEach(function(x){var key=x.kw.tag+'→误标"'+x.di+'"应标"'+x.expected+'"';mmTypes[key]=(mmTypes[key]||0)+1;});
+    var topMM=Object.entries(mmTypes).sort(function(a,b){return b[1]-a[1];}).slice(0,5);
+    html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">';
+    html+='<div style="background:color-mix(in srgb,var(--crit) 6%,transparent);border-radius:8px;padding:10px"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">TOP5 不一致类型</div>';
+    topMM.forEach(function(e){html+='<div style="font-size:12px;margin:3px 0">• '+e[0]+'<br><b>'+e[1]+'次</b></div>';});
+    html+='</div>';
+    html+='<div style="background:var(--surface-1);border-radius:8px;padding:10px"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">纠正示例</div>';
+    a.mismatch.slice(0,3).forEach(function(x){html+='<div style="font-size:11px;color:var(--ink-2);margin:4px 0;padding:4px 6px;background:var(--card);border-radius:4px">「'+x.r.reason+'」<br>→ 应标<b style="color:var(--good-ink)">'+x.expected+'</b>（属'+x.kw.cat+'）</div>';});
+    html+='</div></div>';
+  } else { html+='<div style="color:var(--muted);padding:8px 0;text-align:center">✅ 无归类不一致</div>'; }
+
+  // ── 描述模糊 ──
+  html+='<div style="font-weight:600;font-size:13px;margin-bottom:8px;margin-top:12px">🔍 描述模糊：'+a.vague.length+'条（'+_pct(a.vagueRate)+'）</div>';
+  if(a.vague.length>0){
+    var vagueSamples={};a.vague.forEach(function(x){var d=x.r.reason;if(d)vagueSamples[d]=(vagueSamples[d]||0)+1;});
+    var topVague=Object.entries(vagueSamples).sort(function(a,b){return b[1]-a[1];}).slice(0,5);
+    html+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">';
+    topVague.forEach(function(e){html+='<span class="pattern-chip" style="border-color:var(--warn)">'+e[0]+'<span class="n">'+e[1]+'</span></span>';});
+    html+='</div>';
+    html+='<div style="font-size:10px;color:var(--muted)">建议：APP端强制30项标准关键词下拉选择，禁止自由文本提交</div>';
+  } else { html+='<div style="color:var(--muted);padding:4px 0">✅ 无模糊描述</div>'; }
+
+  // ── 无描述 ──
+  html+='<div style="font-weight:600;font-size:13px;margin-bottom:4px;margin-top:12px">❌ 无原因描述：'+a.noReason+'条（'+_pct(a.noReason/(a.diffCount||1)*100)+'）</div>';
+  if(a.noReason>0){html+='<div style="font-size:11px;color:var(--muted)">无法追溯差异根因→差异原因设为必填项+拍照留档</div>';}
+  else {html+='<div style="color:var(--muted);font-size:11px">✅ 全部有描述</div>';}
+
+  // ── 一致记录 ──
+  html+='<div style="font-weight:600;font-size:13px;margin-bottom:4px;margin-top:12px">✅ 描述-差异项一致：'+a.match.length+'条（'+_pct(a.matchRate)+'）</div>';
+  if(a.match.length>0){var kwD={};a.match.forEach(function(x){kwD[x.kw.tag]=(kwD[x.kw.tag]||0)+1;});
+    var topKW2=Object.entries(kwD).sort(function(a,b){return b[1]-a[1];}).slice(0,6);
+    html+='<div style="display:flex;gap:4px;flex-wrap:wrap">';
+    topKW2.forEach(function(e){html+='<span class="pattern-chip">'+e[0]+'<span class="n">'+e[1]+'</span></span>';});
+    html+='</div>';}
+
+  var el=document.getElementById('anaMismatch');if(el)el.innerHTML=html;
+}
 function renderAnaTopKW(){
   var a=_analyze();var html='';
   if(a.topKW.length){var c2=['var(--s6)','var(--s1)','var(--s8)','var(--s2)','var(--s5)','var(--s3)','var(--s7)','var(--s4)'];
@@ -679,7 +721,7 @@ function renderAnaWarehouse(){
 
   var el=document.getElementById('anaWarehouse');if(el)el.innerHTML=html;
 }
-function renderAnalysisAll(){try{renderAnaModel();}catch(e){}try{renderAnaOverview();}catch(e){}try{renderAnaSubjDefect();}catch(e){}try{renderAnaTopKW();}catch(e){}try{renderAnaWarehouse();}catch(e){}}
+function renderAnalysisAll(){try{renderAnaModel();}catch(e){}try{renderAnaOverview();}catch(e){}try{renderAnaMismatch();}catch(e){}try{renderAnaSubjDefect();}catch(e){}try{renderAnaTopKW();}catch(e){}try{renderAnaWarehouse();}catch(e){}}
 /* ====== 差异分析模块 END ====== */
 
 function renderAll(){ renderKPIs(); renderDaily(); renderRegions();
