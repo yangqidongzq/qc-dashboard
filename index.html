@@ -602,7 +602,7 @@ function renderAnaWarehouse(){
   a.dr.forEach(function(r){
     var c=r.center; ccRoot[c]=ccRoot[c]||{miss:[],hidden:[],merchant:[],unclear:[],total:0};
     ccRoot[c].total++;
-    if(!r.reason||r.reason==='—'){ccRoot[c].unclear.push({r:r});return;}
+    if(!r.reason||r.reason==='—'){ccRoot[c].unclear.push(r);return;}
     var kw=_tagKW(r.reason);
     var cm=_findCM(r.model);
     // 判定逻辑：
@@ -619,7 +619,7 @@ function renderAnaWarehouse(){
     // 4. 描述清晰+客观+非通病 → 合理记录（归入质量参考）
     if(kw&&!cm.length){ccRoot[c].hidden.push({r:r,kw:kw,unknown:true});return;}
     // 5. 其余归为无法判定
-    ccRoot[c].unclear.push({r:r});
+    ccRoot[c].unclear.push(r);
   });
 
   // 逐仓展示
@@ -629,7 +629,7 @@ function renderAnaWarehouse(){
     var c=e[0],d=e[1],tt=d.total;
     var missPct=tt>0?d.miss.length/tt*100:0,hiddenPct=tt>0?d.hidden.length/tt*100:0,mercPct=0,unclPct=tt>0?d.unclear.length/tt*100:0;
     // 商户质量：统计该仓差异商户集中度
-    var mc={};d.miss.concat(d.hidden).concat(d.unclear).forEach(function(x){var m=(x.r||x).merchant;mc[m]=(mc[m]||0)+1;});
+    var mc={};d.miss.concat(d.hidden).concat(d.unclear).forEach(function(x){mc[x.r.merchant]=(mc[x.r.merchant]||0)+1;});
     var topMerch=Object.entries(mc).sort(function(a,b){return b[1]-a[1];}).slice(0,2);
     var mercCount=0;topMerch.forEach(function(x){mercCount+=x[1];});
     if(mercCount/tt>0.35)mercPct=mercCount/tt*100;
