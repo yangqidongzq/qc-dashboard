@@ -964,14 +964,12 @@ function renderDetail(){
   const pageItems=f.slice(start,end);
   document.getElementById('detailCount').textContent=fmt(total);
   let rows=pageItems.map(r=>{
-    const tag=r.status==='合格'?'ok':r.status==='差异'?'diff':'wait';
     return '<tr><td class=\"tnum\">'+r.date+'</td><td class=\"tnum\">'+(r.code||'—')+'</td><td>'+r.center+'</td>'+
       '<td class=\"mcell\" title=\"'+r.merchant.replace(/\"/g,'&quot;')+'\">'+r.merchant+'</td><td>'+r.category+'</td>'+
       '<td class=\"mcell\" title=\"'+(r.model||'').replace(/\"/g,'&quot;')+'\">'+(r.model||'—')+'</td><td>'+r.inspector+'</td><td>'+r.bizline+'</td>'+
-      '<td>'+(r.diffItems.join('、')||'—')+'</td><td>'+(r.subjObj||'—')+'</td>'+
-      '<td><span class=\"tag '+tag+'\">'+r.status+'</span></td></tr>';
+      '<td>'+(r.diffItems.join('、')||'—')+'</td><td>'+(r.subjObj||'—')+'</td></tr>';
   }).join('');
-  if(!f.length) rows='<tr><td colspan=\"11\" style=\"color:var(--muted)\">当前筛选无数据</td></tr>';
+  if(!f.length) rows='<tr><td colspan=\"10\" style=\"color:var(--muted)\">当前筛选无数据</td></tr>';
   // Pagination controls
   let pager='';
   if(pages>1){
@@ -985,8 +983,8 @@ function renderDetail(){
   }
   document.getElementById('detailTable').innerHTML=
     '<thead><tr><th>日期</th><th>质检码</th><th>中心仓</th><th>商户</th><th>品类</th><th>机型</th><th>巡检人员</th>'+
-      '<th>业务线</th><th>差异项</th><th>主客观</th><th>状态</th></tr></thead><tbody>'+rows+'</tbody>'+
-    (pager?'<tfoot><tr><td colspan=\"11\">'+pager+'</td></tr></tfoot>':'');
+      '<th>业务线</th><th>差异项</th><th>主客观</th></tr></thead><tbody>'+rows+'</tbody>'+
+    (pager?'<tfoot><tr><td colspan=\"10\">'+pager+'</td></tr></tfoot>':'');
 }
 
 /* =========================================================
