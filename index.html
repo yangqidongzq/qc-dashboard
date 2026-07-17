@@ -538,132 +538,100 @@ function renderAnaSubjDefect(){
 }
 function renderAnaWarehouse(){
   var a=_analyze();var html='';
-  if(!a.dr||!a.dr.length){var el=document.getElementById('anaWarehouse');if(el)el.innerHTML='<div style=\"color:var(--muted);padding:12px;text-align:center\">无差异数据</div>';return;}
+  if(!a.dr||!a.dr.length){var el=document.getElementById('anaWarehouse');if(el)el.innerHTML='<div style="color:var(--muted);padding:12px;text-align:center">无差异数据</div>';return;}
 
-  // ═══ 逐仓三类根因分析 ═══
   var ccRoot={};
   a.dr.forEach(function(r){
-    var c=r.center; ccRoot[c]=ccRoot[c]||{miss:[],hidden:[],merchant:[],unclear:[],total:0};
+    var c=r.center; ccRoot[c]=ccRoot[c]||{miss:[],merchant:[],unclear:[],total:0};
     ccRoot[c].total++;
+
+    var reason=(r.reason||'').toLowerCase();
+    var status=(r.status||'').toString();
+    var isZancun=reason.indexOf('暂存')>=0||status.indexOf('暂存')>=0||status.indexOf('待验')>=0;
+
+    if(isZancun){ccRoot[c].merchant.push({r:r,reason:'暂存状态，质检未验'});return;}
+
+    var bizline=(r.bizline||'').toString();
+    var isQcChecked=bizline.indexOf('前置/后验')>=0||bizline.indexOf('入仓质检')>=0;
+
+    if(isQcChecked&&r.qtyDiff>0){ccRoot[c].miss.push({r:r,reason:'质检员已验证但存在差异'});return;}
+
     if(!r.reason||r.reason==='—'){ccRoot[c].unclear.push({r:r});return;}
+
     var kw=_tagKW(r.reason);
-    var cm=_findCM(r.model);
-    // 判定逻辑：
-    // 1. 描述关键词匹配通病 → 机器隐性故障/通病
-    if(cm.length>0&&kw){
-      var related=cm.some(function(x){return x.cat===kw.cat||kw.tag.indexOf(x.iss.split('/')[0])>=0;});
-      if(related){ccRoot[c].hidden.push({r:r,kw:kw,cm:cm[0]});return;}
-    }
-    // 2. 描述清晰(有kw) + 主观判定 + 非通病 → 质检漏测/执行问题
-    if(kw&&r.subjObj==='主观'){ccRoot[c].miss.push({r:r,kw:kw});return;}
-    // 3. 归类不一致 → 质检漏测（标记错误）
-    var match=true;a.mismatch.forEach(function(x){if(x.r===r)match=false;});
-    if(!match&&kw){ccRoot[c].miss.push({r:r,kw:kw,mm:true});return;}
-    // 4. 描述清晰+客观+非通病 → 合理记录（归入质量参考）
-    if(kw&&!cm.length){ccRoot[c].hidden.push({r:r,kw:kw,unknown:true});return;}
-    // 5. 其余归为无法判定
-    ccRoot[c].unclear.push({r:r});
+    if(kw&&r.subjObj==='主观'){ccRoot[c].miss.push({r:r,kw:kw});}
+    else if(kw){ccRoot[c].unclear.push({r:r,kw:kw});}
+    else{ccRoot[c].unclear.push({r:r});}
   });
 
-  // 逐仓展示
   var ccList=Object.entries(ccRoot).filter(function(e){return e[1].total>=3;}).sort(function(a,b){return b[1].total-a[1].total;});
 
   ccList.forEach(function(e,idx){
     var c=e[0],d=e[1],tt=d.total;
-    var missPct=tt>0?d.miss.length/tt*100:0,hiddenPct=tt>0?d.hidden.length/tt*100:0,mercPct=0,unclPct=tt>0?d.unclear.length/tt*100:0;
-    // 商户质量：统计该仓差异商户集中度
-    var mc={};d.miss.concat(d.hidden).concat(d.unclear).forEach(function(x){var m=(x.r||x).merchant;mc[m]=(mc[m]||0)+1;});
-    var topMerch=Object.entries(mc).sort(function(a,b){return b[1]-a[1];}).slice(0,2);
-    var mercCount=0;topMerch.forEach(function(x){mercCount+=x[1];});
-    if(mercCount/tt>0.35)mercPct=mercCount/tt*100;
+    var missPct=tt>0?d.miss.length/tt*100:0,mercPct=tt>0?d.merchant.length/tt*100:0,unclPct=tt>0?d.unclear.length/tt*100:0;
 
-    // 确定主因
     var mainCause='',mainColor='';
-    if(missPct>hiddenPct&&missPct>mercPct&&missPct>25){mainCause='质检漏测/执行问题';mainColor='var(--crit)';}
-    else if(hiddenPct>missPct&&hiddenPct>mercPct&&hiddenPct>20){mainCause='机器隐性故障/通病';mainColor='var(--s5)';}
-    else if(mercPct>missPct&&mercPct>hiddenPct&&mercPct>30){mainCause='商户机器质量问题';mainColor='var(--warn)';}
-    else {mainCause='多因素混合';mainColor='var(--ink-2)';}
+    if(missPct>mercPct&&missPct>25){mainCause='质检漏测/执行问题(中心仓)';mainColor='var(--crit)';}
+    else if(mercPct>missPct&&mercPct>20){mainCause='商户机器质量问题';mainColor='var(--warn)';}
+    else{mainCause='多因素混合';mainColor='var(--ink-2)';}
 
     var sev=missPct>40?'crit':missPct>25?'warn':'';
     html+='<div class="insight-box '+sev+'" style="margin-bottom:12px">';
     html+='<div class="ititle" style="font-size:14px">'+(idx+1)+'. '+c+' <span style="font-weight:400;font-size:12px;color:var(--muted)">差异'+d.total+'台 | 主因：</span><span style="color:'+mainColor+';font-weight:600">'+mainCause+'</span></div>';
     html+='<div class="ibody">';
 
-    // 三类根因卡片
-    html+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px">';
+    html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">';
 
-    // 卡1：质检漏测
     html+='<div style="background:color-mix(in srgb,var(--crit) 6%,transparent);border-radius:8px;padding:10px;border-left:3px solid var(--crit)">';
-    html+='<div style="font-weight:600;font-size:12px;margin-bottom:4px">🔍 质检漏测/执行问题</div>';
+    html+='<div style="font-weight:600;font-size:12px;margin-bottom:4px">🔍 中心仓 · 漏测/执行问题</div>';
     html+='<div style="font-size:20px;font-weight:700;color:var(--crit)">'+d.miss.length+'<span style="font-size:11px;font-weight:400;color:var(--muted)">台 ('+_pct(missPct)+')</span></div>';
     if(d.miss.length>0){
-      html+='<div style="font-size:10px;color:var(--ink-2);margin-top:4px">描述清晰但主观判定/归类错误→标准明确但执行不一</div>';
-      var msTypes={};d.miss.forEach(function(x){var t=x.kw.tag+(x.mm?'(归类错)':'(主观判定)');msTypes[t]=(msTypes[t]||0)+1;});
+      html+='<div style="font-size:10px;color:var(--ink-2);margin-top:4px">前置/后验+入仓质检中的机器，质检员已验证→差异归属中心仓</div>';
+      var msTypes={};d.miss.forEach(function(x){var t=(x.kw?x.kw.tag:x.reason)||'差异记录';msTypes[t]=(msTypes[t]||0)+1;});
       var topMS=Object.entries(msTypes).sort(function(a,b){return b[1]-a[1];}).slice(0,3);
       topMS.forEach(function(t){html+='<div style="font-size:10px;margin:2px 0">• '+t[0]+'：<b>'+t[1]+'台</b></div>';});
-    } else { html+='<div style="font-size:10px;color:var(--good-ink)">✅ 无明显漏测</div>'; }
+    }else{html+='<div style="font-size:10px;color:var(--good-ink)">✅ 无明显漏测</div>';}
     html+='</div>';
 
-    // 卡2：机器隐性故障
-    html+='<div style="background:color-mix(in srgb,var(--s5) 6%,transparent);border-radius:8px;padding:10px;border-left:3px solid var(--s5)">';
-    html+='<div style="font-weight:600;font-size:12px;margin-bottom:4px">⚙️ 机器隐性故障/通病</div>';
-    html+='<div style="font-size:20px;font-weight:700;color:var(--s5)">'+d.hidden.length+'<span style="font-size:11px;font-weight:400;color:var(--muted)">台 ('+_pct(hiddenPct)+')</span></div>';
-    if(d.hidden.length>0){
-      html+='<div style="font-size:10px;color:var(--ink-2);margin-top:4px">已知机型通病或隐性故障→非质检失误</div>';
-      var hdTypes={};d.hidden.forEach(function(x){var t=x.cm?x.cm.iss:x.kw.tag;hdTypes[t]=(hdTypes[t]||0)+1;});
-      var topHD=Object.entries(hdTypes).sort(function(a,b){return b[1]-a[1];}).slice(0,3);
-      topHD.forEach(function(t){html+='<div style="font-size:10px;margin:2px 0">• '+t[0]+'：<b>'+t[1]+'台</b></div>';});
-    } else { html+='<div style="font-size:10px;color:var(--good-ink)">✅ 无通病匹配</div>'; }
-    html+='</div>';
-
-    // 卡3：商户质量
     html+='<div style="background:color-mix(in srgb,var(--warn) 8%,transparent);border-radius:8px;padding:10px;border-left:3px solid var(--warn)">';
-    html+='<div style="font-weight:600;font-size:12px;margin-bottom:4px">📦 商户机器质量</div>';
-    html+='<div style="font-size:20px;font-weight:700;color:var(--warn)">'+mercCount+'<span style="font-size:11px;font-weight:400;color:var(--muted)">台 ('+_pct(mercPct)+')</span></div>';
-    if(topMerch.length>0){
-      html+='<div style="font-size:10px;color:var(--ink-2);margin-top:4px">差异来源于商户集中→机器本身质量问题</div>';
-      topMerch.forEach(function(t){html+='<div style="font-size:10px;margin:2px 0">• '+t[0]+'：<b>'+t[1]+'台</b></div>';});
-    } else { html+='<div style="font-size:10px;color:var(--ink-2)">商户分布均匀</div>'; }
-    if(d.unclear.length>0){html+='<div style="font-size:10px;color:var(--muted);margin-top:4px">⚠️ 另有'+d.unclear.length+'台无法判定（描述缺失/模糊）</div>';}
+    html+='<div style="font-weight:600;font-size:12px;margin-bottom:4px">📦 商户机器质量 · 暂存未验</div>';
+    html+='<div style="font-size:20px;font-weight:700;color:var(--warn)">'+d.merchant.length+'<span style="font-size:11px;font-weight:400;color:var(--muted)">台 ('+_pct(mercPct)+')</span></div>';
+    if(d.merchant.length>0){
+      html+='<div style="font-size:10px;color:var(--ink-2);margin-top:4px">暂存状态机器→质检员未验→商户责任</div>';
+    }else{html+='<div style="font-size:10px;color:var(--good-ink)">✅ 无暂存问题</div>';}
+    if(d.unclear.length>0){html+='<div style="font-size:10px;color:var(--muted);margin-top:4px">⚠️ '+d.unclear.length+'台无法判定（描述缺失/模糊）</div>';}
     html+='</div></div>';
 
-    // 改善建议
     var acts=[];
-    if(missPct>25)acts.push('<b>漏测改善：</b>对「'+mainCause+'」类差异制定量化标准卡，质检员人手一份；主观判定项推行双人复核机制');
-    if(hiddenPct>20)acts.push('<b>通病应对：</b>建立「机型通病预检清单」，商户送检前自动提示该机型常见问题；通病项自动归为客观判定');
-    if(mercPct>30&&topMerch.length)acts.push('<b>商户管控：</b>约谈'+topMerch[0][0]+'，回传差异明细要求入仓前自查；连续两月高差异暂停合作');
-    if(d.unclear.length/tt>0.3)acts.push('<b>描述改善：</b>'+d.unclear.length+'条无法判定→强制使用30项标准关键词下拉，模糊描述禁止提交');
+    if(missPct>25)acts.push('<b>中心仓改善：</b>漏测高发项量化标准上墙、双人复核；'+d.miss.length+'台差异需回溯到人');
+    if(mercPct>20)acts.push('<b>商户管控：</b>暂存机器约谈商户回传差异明细；入仓前自查，连续高差异暂停合作');
+    if(d.unclear.length/tt>0.3)acts.push('<b>描述改善：</b>'+d.unclear.length+'条无法判定→强制标准关键词下拉，模糊描述禁止提交');
     html+='<div style="font-size:11px;margin-top:6px">'+acts.map(function(x){return '<div style="margin:3px 0">'+x+'</div>';}).join('')+'</div>';
 
     html+='</div></div>';
   });
 
-  // ── 全局总结 ──
-  var totalMiss=0,totalHidden=0,totalMerc=0,totalUnclear=0;
-  Object.values(ccRoot).forEach(function(d){totalMiss+=d.miss.length;totalHidden+=d.hidden.length;totalUnclear+=d.unclear.length;});
-  // 计算商户质量问题总数
-  var allMc={};a.dr.forEach(function(r){allMc[r.merchant]=(allMc[r.merchant]||0)+1;});
-  var highMc=Object.entries(allMc).filter(function(e){return e[1]>=5;}).sort(function(a,b){return b[1]-a[1];});
-  totalMerc=highMc.reduce(function(s,e){return s+e[1];},0);
+  var totalMiss=0,totalMerc=0,totalUnclear=0;
+  Object.values(ccRoot).forEach(function(d){totalMiss+=d.miss.length;totalMerc+=d.merchant.length;totalUnclear+=d.unclear.length;});
 
   var total=a.diffCount||1;
   html+='<div class="insight-box ok" style="margin-top:12px"><div class="ititle" style="font-size:14px">📊 全局根因分布 & 改善路线图</div><div class="ibody">';
   html+='<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px">';
-  html+='<div style="flex:1;min-width:120px;text-align:center"><div style="font-size:24px;font-weight:700;color:var(--crit)">'+_pct(totalMiss/total*100)+'</div><div style="font-size:11px;color:var(--muted)">🔍 质检漏测</div><div style="font-size:10px;color:var(--ink-2)">'+totalMiss+'台</div></div>';
-  html+='<div style="flex:1;min-width:120px;text-align:center"><div style="font-size:24px;font-weight:700;color:var(--s5)">'+_pct(totalHidden/total*100)+'</div><div style="font-size:11px;color:var(--muted)">⚙️ 隐性故障</div><div style="font-size:10px;color:var(--ink-2)">'+totalHidden+'台</div></div>';
+  html+='<div style="flex:1;min-width:120px;text-align:center"><div style="font-size:24px;font-weight:700;color:var(--crit)">'+_pct(totalMiss/total*100)+'</div><div style="font-size:11px;color:var(--muted)">🔍 中心仓漏测</div><div style="font-size:10px;color:var(--ink-2)">'+totalMiss+'台</div></div>';
   html+='<div style="flex:1;min-width:120px;text-align:center"><div style="font-size:24px;font-weight:700;color:var(--warn)">'+_pct(totalMerc/total*100)+'</div><div style="font-size:11px;color:var(--muted)">📦 商户质量</div><div style="font-size:10px;color:var(--ink-2)">'+totalMerc+'台</div></div>';
   html+='<div style="flex:1;min-width:120px;text-align:center"><div style="font-size:24px;font-weight:700;color:var(--muted)">'+_pct(totalUnclear/total*100)+'</div><div style="font-size:11px;color:var(--muted)">❓ 无法判定</div><div style="font-size:10px;color:var(--ink-2)">'+totalUnclear+'台</div></div>';
   html+='</div>';
 
   html+='<table style="font-size:11px;margin-top:8px"><thead><tr><th>阶段</th><th>针对</th><th>措施</th><th>目标</th></tr></thead><tbody>';
   html+='<tr><td>紧急</td><td>描述缺失</td><td>差异原因必填+30项标准关键词下拉；'+totalUnclear+'条无法判定→补标后重新分析</td><td>可判定率→90%+</td></tr>';
-  html+='<tr><td>短期</td><td>质检漏测</td><td>漏测高发项制定量化标准卡上墙；主观率>60%项推行双人复核；归类对照表人手一份</td><td>漏测率→<15%</td></tr>';
-  html+='<tr><td>中期</td><td>通病+商户</td><td>机型通病预检清单上线；高差异商户入仓预检+月度报告回传</td><td>通病项客观化+商户端拦截</td></tr>';
-  html+='<tr><td>长期</td><td>系统性</td><td>数据训练AI预判模型（机型+描述→判定是漏测/通病/商户问题）</td><td>整体差异率降低30%</td></tr>';
+  html+='<tr><td>短期</td><td>中心仓漏测</td><td>漏测高发项量化标准卡上墙；主观率>60%项双人复核；回溯到人追责</td><td>漏测率→<15%</td></tr>';
+  html+='<tr><td>中期</td><td>商户质量</td><td>暂存机器入仓预检强制要求；高差异商户月度报告回传+约谈</td><td>商户端拦截差异</td></tr>';
+  html+='<tr><td>长期</td><td>系统性</td><td>数据训练AI预判模型（业务线+暂存状态→判定归属）</td><td>整体差异率降低30%</td></tr>';
   html+='</tbody></table></div></div>';
 
   var el=document.getElementById('anaWarehouse');if(el)el.innerHTML=html;
 }
+
 function renderAnalysisAll(){try{renderAnaModel();}catch(e){}try{renderAnaSubjDefect();}catch(e){}try{renderAnaTopKW();}catch(e){}try{renderAnaWarehouse();}catch(e){}}
 /* ====== 差异分析模块 END ====== */
 
