@@ -201,9 +201,9 @@ svg{display:block; width:100%; height:auto}
       <div id="dailyChart"></div>
     </div>
 
-    <div class="card col-6">
-      <h3>🏢 各中心仓差异汇总 <span class="hint">按差异率排序</span></h3>
-      <div class="csub">各仓质检总数、差异台数、差异率。</div>
+    <div class="card col-12">
+      <h3>🏢 各中心仓差异汇总 <span class="hint">按差异率排序 · 点击展开明细 · 支持导出</span></h3>
+      <div class="csub">各仓质检总数、差异台数、差异率，点击中心仓行展开具体问题明细。</div>
       <div id="centerDiff"></div>
     </div>
 
@@ -909,40 +909,126 @@ function splitBlock(title,keys,recs,fn,cols){
   return html;
 }
 
+const _cdExpanded = {};
 function renderCenterDiff(){
   const f = getFiltered();
+  const diffRecs = f.filter(r => r.qtyDiff > 0);
   const map = {};
   for (const r of f) {
-    const m = map[r.center] || (map[r.center] = { qty: 0, diff: 0, region: r.region });
+    const m = map[r.center] || (map[r.center] = { qty: 0, diff: 0, region: r.region, diffItems: {}, reasons: {}, merchants: {}, records: [] });
     m.qty += r.qty; m.diff += r.qtyDiff;
+    if (r.qtyDiff > 0) {
+      (r.diffItems||[]).forEach(it => { m.diffItems[it] = (m.diffItems[it]||0) + 1; });
+      if (r.reason) m.reasons[r.reason] = (m.reasons[r.reason]||0) + 1;
+      m.merchants[r.merchant] = (m.merchants[r.merchant]||0) + 1;
+      m.records.push(r);
+    }
   }
   const arr = Object.entries(map).map(([k,v]) => ({
-    center: k, region: v.region, qty: v.qty, diff: v.diff,
-    rate: pct(v.diff, v.qty)
+    center: k, ...v, rate: pct(v.diff, v.qty)
   })).sort((a,b) => b.rate - a.rate);
 
   let html = '';
   if (!arr.length) { html = '<div style=\"color:var(--muted);padding:12px\">暂无数据</div>'; }
   else {
     const maxRate = Math.max(1, arr[0].rate);
-    const cols = [cssv('--s6'), cssv('--s1'), cssv('--s8'), cssv('--s2'), cssv('--s5'), cssv('--s3')];
-    html = '<div class=\"tablewrap scroll\" style=\"max-height:380px\"><table style=\"font-size:12px\"><thead><tr><th>#</th><th>中心仓</th><th class=\"num\">质检台</th><th class=\"num\">差异台</th><th class=\"num\">差异率</th><th>占比条</th></tr></thead><tbody>';
+    html = '<div style=\"display:flex;gap:8px;margin-bottom:8px\"><span style=\"font-size:12px;color:var(--muted)\">💡 点击行展开详情</span><span style=\"flex:1\"></span>';
+    html += '<button class=\"chip\" onclick=\"exportCenterDiff()\">⬇ 导出全部明细</button></div>';
+    html += '<div class=\"tablewrap scroll\" style=\"max-height:500px\"><table style=\"font-size:12px\"><thead><tr><th>#</th><th>中心仓</th><th class=\"num\">质检台</th><th class=\"num\">差异台</th><th class=\"num\">差异率</th><th>占比条</th></tr></thead><tbody>';
     arr.forEach((a, i) => {
       const c = a.rate > 8 ? 'var(--crit)' : a.rate > 5 ? 'var(--warn)' : 'var(--good-ink)';
       const barW = Math.round(a.rate / maxRate * 100);
-      html += `<tr>
-        <td style=\"color:var(--muted);font-size:11px\">${i+1}</td>
-        <td><span style=\"display:inline-block;width:8px;height:8px;border-radius:50%;background:${cssv(REGION_COLOR[a.region]||'--muted')};margin-right:6px;vertical-align:middle\"></span>${a.center}</td>
+      const expanded = _cdExpanded[a.center] || false;
+
+      html += `<tr onclick=\"_cdExpanded['${a.center.replace(/'/g,\"\\\\'\")}']=!_cdExpanded['${a.center.replace(/'/g,\"\\\\'\")}'];renderCenterDiff();\" style=\"cursor:pointer\">
+        <td style=\"color:var(--muted);font-size:11px\">${expanded?'▼':'▶'} ${i+1}</td>
+        <td><span style=\"display:inline-block;width:8px;height:8px;border-radius:50%;background:${cssv(REGION_COLOR[a.region]||'--muted')};margin-right:6px;vertical-align:middle\"></span><b>${a.center}</b></td>
         <td class=\"num tnum\">${fmt(a.qty)}</td>
         <td class=\"num tnum\" style=\"color:${c};font-weight:600\">${a.diff}</td>
         <td class=\"num tnum\" style=\"color:${c};font-weight:600\">${a.rate.toFixed(1)}%</td>
         <td style=\"width:120px\"><div style=\"height:8px;background:var(--track);border-radius:4px;overflow:hidden\"><div style=\"width:${barW}%;height:100%;background:${c};border-radius:4px\"></div></div></td>
       </tr>`;
+
+      if (expanded) {
+        // 差异项分布
+        const items = Object.entries(a.diffItems).sort((x,y) => y[1]-x[1]);
+        // TOP原因
+        const reasons = Object.entries(a.reasons).sort((x,y) => y[1]-x[1]).slice(0,5);
+        // TOP商户
+        const merchants = Object.entries(a.merchants).sort((x,y) => y[1]-x[1]).slice(0,5);
+
+        html += `<tr style=\"background:var(--surface-1)\"><td colspan=\"6\" style=\"padding:12px 20px\">`;
+        html += '<div style=\"display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px\">';
+
+        // 差异项分布
+        html += '<div><div style=\"font-weight:600;font-size:12px;margin-bottom:6px\">📊 差异项分布</div>';
+        if (items.length) {
+          const maxItem = items[0][1];
+          items.forEach(([k,v]) => {
+            const bw = Math.round(v/maxItem*100);
+            const cc = v > a.diff*0.3 ? 'var(--crit)' : 'var(--warn)';
+            html += `<div style=\"margin:3px 0;display:flex;align-items:center;gap:6px;font-size:11px\"><span style=\"width:28px\">${k}</span><div style=\"flex:1;height:6px;background:var(--track);border-radius:3px\"><div style=\"width:${bw}%;height:100%;background:${cc};border-radius:3px\"></div></div><span style=\"color:${cc};font-weight:600\">${v}</span></div>`;
+          });
+        } else html += '<div style=\"color:var(--muted);font-size:11px\">无差异数据</div>';
+        html += '</div>';
+
+        // TOP原因
+        html += '<div><div style=\"font-weight:600;font-size:12px;margin-bottom:6px\">🔍 TOP5 差异原因</div>';
+        if (reasons.length) {
+          reasons.forEach(([k,v],j) => {
+            html += `<div style=\"font-size:11px;margin:2px 0;color:var(--ink-2)\">${j+1}. ${k} <b>×${v}</b></div>`;
+          });
+        } else html += '<div style=\"color:var(--muted);font-size:11px\">无</div>';
+        html += '</div>';
+
+        // TOP商户
+        html += '<div><div style=\"font-weight:600;font-size:12px;margin-bottom:6px\">🏪 TOP5 商户</div>';
+        if (merchants.length) {
+          merchants.forEach(([k,v],j) => {
+            html += `<div style=\"font-size:11px;margin:2px 0;color:var(--ink-2)\">${j+1}. ${k.length>16?k.slice(0,14)+'…':k} <b>×${v}</b></div>`;
+          });
+        } else html += '<div style=\"color:var(--muted);font-size:11px\">无</div>';
+        html += '</div>';
+
+        html += '</div>';
+        // 单仓导出按钮
+        html += `<button class=\"chip\" style=\"margin-top:8px\" onclick=\"event.stopPropagation();exportCenterDetail('${a.center.replace(/'/g,\"\\\\'\")}')\">⬇ 导出 ${a.center} 明细</button>`;
+        html += '</td></tr>';
+      }
     });
     html += '</tbody></table></div>';
   }
   const el = document.getElementById('centerDiff'); if (el) el.innerHTML = html;
+
+  // 存数据供导出用
+  window._cdData = arr;
 }
+
+// 导出全部明细
+window.exportCenterDiff = function(){
+  const csv = ['中心仓,大区,质检台,差异台,差异率,差异项(TOP3),主要差异原因(TOP3),主要商户(TOP3)'];
+  const data = window._cdData || [];
+  data.forEach(a => {
+    const items = Object.entries(a.diffItems||{}).sort((x,y)=>y[1]-x[1]).slice(0,3).map(e=>e[0]+'('+e[1]+')').join('/')||'—';
+    const reasons = Object.entries(a.reasons||{}).sort((x,y)=>y[1]-x[1]).slice(0,3).map(e=>e[0]+'('+e[1]+')').join('/')||'—';
+    const merchants = Object.entries(a.merchants||{}).sort((x,y)=>y[1]-x[1]).slice(0,3).map(e=>e[0]+'('+e[1]+')').join('/')||'—';
+    csv.push(`"${a.center}","${a.region}","${a.qty}","${a.diff}","${a.rate.toFixed(1)}%","${items}","${reasons}","${merchants}"`);
+  });
+  downloadFile('中心仓差异汇总.csv','﻿'+csv.join('\r\n'));
+  toast('已导出中心仓差异汇总');
+};
+
+// 导出单个中心仓明细
+window.exportCenterDetail = function(center){
+  const a = (window._cdData||[]).find(d => d.center === center);
+  if (!a) return;
+  const csv = ['日期,质检码,商户,品类,机型,巡检人员,差异项,差异原因描述'];
+  (a.records||[]).forEach(r => {
+    csv.push(`${r.date},${r.code},"${r.merchant}","${r.category}","${r.model||''}","${r.inspector}","${(r.diffItems||[]).join('/')}","${r.reason||''}"`);
+  });
+  downloadFile(center+'_差异明细.csv','﻿'+csv.join('\r\n'));
+  toast('已导出 '+center+' 差异明细');
+};
 
 function renderInspectorDiff(){
   const f = getFiltered();
