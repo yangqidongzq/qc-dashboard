@@ -201,6 +201,18 @@ svg{display:block; width:100%; height:auto}
       <div id="dailyChart"></div>
     </div>
 
+    <div class="card col-6">
+      <h3>🏢 各中心仓差异汇总 <span class="hint">按差异率排序</span></h3>
+      <div class="csub">各仓质检总数、差异台数、差异率。</div>
+      <div id="centerDiff"></div>
+    </div>
+
+    <div class="card col-6">
+      <h3>👤 巡检个人差异率 <span class="hint">按差异率排序</span></h3>
+      <div class="csub">个人差异台数/质检总数，差异率≥8%标红。</div>
+      <div id="inspectorDiff"></div>
+    </div>
+
     <div class="card col-12">
       <h3>巡检人员数据 <span class="hint">达成率 = 实际 / (100×出勤天)</span></h3>
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
@@ -656,7 +668,7 @@ function renderAnalysisAll(){try{renderAnaModel();}catch(e){}try{renderAnaSubjDe
 /* ====== 差异分析模块 END ====== */
 
 function renderAll(){ renderKPIs(); renderDaily(); renderRegions();
-  renderMerchantTop(); renderDiffItems(); renderSplits(); renderDescAnalysis(); renderInspectors(); renderDetail();
+  renderCenterDiff(); renderInspectorDiff(); renderMerchantTop(); renderDiffItems(); renderSplits(); renderDescAnalysis(); renderInspectors(); renderDetail();
   renderAnalysisAll(); }
 
 function renderKPIs(){
@@ -897,6 +909,74 @@ function splitBlock(title,keys,recs,fn,cols){
   return html;
 }
 
+function renderCenterDiff(){
+  const f = getFiltered();
+  const map = {};
+  for (const r of f) {
+    const m = map[r.center] || (map[r.center] = { qty: 0, diff: 0, region: r.region });
+    m.qty += r.qty; m.diff += r.qtyDiff;
+  }
+  const arr = Object.entries(map).map(([k,v]) => ({
+    center: k, region: v.region, qty: v.qty, diff: v.diff,
+    rate: pct(v.diff, v.qty)
+  })).sort((a,b) => b.rate - a.rate);
+
+  let html = '';
+  if (!arr.length) { html = '<div style=\"color:var(--muted);padding:12px\">暂无数据</div>'; }
+  else {
+    const maxRate = Math.max(1, arr[0].rate);
+    const cols = [cssv('--s6'), cssv('--s1'), cssv('--s8'), cssv('--s2'), cssv('--s5'), cssv('--s3')];
+    html = '<div class=\"tablewrap scroll\" style=\"max-height:380px\"><table style=\"font-size:12px\"><thead><tr><th>#</th><th>中心仓</th><th class=\"num\">质检台</th><th class=\"num\">差异台</th><th class=\"num\">差异率</th><th>占比条</th></tr></thead><tbody>';
+    arr.forEach((a, i) => {
+      const c = a.rate > 8 ? 'var(--crit)' : a.rate > 5 ? 'var(--warn)' : 'var(--good-ink)';
+      const barW = Math.round(a.rate / maxRate * 100);
+      html += `<tr>
+        <td style=\"color:var(--muted);font-size:11px\">${i+1}</td>
+        <td><span style=\"display:inline-block;width:8px;height:8px;border-radius:50%;background:${cssv(REGION_COLOR[a.region]||'--muted')};margin-right:6px;vertical-align:middle\"></span>${a.center}</td>
+        <td class=\"num tnum\">${fmt(a.qty)}</td>
+        <td class=\"num tnum\" style=\"color:${c};font-weight:600\">${a.diff}</td>
+        <td class=\"num tnum\" style=\"color:${c};font-weight:600\">${a.rate.toFixed(1)}%</td>
+        <td style=\"width:120px\"><div style=\"height:8px;background:var(--track);border-radius:4px;overflow:hidden\"><div style=\"width:${barW}%;height:100%;background:${c};border-radius:4px\"></div></div></td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+  }
+  const el = document.getElementById('centerDiff'); if (el) el.innerHTML = html;
+}
+
+function renderInspectorDiff(){
+  const f = getFiltered();
+  const map = {};
+  for (const r of f) {
+    const m = map[r.inspector] || (map[r.inspector] = { qty: 0, diff: 0, region: r.region, center: r.center });
+    m.qty += r.qty; m.diff += r.qtyDiff;
+  }
+  const arr = Object.entries(map).map(([k,v]) => ({
+    name: k, region: v.region, center: v.center, qty: v.qty, diff: v.diff,
+    rate: pct(v.diff, v.qty)
+  })).sort((a,b) => b.rate - a.rate);
+
+  let html = '';
+  if (!arr.length) { html = '<div style=\"color:var(--muted);padding:12px\">暂无数据</div>'; }
+  else {
+    const maxRate = Math.max(1, arr[0].rate);
+    html = '<div class=\"tablewrap scroll\" style=\"max-height:380px\"><table style=\"font-size:12px\"><thead><tr><th>#</th><th>巡检员</th><th>大区</th><th class=\"num\">质检台</th><th class=\"num\">差异台</th><th class=\"num\">差异率</th></tr></thead><tbody>';
+    arr.forEach((a, i) => {
+      const c = a.rate > 8 ? 'var(--crit)' : a.rate > 5 ? 'var(--warn)' : 'var(--good-ink)';
+      html += `<tr>
+        <td style=\"color:var(--muted);font-size:11px\">${i+1}</td>
+        <td>${a.name}${a.rate>8?' 🔴':''}</td>
+        <td style=\"font-size:11px;color:var(--ink-2)\">${a.region}</td>
+        <td class=\"num tnum\">${fmt(a.qty)}</td>
+        <td class=\"num tnum\" style=\"color:${c};font-weight:600\">${a.diff}</td>
+        <td class=\"num tnum\" style=\"color:${c};font-weight:600\">${a.rate.toFixed(1)}%</td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+  }
+  const el = document.getElementById('inspectorDiff'); if (el) el.innerHTML = html;
+}
+
 function renderInspectors(){
   const map={};
   for(const r of getFiltered()){ const m=map[r.inspector]||(map[r.inspector]={region:r.region,centers:{},days:new Set(),qty:0,diff:0});
@@ -925,20 +1005,20 @@ function renderInspectors(){
     const collapsed=state.collapsed[reg]!==undefined?state.collapsed[reg]:true; rows+=`<tr class="reg-sub" data-reg="${reg}" style="background:color-mix(in srgb,${rc} 12%,transparent);font-weight:600;cursor:pointer" onclick="state.collapsed[&#34;${reg}&#34;]=!state.collapsed[&#34;${reg}&#34;];renderInspectors();">
       <td colspan="2"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${rc};margin-right:7px;vertical-align:middle"></span><span class="toggle-icon">${collapsed?"▶":"▼"}</span> ${reg} 小计 · ${ppl.length}人${badge?' <span style=\"font-size:16px;line-height:1\">'+badge+'</span>':''}</td>
       <td></td><td class="num tnum">${days}</td><td class="num tnum">${fmt(q)}</td><td class="num tnum">${fmt(tgt)}</td>
-      <td class="num tnum" style="color:${cc(comp)}">${comp.toFixed(0)}%</td><td class="num tnum">${rate.toFixed(1)}%</td></tr>`;
+      <td class="num tnum" style="color:${cc(comp)}">${comp.toFixed(0)}%</td></tr>`;
     for(const a of ppl){
       rows+=`<tr class="reg-mem reg-mem-${reg}" style="${collapsed?"display:none":""}"><td style="padding-left:24px">${a.name}${a.comp<85?' <span style=\"font-size:11px;color:var(--crit);font-weight:400\">⚠未达标</span>':''}</td>
         <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${rc};margin-right:6px;vertical-align:middle"></span>${a.region}</td>
         <td>${a.center}</td><td class="num tnum">${a.days}</td><td class="num tnum">${fmt(a.qty)}</td><td class="num tnum">${fmt(a.tgt)}</td>
-        <td class="num tnum" style="color:${cc(a.comp)};font-weight:600">${a.comp.toFixed(0)}%</td><td class="num tnum">${a.rate.toFixed(1)}%</td></tr>`;
+        <td class="num tnum" style="color:${cc(a.comp)};font-weight:600">${a.comp.toFixed(0)}%</td></tr>`;
     }
   }
-  if(!hasAny) rows=`<tr><td colspan="8" style="color:var(--muted)">${state.underOnly?'当前筛选无不达标人员 ✅':'暂无数据'}</td></tr>`;
+  if(!hasAny) rows=`<tr><td colspan="7" style="color:var(--muted)">${state.underOnly?'当前筛选无不达标人员 ✅':'暂无数据'}</td></tr>`;
   document.getElementById('inspectorTable').innerHTML=
-    `<thead><tr><th>巡检人员</th><th>大区</th><th>中心仓</th><th class="num">出勤天</th><th class="num">质检台</th><th class="num">目标</th><th class="num">达成率</th><th class="num">差异率</th></tr></thead><tbody>${rows}</tbody>`;
+    `<thead><tr><th>巡检人员</th><th>大区</th><th>中心仓</th><th class="num">出勤天</th><th class="num">质检台</th><th class="num">目标</th><th class="num">达成率</th></tr></thead><tbody>${rows}</tbody>`;
   // export hook
   window._inspExport=()=>{
-    const csv=['巡检人员,大区,中心仓,出勤天,质检台,目标,达成率,差异率'];
+    const csv=['巡检人员,大区,中心仓,出勤天,质检台,目标,达成率'];
     for(const reg of regOrder){
       const ppl=byReg[reg].sort((a,b)=>b.comp-a.comp);
       const q=sum(ppl,p=>p.qty),tgt=sum(ppl,p=>p.tgt),diff=sum(ppl,p=>p.diff),days=sum(ppl,p=>p.days);
