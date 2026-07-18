@@ -192,12 +192,18 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
 
     <!-- ═══ Section 4: 人员问题收集完成度 ═══ -->
     <div class="card">
-      <h3>📋 人员问题收集完成度 <span class="hint">目标 3条/人/月 · 区域分组 · 月度统计</span></h3>
+      <h3>
+        <span>📋 人员问题收集完成度 <span class="hint">目标 3条/人/月 · 区域分组 · 月度统计</span></span>
+        <span style="display:flex;gap:6px;flex:none">
+          <button class="chip" id="problemToggleBtn">📁 一键折叠</button>
+        </span>
+      </h3>
       <div class="csub" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <span>「是否调整」=<span style="color:var(--good-ink)">是→通过</span> · <span style="color:var(--crit)">否→未通过</span> · <span style="color:var(--s5)">待验证→评估中</span></span>
         <span style="color:var(--muted)">|</span>
         <span>月份：<select id="fProblemMonth" style="border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:12px;background:var(--surface-1);color:var(--ink);font-family:inherit"></select></span>
       </div>
+      <div id="problemSummary" style="margin-bottom:10px"></div>
       <div class="tablewrap"><table id="problemTable"></table></div>
     </div>
 
@@ -324,7 +330,7 @@ function genData(){
 const state = {
   region:'全区域', center:'全部', category:'全部', inspector:'全部',
   bizline:'全部', from:1, to:CFG.asOfDay, preset:'todate',
-  underOnly:false, collapseAll:false, collapsed:{}, problemMonth:'', problemExpand:''
+  underOnly:false, collapseAll:false, collapsed:{}, problemMonth:'', problemExpand:'', problemCollapseAll:false
 };
 
 function baseFilter(r, ignore={}){
@@ -565,7 +571,7 @@ function renderProblem(){
   const regOrder = [...CFG.regions.filter(r => byReg[r]), ...Object.keys(byReg).filter(r => !CFG.regions.includes(r))];
 
   const cc = c => c>=TARGET?'var(--good-ink)':c>=1?'var(--ink)':'var(--crit)';
-  const collapsed = reg => state.collapsed['prob_'+reg] !== undefined ? state.collapsed['prob_'+reg] : false;
+  const collapsed = reg => state.collapsed['prob_'+reg] !== undefined ? state.collapsed['prob_'+reg] : state.problemCollapseAll;
   const expanded = name => state.problemExpand === name;
 
   let rows = '', hasAny = false;
@@ -628,6 +634,20 @@ function renderProblem(){
 
   const totalPassed = sum(people,p=>p.passed);
   const totalDone = people.filter(p=>p.done).length;
+  const totalCollected = sum(people,p=>p.collected);
+  const totalPending = sum(people,p=>p.pending);
+  const totalFailed = sum(people,p=>p.failed);
+
+  // 全区域汇总条
+  document.getElementById('problemSummary').innerHTML =
+    `<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;padding:8px 12px;background:var(--surface-1);border-radius:8px">
+      <span>📊 <b>总收集：${totalCollected}</b> 条</span>
+      <span style="color:var(--good-ink)">✅ <b>通过：${totalPassed}</b> 条</span>
+      <span style="color:var(--s5)">⏳ <b>评估中：${totalPending}</b> 条</span>
+      <span style="color:var(--crit)">❌ <b>未通过：${totalFailed}</b> 条</span>
+      <span>|</span>
+      <span>👤 ${people.length}人 · 🎯 已完成 <b>${totalDone}</b> 人</span>
+    </div>`;
 
   document.getElementById('problemTable').innerHTML =
     `<thead><tr>
@@ -775,12 +795,21 @@ function buildControls(){
     tb.textContent=state.collapseAll?'📂 一键展开':'📁 一键折叠';
     tb.onclick=()=>{
       state.collapseAll=!state.collapseAll;
-      // toggle all known region keys
       Object.keys(state.collapsed).forEach(k=>{ state.collapsed[k]=state.collapseAll; });
-      // also pre-set for all CFG regions
       CFG.regions.forEach(r=>{ state.collapsed[r]=state.collapseAll; });
       tb.textContent=state.collapseAll?'📂 一键展开':'📁 一键折叠';
       renderInspectors();
+    };
+  }
+  // 问题收集模块的折叠按钮
+  const ptb=document.getElementById('problemToggleBtn');
+  if(ptb){
+    ptb.textContent=state.problemCollapseAll?'📂 一键展开':'📁 一键折叠';
+    ptb.onclick=()=>{
+      state.problemCollapseAll=!state.problemCollapseAll;
+      CFG.regions.forEach(r=>{ state.collapsed['prob_'+r]=state.problemCollapseAll; });
+      ptb.textContent=state.problemCollapseAll?'📂 一键展开':'📁 一键折叠';
+      renderProblem();
     };
   }
 }
