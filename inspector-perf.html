@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-palette="#2a78d6,#1baf7a,#eda100,#008300,#4a3aa7,#e34948,#e87ba4,#eb6834">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>巡检人员效能看板 · KPI / 单日明细 / 差异率</title>
+<style>
+:root{
+  --surface-1:#fcfcfb; --page:#f9f9f7; --card:#ffffff;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,0.10);
+  --s1:#2a78d6; --s2:#1baf7a; --s3:#eda100; --s4:#008300; --s5:#4a3aa7; --s6:#e34948; --s7:#e87ba4; --s8:#eb6834;
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+  --good-ink:#006300; --track:#eef1f4;
+  --shadow:0 1px 2px rgba(11,11,11,.05),0 4px 16px rgba(11,11,11,.05);
+}
+[data-theme="dark"]{
+  --surface-1:#1a1a19; --page:#0d0d0d; --card:#1a1a19;
+  --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+  --s1:#3987e5; --s2:#199e70; --s3:#c98500; --s4:#008300; --s5:#9085e9; --s6:#e66767; --s7:#d55181; --s8:#d95926;
+  --good-ink:#0ca30c; --track:#262624;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--page); color:var(--ink);
+  font-family:system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif; font-size:14px; line-height:1.45;}
+h1,h2,h3{margin:0; font-weight:600}
+.wrap{max-width:1440px; margin:0 auto; padding:18px 22px 60px}
+.tnum{font-variant-numeric:tabular-nums}
+
+.topbar{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:16px}
+.brand{display:flex; align-items:center; gap:11px}
+.logo{width:34px; height:34px; border-radius:9px; background:linear-gradient(135deg,var(--s1),var(--s5)); display:grid; place-items:center; color:#fff; font-weight:700; font-size:16px}
+.brand h1{font-size:18px; letter-spacing:.3px}
+.brand .sub{font-size:12px; color:var(--muted)}
+.spacer{flex:1}
+.btn{border:1px solid var(--border); background:var(--card); color:var(--ink); border-radius:9px; padding:8px 13px; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; font-family:inherit}
+.btn:hover{border-color:var(--s1)}
+.btn.primary{background:var(--s1); color:#fff; border-color:var(--s1)}
+
+.filters{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:14px 16px; box-shadow:var(--shadow); margin-bottom:18px}
+.region-tabs{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px}
+.rtab{padding:7px 15px; border-radius:20px; border:1px solid var(--border); background:transparent; color:var(--ink-2); cursor:pointer; font-size:13px; font-family:inherit; display:flex; align-items:center; gap:7px}
+.rtab .dot{width:9px; height:9px; border-radius:50%}
+.rtab.active{background:var(--ink); color:var(--surface-1); border-color:var(--ink)}
+.rtab.active .dot{outline:2px solid var(--surface-1); outline-offset:1px}
+.frow{display:flex; gap:16px; flex-wrap:wrap; align-items:flex-end}
+.field{display:flex; flex-direction:column; gap:5px}
+.field label{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px}
+.field select,.field input[type=date]{border:1px solid var(--border); background:var(--surface-1); color:var(--ink); border-radius:8px; padding:7px 10px; font-size:13px; font-family:inherit; min-width:120px}
+.presets{display:flex; gap:6px}
+.chip{padding:6px 11px; border-radius:7px; border:1px solid var(--border); background:transparent; color:var(--ink-2); cursor:pointer; font-size:12px; font-family:inherit}
+.chip.active{background:var(--s1); color:#fff; border-color:var(--s1)}
+
+/* ── KPI cards ── */
+.kpis{display:grid; grid-template-columns:1.3fr repeat(4,1fr); gap:16px; margin-bottom:18px}
+@media(max-width:1080px){.kpis{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:520px){.kpis{grid-template-columns:1fr}}
+.kpi{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:15px 17px; box-shadow:var(--shadow)}
+.kpi .klabel{font-size:12px; color:var(--muted); margin-bottom:7px}
+.kpi .kval{font-size:30px; font-weight:600; letter-spacing:-.5px; line-height:1}
+.kpi.hero .kval{font-size:46px}
+.kpi .kunit{font-size:14px; color:var(--ink-2); font-weight:500; margin-left:3px}
+.kpi .kdelta{font-size:12px; margin-top:8px; display:inline-flex; align-items:center; gap:5px}
+.up{color:var(--good-ink)} .down{color:var(--crit)}
+.meter{height:8px; border-radius:5px; background:var(--track); overflow:hidden; margin-top:11px}
+.meter>span{display:block; height:100%; border-radius:5px}
+
+/* ── Card ── */
+.grid{display:grid; grid-template-columns:1fr; gap:16px}
+.card{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px 18px; box-shadow:var(--shadow); min-width:0}
+.card h3{font-size:14px; display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:2px}
+.card .hint{font-size:11px; color:var(--muted); font-weight:400}
+.card .csub{font-size:12px; color:var(--muted); margin-bottom:12px}
+
+/* ── Tables ── */
+table{width:100%; border-collapse:collapse; font-size:13px}
+th,td{text-align:left; padding:9px 10px; border-bottom:1px solid var(--grid)}
+th{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; font-weight:600}
+td.num,th.num{text-align:right; font-variant-numeric:tabular-nums}
+tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
+.tag{display:inline-block; padding:2px 8px; border-radius:6px; font-size:11px; font-weight:600}
+.tag.ok{background:color-mix(in srgb,var(--good) 16%,transparent); color:var(--good-ink)}
+.tag.warn{background:color-mix(in srgb,var(--warn) 16%,transparent); color:#8b6914}
+.tag.crit{background:color-mix(in srgb,var(--crit) 14%,transparent); color:var(--crit)}
+
+.tablewrap{overflow-x:auto}
+.scroll{max-height:450px; overflow:auto}
+
+/* ── Diff rate bar in inspector table ── */
+.diffbar{display:inline-block; height:16px; border-radius:3px; vertical-align:middle; margin-right:4px}
+
+/* ── Footer ── */
+.foot{margin-top:26px; text-align:center; color:var(--muted); font-size:12px}
+
+/* ── Toast ── */
+.toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--good); color:#fff; padding:11px 18px; border-radius:10px; font-size:13px; box-shadow:0 8px 24px rgba(0,0,0,.25); opacity:0; transition:.25s; z-index:90; pointer-events:none}
+.toast.on{opacity:1; transform:translateX(-50%) translateY(0)}
+.toast.err{background:var(--crit)}
+
+/* ── Responsive ── */
+@media(max-width:768px){
+  .wrap{padding:10px 12px 40px}
+  .kpi .kval{font-size:22px}
+  .kpi.hero .kval{font-size:30px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ═══ Header ═══ -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">检</div>
+      <div>
+        <h1>巡检人员效能看板</h1>
+        <div class="sub">KPI · 单日明细 · 巡检人员达成率 &amp; 个人差异率</div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn" id="exportInspBtn">⬇ 导出巡检数据</button>
+    <button class="btn" id="themeBtn">🌙 深色</button>
+  </div>
+
+  <!-- ═══ Filters ═══ -->
+  <div class="filters">
+    <div class="region-tabs" id="regionTabs"></div>
+    <div class="frow">
+      <div class="field"><label>中心仓</label><select id="fCenter"></select></div>
+      <div class="field"><label>品类</label><select id="fCategory"></select></div>
+      <div class="field"><label>巡检人员</label><select id="fInspector"></select></div>
+      <div class="field"><label>业务线</label><select id="fBiz"></select></div>
+      <div class="field"><label>开始日期</label><input type="date" id="fFrom"></div>
+      <div class="field"><label>结束日期</label><input type="date" id="fTo"></div>
+      <div class="field">
+        <label>快捷区间</label>
+        <div class="presets" id="presets">
+          <button class="chip" data-p="todate">至今</button>
+          <button class="chip" data-p="7">近7天</button>
+          <button class="chip" data-p="all">全周期</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ Section 1: KPI Cards ═══ -->
+  <div class="kpis" id="kpis"></div>
+
+  <div class="grid">
+
+    <!-- ═══ Section 2: Daily Per-Person Detail ═══ -->
+    <div class="card">
+      <h3>📅 每人单日明细 <span class="hint">100台/人/日 · 达标绿色 · 未达标红色 · 休息灰色</span></h3>
+      <div class="csub">点击单元格可查看该人当天明细（在原看板中跳转）；热力底色随台数加深。</div>
+      <div id="dailyChart"></div>
+    </div>
+
+    <!-- ═══ Section 3: Inspector Personnel + Personal Diff Rate ═══ -->
+    <div class="card">
+      <h3>
+        <span>👤 巡检人员数据 &amp; 个人差异率</span>
+        <span style="display:flex;gap:6px;flex:none">
+          <button class="chip" id="underFilter">⚡ 仅看未达标</button>
+        </span>
+      </h3>
+      <div class="csub">
+        达成率 = 实际台数 / (100 × 出勤天) ·
+        <span style="color:var(--good-ink)">≥100% 绿色</span> ·
+        <span style="color:var(--ink)">85%~100% 常规</span> ·
+        <span style="color:var(--crit)"><85% 红色</span> ·
+        差异率 = 差异台数 / 质检台数（个人维度）
+      </div>
+      <div class="tablewrap"><table id="inspectorTable"></table></div>
+    </div>
+
+  </div>
+
+  <div class="foot">巡检人员效能看板 · 数据源同质检主看板（qc-data.js）· 聚焦 KPI / 单日明细 / 巡检人员 / 个人差异率</div>
+</div>
+
+<!-- ═══ Scripts ═══ -->
+<script src="qc-data.js"></script>
+<script>
+/* =========================================================
+   1. 配置
+   ========================================================= */
+const CFG = {
+  cycleMonth:'2026-07', workDays:24, dailyTarget:100, asOfDay:11,
+  regions:['华东','华南','华西','华北'],
+  categories:['手机','平板','笔记本','台式机','智能穿戴'],
+  bizlines:['前置/后验','入仓质检'],
+  diffTypes:['拆修','功能','外观','显示','浸液','其他'],
+  sources:['邮件推送','中心仓拦截'],
+  subj:['主观','客观'],
+};
+
+const CENTER_REGION = {
+  '上海中心仓':'华东','南昌中心仓':'华东','杭州中心仓':'华东',
+  '深圳中心仓':'华南','广州中心仓':'华南','长沙中心仓':'华南',
+  '成都中心仓':'华西','西安中心仓':'华西','重庆中心仓':'华西',
+  '北京中心仓':'华北','天津中心仓':'华北','郑州中心仓':'华北',
+};
+const CENTERS = Object.keys(CENTER_REGION);
+let DYN_CENTERS = CENTERS.slice();
+
+const INSPECTOR_REGION = {
+  '杨启栋':'华南','胡江海':'华南','张天东':'华南','火东云':'华南','刘辉崇':'华南','刘先浩':'华南',
+  '苏凯':'华西','黄少博':'华西','米小三':'华西',
+  '旷小波':'华东','尚杰':'华东','谢志亮':'华东',
+  '赵子龙':'华北','张晰梦':'华北','吴恩惠':'华北','杨涛':'华北',
+};
+const regionOf = (inspector,center) => INSPECTOR_REGION[inspector] || CENTER_REGION[center] || '其他';
+const REGION_COLOR = {华东:'--s1', 华南:'--s2', 华西:'--s3', 华北:'--s5'};
+
+const REASON = {'拆修':'非官方拆修痕迹','功能':'功能异常/主板虚焊','外观':'外观磕碰划痕',
+  '显示':'屏幕显示异常','浸液':'进液受潮','其他':'其他差异'};
+const MERCHANTS = [['优选严选仓',.12],['极客数码',.05],['甄品3C',.08],['云仓优选',.15],
+  ['闪回优品',.06],['万物新',.10],['回收宝仓',.13],['拍拍严选',.07],['靓机汇',.16],['数码优选',.09]];
+const INSPECTORS = [['张伟','华东'],['李娜','华东'],['王强','华南'],['赵敏','华南'],
+  ['刘洋','华西'],['陈静','华西'],['周杰','华北'],['孙丽','华北']];
+let DYN_INSPECTORS = INSPECTORS.slice();
+const inspByRegion = r => INSPECTORS.filter(i=>i[1]===r).map(i=>i[0]);
+
+const MODELS = {
+  '手机':['iPhone 14 Pro','iPhone 13','小米13','华为Mate50','OPPO Reno9','vivo X90','三星S22'],
+  '平板':['iPad Air','iPad 2022','华为MatePad','小米平板6'],
+  '笔记本':['MacBook Air M2','联想小新Pro','ThinkPad X1','华为MateBook','戴尔灵越'],
+  '台式机':['iMac 24','联想拯救者','惠普暗影精灵'],
+  '智能穿戴':['Apple Watch S8','华为Watch GT4','小米手环8'],
+};
+
+/* ── utils ── */
+const cssv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const dayToDate = d => `${CFG.cycleMonth}-${String(d).padStart(2,'0')}`;
+const pad2 = n => String(n).padStart(2,'0');
+function parseDate(s){
+  const m=/(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/.exec(String(s||''));
+  if(!m) return null;
+  return {norm:`${m[1]}-${pad2(m[2])}-${pad2(m[3])}`, day:+m[3]};
+}
+
+/* ── RNG ── */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const rnd = mulberry32(20260701);
+const ri = (a,b)=>a+Math.floor(rnd()*(b-a+1));
+const pick = arr => arr[Math.floor(rnd()*arr.length)];
+
+/* =========================================================
+   2. 数据
+   ========================================================= */
+let RECORDS = (typeof window!=='undefined' && window.QC_DATA && window.QC_DATA.length) ? window.QC_DATA : genData();
+function genData(){
+  const out=[];
+  for(let d=1; d<=CFG.asOfDay; d++){
+    const n=ri(82,120);
+    for(let k=0;k<n;k++){
+      const center=pick(CENTERS), region=CENTER_REGION[center];
+      const [merchant,base]=pick(MERCHANTS);
+      const category=pick(CFG.categories), model=pick(MODELS[category]);
+      const inspector=pick(inspByRegion(region));
+      const source=rnd()<.6?'邮件推送':'中心仓拦截';
+      const bizline=rnd()<.55?'前置/后验':'入仓质检';
+      const isDiff=rnd()<base;
+      const item=isDiff?pick(CFG.diffTypes):null;
+      out.push({date:dayToDate(d), day:d, center, region, merchant, category, model, inspector,
+        source, bizline, qty:1, qtyDiff:isDiff?1:0,
+        diffItems:isDiff?[item]:[], reason:isDiff?REASON[item]:'',
+        subjObj:isDiff?(rnd()<.5?'主观':'客观'):'', status:isDiff?'差异':'合格'});
+    }
+  }
+  return out;
+}
+
+/* =========================================================
+   3. 状态 & 筛选
+   ========================================================= */
+const state = {
+  region:'全区域', center:'全部', category:'全部', inspector:'全部',
+  bizline:'全部', from:1, to:CFG.asOfDay, preset:'todate',
+  underOnly:false, collapsed:{}
+};
+
+function baseFilter(r, ignore={}){
+  if(!ignore.region && state.region!=='全区域' && r.region!==state.region) return false;
+  if(state.center!=='全部' && r.center!==state.center) return false;
+  if(state.category!=='全部' && r.category!==state.category) return false;
+  if(state.inspector!=='全部' && r.inspector!==state.inspector) return false;
+  if(state.bizline!=='全部' && r.bizline!==state.bizline) return false;
+  if(r.day<state.from || r.day>state.to) return false;
+  return true;
+}
+const getFiltered = (ignore={}) => RECORDS.filter(r=>baseFilter(r,ignore));
+
+const fmt = n => n.toLocaleString('zh-CN');
+const pct = (a,b) => b>0? (a/b*100) : 0;
+const pct1 = x => x.toFixed(1)+'%';
+const sum = (arr,f)=>arr.reduce((s,x)=>s+f(x),0);
+const uniq = (arr,f)=>new Set(arr.map(f)).size;
+const targetOf = recs => {
+  const s=new Set();
+  for(const r of recs) s.add(r.inspector+'|'+r.day);
+  return s.size*CFG.dailyTarget;
+};
+
+function computeDims(){
+  const D=RECORDS, U=f=>[...new Set(D.map(f).filter(v=>v&&v!=='—'))];
+  if(!D.length) return;
+  CFG.categories=U(r=>r.category);
+  CFG.bizlines=U(r=>r.bizline);
+  CFG.diffTypes=[...new Set(D.flatMap(r=>r.diffItems))].filter(Boolean);
+  CFG.sources=U(r=>r.source);
+  DYN_CENTERS=U(r=>r.center);
+  const im={};
+  for(const r of D){
+    im[r.inspector]=im[r.inspector]||{};
+    im[r.inspector][r.region]=(im[r.inspector][r.region]||0)+1;
+  }
+  DYN_INSPECTORS=Object.keys(im).map(n=>{
+    const rs=im[n];
+    return [n, Object.keys(rs).sort((a,b)=>rs[b]-rs[a])[0]];
+  });
+  const days=[...new Set(D.map(r=>r.day))].sort((a,b)=>a-b);
+  CFG.asOfDay=days[days.length-1];
+  state.from=days[0];
+  state.to=CFG.asOfDay;
+}
+function deriveDims(){
+  if(typeof window!=='undefined' && window.QC_DATA && window.QC_DATA.length) computeDims();
+}
+
+/* =========================================================
+   4. 渲染：KPI Cards
+   ========================================================= */
+function renderKPIs(){
+  const f=getFiltered();
+  const checked=sum(f,r=>r.qty), diff=sum(f,r=>r.qtyDiff);
+  const target=targetOf(f), comp=pct(checked,target);
+  const insDays=Math.round(target/CFG.dailyTarget);
+  const daysActive=uniq(f,r=>r.day);
+  const bar=comp>=100?'var(--good)':comp>=85?'var(--s1)':'var(--warn)';
+  document.getElementById('kpis').innerHTML=`
+    <div class="kpi hero">
+      <div class="klabel">🎯 目标完成率 · ${CFG.dailyTarget}台/人/日</div>
+      <div class="kval">${comp.toFixed(1)}<span class="kunit">%</span></div>
+      <div class="meter"><span style="width:${Math.min(comp,100)}%;background:${bar}"></span></div>
+      <div class="kdelta ${comp>=100?'up':'down'}">${fmt(checked)} / ${fmt(target)} 台 · ${uniq(f,r=>r.inspector)} 人在岗 · 出勤 ${insDays} 天</div>
+    </div>
+    ${tile('📦 累计质检台数', fmt(checked),'台',`日均 ${daysActive?Math.round(checked/daysActive):0} 台`, false)}
+    ${tile('⚠️ 差异台数', fmt(diff),'台',`差异率 ${pct1(pct(diff,checked))}`, false, true)}
+    ${tile('🏪 覆盖商户', uniq(f,r=>r.merchant),'家',`中心仓 ${uniq(f,r=>r.center)} 个`, true)}
+    ${tile('👥 在岗人员', uniq(f,r=>r.inspector),'人',`出勤天数共 ${insDays} 天`, true)}`;
+}
+function tile(l,v,u,d,good,bad){
+  return `<div class="kpi"><div class="klabel">${l}</div>
+    <div class="kval tnum">${v}<span class="kunit">${u}</span></div>
+    <div class="kdelta ${bad?'down':good?'up':''}">${d}</div></div>`;
+}
+
+/* =========================================================
+   5. 渲染：每人单日明细
+   ========================================================= */
+function renderDaily(){
+  const f=getFiltered();
+  const days=[...new Set(f.map(r=>r.day))].sort((a,b)=>a-b);
+  const allInsp=[...new Set(f.map(r=>r.inspector))].sort();
+  // data[day][inspector] = count
+  const data={};
+  days.forEach(d=>{ data[d]={}; allInsp.forEach(n=>data[d][n]=0); });
+  f.forEach(r=>{ data[r.day][r.inspector]=(data[r.day][r.inspector]||0)+r.qty; });
+  const dTotals={};
+  days.forEach(d=>{ dTotals[d]=allInsp.reduce((s,n)=>s+data[d][n],0); });
+  const iTotals={};
+  allInsp.forEach(n=>{ iTotals[n]=days.reduce((s,d)=>s+data[d][n],0); });
+  const inspOrder=allInsp.sort((a,b)=>iTotals[b]-iTotals[a]);
+  const maxVal=Math.max(1,...Object.values(iTotals),...Object.values(dTotals));
+  const heat=v=>{
+    const p=v/maxVal;
+    return p>0.8?'color-mix(in srgb,var(--s1) 40%,transparent)':
+           p>0.5?'color-mix(in srgb,var(--s1) 22%,transparent)':
+           p>0.2?'color-mix(in srgb,var(--s1) 10%,transparent)':'transparent';
+  };
+
+  let html='<div class="tablewrap scroll" style="max-height:400px"><table style="font-size:12px"><thead><tr><th>日期</th>';
+  inspOrder.forEach(n=>html+='<th class="num">'+n+'</th>');
+  html+='<th class="num">合计</th></tr></thead><tbody>';
+  days.forEach(d=>{
+    html+='<tr><td class="tnum" style="font-weight:600">'+d+'日</td>';
+    inspOrder.forEach(n=>{
+      const v=data[d][n]||0;
+      const color=v>=CFG.dailyTarget?'var(--good-ink)':v>0?'var(--crit)':'var(--muted)';
+      html+='<td class="num tnum" style="background:'+heat(v)+';color:'+color+';font-weight:'+(v>0?'600':'400')+'">'+(v>0?v:'<span style="font-size:11px">休</span>')+'</td>';
+    });
+    html+='<td class="num tnum" style="font-weight:600;background:var(--surface-1)">'+dTotals[d]+'</td></tr>';
+  });
+  // totals row
+  html+='<tr style="border-top:2px solid var(--ink)"><td style="font-weight:700">合计</td>';
+  inspOrder.forEach(n=>html+='<td class="num tnum" style="font-weight:600;color:var(--ink)">'+iTotals[n]+'</td>');
+  html+='<td class="num tnum" style="font-weight:700;color:var(--s1)">'+f.length+'</td></tr>';
+  html+='</tbody></table></div>';
+  document.getElementById('dailyChart').innerHTML=html;
+}
+
+/* =========================================================
+   6. 渲染：巡检人员数据 & 个人差异率
+   ========================================================= */
+function renderInspectors(){
+  const map={};
+  for(const r of getFiltered()){
+    const m=map[r.inspector]||(map[r.inspector]={region:r.region,centers:{},days:new Set(),qty:0,diff:0});
+    m.qty+=r.qty;
+    m.diff+=r.qtyDiff;
+    m.days.add(r.day);
+    m.centers[r.center]=(m.centers[r.center]||0)+1;
+  }
+  const people=Object.entries(map).map(([k,v])=>{
+    const days=v.days.size, tgt=days*CFG.dailyTarget;
+    const center=Object.entries(v.centers).sort((a,b)=>b[1]-a[1])[0][0];
+    return {name:k, region:v.region, center, days, qty:v.qty, diff:v.diff, tgt,
+      comp:pct(v.qty,tgt), rate:pct(v.diff,v.qty)};
+  });
+
+  const byReg={};
+  people.forEach(p=>(byReg[p.region]=byReg[p.region]||[]).push(p));
+  const regOrder=[...CFG.regions.filter(r=>byReg[r]), ...Object.keys(byReg).filter(r=>!CFG.regions.includes(r))];
+
+  // region ranking for badges
+  const regScores=regOrder.map(r=>{
+    const ppl=byReg[r];
+    return {region:r, comp:pct(sum(ppl,p=>p.qty),sum(ppl,p=>p.tgt)), q:sum(ppl,p=>p.qty)};
+  }).sort((a,b)=>b.comp-a.comp);
+  const rankBadge=(i,total)=>{
+    if(total<=1) return '';
+    if(i===0) return '🥇'; if(i===1) return '🥈'; if(i===2) return '🥉';
+    return (i+1)+'';
+  };
+  const RANK_BADGE=Object.fromEntries(regScores.map((s,i)=>[s.region,rankBadge(i,regScores.length)]));
+
+  const UNDER=state.underOnly?85:-1;
+  const cc=c=>c>=100?'var(--good-ink)':c>=85?'var(--ink)':'var(--crit)';
+
+  // diff rate color: ≤5% good, 5-10% warn, >10% crit
+  const drColor=r=>r<=5?'var(--good-ink)':r<=10?'var(--warn)':'var(--crit)';
+  const drBg=r=>r<=5?'color-mix(in srgb,var(--good) 12%,transparent)':r<=10?'color-mix(in srgb,var(--warn) 14%,transparent)':'color-mix(in srgb,var(--crit) 10%,transparent)';
+
+  let rows='', hasAny=false;
+  for(const reg of regOrder){
+    const ppl=byReg[reg].filter(p=>p.comp<UNDER||UNDER<0).sort((a,b)=>b.comp-a.comp);
+    if(!ppl.length) continue;
+    hasAny=true;
+    const q=sum(ppl,p=>p.qty), tgt=sum(ppl,p=>p.tgt), diff=sum(ppl,p=>p.diff), days=sum(ppl,p=>p.days);
+    const comp=pct(q,tgt), rate=pct(diff,q), rc=cssv(REGION_COLOR[reg]||'--muted');
+    const badge=RANK_BADGE[reg]||'';
+    const collapsed=state.collapsed[reg]!==undefined?state.collapsed[reg]:false; // default expanded
+
+    rows+=`<tr class="reg-sub" data-reg="${reg}" style="background:color-mix(in srgb,${rc} 10%,transparent);font-weight:600;cursor:pointer" onclick="state.collapsed['${reg}']=!state.collapsed['${reg}'];renderInspectors();">
+      <td colspan="2"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${rc};margin-right:7px;vertical-align:middle"></span><span class="toggle-icon">${collapsed?"▶":"▼"}</span> ${reg} 小计 · ${ppl.length}人${badge?' <span style="font-size:16px;line-height:1">'+badge+'</span>':''}</td>
+      <td></td>
+      <td class="num tnum">${days}</td>
+      <td class="num tnum">${fmt(q)}</td>
+      <td class="num tnum">${fmt(tgt)}</td>
+      <td class="num tnum" style="color:${cc(comp)}">${comp.toFixed(0)}%</td>
+      <td class="num tnum" style="color:${drColor(rate)}">${rate.toFixed(1)}%</td>
+      <td class="num tnum">${diff}</td>
+    </tr>`;
+
+    for(const a of ppl){
+      const diffBarW=Math.min(a.rate/15*100,100); // scale: 15% = full bar
+      rows+=`<tr class="reg-mem reg-mem-${reg}" style="${collapsed?"display:none":""}">
+        <td style="padding-left:24px">${a.name}${a.comp<85?' <span style="font-size:11px;color:var(--crit);font-weight:400">⚠未达标</span>':''}${a.comp>=100?' <span style="font-size:11px;color:var(--good-ink)">✅</span>':''}</td>
+        <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${rc};margin-right:6px;vertical-align:middle"></span>${a.region}</td>
+        <td>${a.center}</td>
+        <td class="num tnum">${a.days}</td>
+        <td class="num tnum">${fmt(a.qty)}</td>
+        <td class="num tnum">${fmt(a.tgt)}</td>
+        <td class="num tnum" style="color:${cc(a.comp)};font-weight:600">${a.comp.toFixed(0)}%</td>
+        <td class="num tnum" style="font-weight:600">
+          <span style="display:inline-block;width:${diffBarW}%;max-width:80px;height:14px;background:${drColor(a.rate)};border-radius:3px;vertical-align:middle;margin-right:5px;opacity:.35"></span>
+          <span style="color:${drColor(a.rate)}">${a.rate.toFixed(1)}%</span>
+        </td>
+        <td class="num tnum">${a.diff}<span style="color:var(--muted);font-size:10px">/${a.qty}</span></td>
+      </tr>`;
+    }
+  }
+  if(!hasAny) rows=`<tr><td colspan="9" style="color:var(--muted);text-align:center;padding:16px">${state.underOnly?'当前筛选无不达标人员 ✅ 全部达标':'暂无数据'}</td></tr>`;
+
+  document.getElementById('inspectorTable').innerHTML=
+    `<thead><tr>
+      <th>巡检人员</th><th>大区</th><th>中心仓</th>
+      <th class="num">出勤天</th><th class="num">质检台</th><th class="num">目标</th>
+      <th class="num">达成率</th><th class="num">个人差异率</th><th class="num">差异台</th>
+    </tr></thead><tbody>${rows}</tbody>`;
+
+  // store export data
+  window._inspExport=()=>{
+    const csv=['巡检人员,大区,中心仓,出勤天,质检台,目标,达成率,个人差异率,差异台'];
+    for(const reg of regOrder){
+      const ppl=byReg[reg].sort((a,b)=>b.comp-a.comp);
+      const q=sum(ppl,p=>p.qty),tgt=sum(ppl,p=>p.tgt),diff=sum(ppl,p=>p.diff),days=sum(ppl,p=>p.days);
+      csv.push(`● ${reg} 小计(${ppl.length}人),,,"${days}","${q}","${tgt}","${pct(q,tgt).toFixed(0)}%","${pct(diff,q).toFixed(1)}%","${diff}"`);
+      ppl.forEach(p=>csv.push(`${p.name},${p.region},${p.center},"${p.days}","${p.qty}","${p.tgt}","${p.comp.toFixed(0)}%","${p.rate.toFixed(1)}%","${p.diff}"`));
+    }
+    downloadFile('巡检人员效能数据_'+state.region+'.csv','﻿'+csv.join('\r\n'));
+    toast('已导出巡检人员效能数据');
+  };
+}
+
+/* =========================================================
+   7. 筛选控件
+   ========================================================= */
+function buildControls(){
+  const rt=document.getElementById('regionTabs'), regs=['全区域',...CFG.regions];
+  rt.innerHTML=regs.map(r=>{
+    const c=r==='全区域'?'--ink':REGION_COLOR[r];
+    return `<button class="rtab ${state.region===r?'active':''}" data-r="${r}">
+      <span class="dot" style="background:${cssv(c)||cssv('--ink')}"></span>${r}</button>`;
+  }).join('');
+  rt.querySelectorAll('.rtab').forEach(b=>b.onclick=()=>{
+    state.region=b.dataset.r; buildControls(); renderAll();
+  });
+
+  fillSelect('fCenter',['全部',...DYN_CENTERS],state.center,v=>state.center=v);
+  fillSelect('fCategory',['全部',...CFG.categories],state.category,v=>state.category=v);
+  fillSelect('fInspector',['全部',...DYN_INSPECTORS.map(i=>i[0])],state.inspector,v=>state.inspector=v);
+  fillSelect('fBiz',['全部',...CFG.bizlines],state.bizline,v=>state.bizline=v);
+
+  const ff=document.getElementById('fFrom'), ft=document.getElementById('fTo');
+  ff.min=ft.min=dayToDate(1); ff.max=ft.max=dayToDate(CFG.workDays);
+  ff.value=dayToDate(state.from); ft.value=dayToDate(state.to);
+  ff.onchange=()=>{ const p=parseDate(ff.value); if(p){state.from=p.day; syncPreset(); renderAll();} };
+  ft.onchange=()=>{ const p=parseDate(ft.value); if(p){state.to=p.day; syncPreset(); renderAll();} };
+
+  document.querySelectorAll('#presets .chip').forEach(b=>{
+    b.classList.toggle('active',state.preset===b.dataset.p);
+    b.onclick=()=>applyPreset(b.dataset.p);
+  });
+
+  const ub=document.getElementById('underFilter');
+  if(ub){
+    ub.classList.toggle('active',state.underOnly);
+    ub.onclick=()=>{ state.underOnly=!state.underOnly; ub.classList.toggle('active',state.underOnly); renderInspectors(); };
+  }
+}
+
+function fillSelect(id,opts,val,on){
+  const s=document.getElementById(id);
+  s.innerHTML=opts.map(o=>`<option ${o===val?'selected':''}>${o}</option>`).join('');
+  s.onchange=()=>{ on(s.value); renderAll(); };
+}
+
+function applyPreset(p){
+  state.preset=p;
+  if(p==='todate'){state.from=1; state.to=CFG.asOfDay;}
+  else if(p==='7'){state.to=CFG.asOfDay; state.from=Math.max(1,CFG.asOfDay-6);}
+  else if(p==='all'){state.from=1; state.to=CFG.workDays;}
+  buildControls(); renderAll();
+}
+function syncPreset(){ state.preset=''; document.querySelectorAll('#presets .chip').forEach(b=>b.classList.remove('active')); }
+
+/* =========================================================
+   8. 主题
+   ========================================================= */
+document.getElementById('themeBtn').onclick=()=>{
+  const dark=document.documentElement.getAttribute('data-theme')==='dark';
+  document.documentElement.setAttribute('data-theme',dark?'light':'dark');
+  document.getElementById('themeBtn').textContent=dark?'🌙 深色':'☀ 浅色';
+  renderAll();
+};
+
+/* =========================================================
+   9. 导出
+   ========================================================= */
+document.getElementById('exportInspBtn').onclick=()=>{
+  if(window._inspExport) window._inspExport();
+};
+
+function downloadFile(name,content){
+  const blob=new Blob([content],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+
+const toastEl=document.getElementById('toast');
+let toastTimer;
+function toast(msg,err){
+  toastEl.textContent=msg;
+  toastEl.classList.toggle('err',!!err);
+  toastEl.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>toastEl.classList.remove('on'),2800);
+}
+
+/* =========================================================
+   10. 启动
+   ========================================================= */
+function renderAll(){
+  renderKPIs();
+  renderDaily();
+  renderInspectors();
+}
+
+function updateFoot(){
+  const foot=document.querySelector('.foot');
+  if(!foot) return;
+  if(typeof window!=='undefined' && window.QC_DATA && window.QC_DATA.length){
+    const days=[...new Set(RECORDS.map(r=>r.day))].sort((a,b)=>a-b);
+    foot.textContent=`巡检人员效能看板 · 已加载线下质检数据 ${RECORDS.length.toLocaleString('zh-CN')} 条 · ${RECORDS[0].date} 起 ${days.length} 个工作日`;
+  }
+}
+
+deriveDims();
+buildControls();
+renderAll();
+updateFoot();
+</script>
+</body>
+</html>
