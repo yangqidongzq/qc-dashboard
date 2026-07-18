@@ -444,6 +444,7 @@ function renderDaily(){
     f=f.filter(r=>r.date>=state.dailyFrom&&r.date<=state.dailyTo);
   }
 
+  const days=[...new Set(f.map(r=>r.day))].sort((a,b)=>a-b);
   const allInsp=[...new Set(f.map(r=>r.inspector))].sort();
   const filteredInsp = allInsp;
 
