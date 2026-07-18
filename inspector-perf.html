@@ -181,14 +181,13 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
 
     <!-- ═══ Section 3: Personal Diff Rate ═══ -->
     <div class="card">
-      <h3>⚠️ 巡检个人差异率 <span class="hint">差异台 / 质检台 · 按差异率从高到低</span></h3>
+      <h3>⚠️ 巡检个人差异率 <span class="hint">差异台 / 质检台</span></h3>
       <div class="csub">
         <span style="color:var(--good-ink)">≤5% 低风险</span> ·
         <span style="color:var(--warn)">5%~10% 关注</span> ·
         <span style="color:var(--crit)">>10% 重点改善</span>
-        <span style="margin-left:12px;color:var(--muted)">| 虚线 = 团队均值</span>
       </div>
-      <div id="diffRateChart"></div>
+      <div class="tablewrap"><table id="diffRateTable"></table></div>
     </div>
 
     <!-- ═══ Section 4: Inspector Personnel ═══ -->
@@ -440,75 +439,38 @@ function renderDaily(){
    ========================================================= */
 function renderDiffRate(){
   const f=getFiltered();
-  // aggregate per inspector
   const map={};
   for(const r of f){
-    const m=map[r.inspector]||(map[r.inspector]={region:r.region, qty:0, diff:0, items:{}});
+    const m=map[r.inspector]||(map[r.inspector]={region:r.region, qty:0, diff:0});
     m.qty+=r.qty;
     m.diff+=r.qtyDiff;
-    if(r.qtyDiff>0) r.diffItems.forEach(it=>{ m.items[it]=(m.items[it]||0)+1; });
   }
-  const people=Object.entries(map).map(([k,v])=>{
-    const rate=pct(v.diff,v.qty);
-    const topItems=Object.entries(v.items).sort((a,b)=>b[1]-a[1]).slice(0,3);
-    return {name:k, region:v.region, qty:v.qty, diff:v.diff, rate, topItems};
-  }).sort((a,b)=>b.rate-a.rate); // highest diff rate first
+  const people=Object.entries(map).map(([k,v])=>({
+    name:k, region:v.region, qty:v.qty, diff:v.diff, rate:pct(v.diff,v.qty)
+  })).sort((a,b)=>b.rate-a.rate);
 
   if(!people.length){
-    document.getElementById('diffRateChart').innerHTML='<div style="color:var(--muted);padding:16px;text-align:center">暂无差异数据</div>';
+    document.getElementById('diffRateTable').innerHTML='<div style="color:var(--muted);padding:16px;text-align:center">暂无差异数据</div>';
     return;
   }
 
-  const avgRate=sum(people,p=>p.diff)/sum(people,p=>p.qty)*100;
-  const maxRate=Math.max(people[0].rate, 15); // scale max to at least 15%
-  const drColor=r=>r<=5?'var(--good)':r<=10?'var(--warn)':'var(--crit)';
-  const drBg=r=>r<=5?'color-mix(in srgb,var(--good) 12%,transparent)':r<=10?'color-mix(in srgb,var(--warn) 14%,transparent)':'color-mix(in srgb,var(--crit) 10%,transparent)';
-  const drText=r=>r<=5?'var(--good-ink)':r<=10?'#8b6914':'var(--crit)';
+  const drColor=r=>r<=5?'var(--good-ink)':r<=10?'var(--warn)':'var(--crit)';
 
-  // ── Summary stats ──
-  const highRisk=people.filter(p=>p.rate>10).length;
-  const lowRisk=people.filter(p=>p.rate<=5).length;
-  const totalDiff=sum(people,p=>p.diff);
-  const totalQty=sum(people,p=>p.qty);
+  let rows=people.map((p,i)=>{
+    return `<tr>
+      <td>${i+1}</td>
+      <td>${p.name}</td>
+      <td>${p.region}</td>
+      <td class="num tnum">${fmt(p.qty)}</td>
+      <td class="num tnum">${p.diff}</td>
+      <td class="num tnum" style="color:${drColor(p.rate)};font-weight:600">${p.rate.toFixed(1)}%</td>
+    </tr>`;
+  }).join('');
 
-  let html='';
-  html+='<div class="diffrate-summary">';
-  html+='<div class="ds"><div class="ds-val" style="color:'+drText(avgRate)+'">'+avgRate.toFixed(1)+'%</div><div class="ds-label">📊 团队均值差异率</div></div>';
-  html+='<div class="ds"><div class="ds-val">'+totalDiff+'<span style="font-size:11px;color:var(--muted)">/'+totalQty+'</span></div><div class="ds-label">⚠️ 总差异台 / 总质检台</div></div>';
-  html+='<div class="ds"><div class="ds-val" style="color:var(--good-ink)">'+lowRisk+'人</div><div class="ds-label">✅ 低风险 ≤5%</div></div>';
-  html+='<div class="ds"><div class="ds-val" style="color:var(--crit)">'+highRisk+'人</div><div class="ds-label">🔴 重点改善 >10%</div></div>';
-  html+='</div>';
-
-  // ── Bar chart per person ──
-  html+='<div style="margin-bottom:8px;font-size:11px;color:var(--muted)">按个人差异率从高到低排列 | 虚线 = 团队均值 '+avgRate.toFixed(1)+'% | 悬停查看差异项明细</div>';
-  html+='<div class="diffrate-row header-row"><span>排名</span><span>巡检人员</span><span>差异率</span><span>差异台</span></div>';
-
-  people.forEach((p,i)=>{
-    const rankEmoji=i===0?'🔴':i===1?'🟠':i===2?'🟡':'';
-    const barW=Math.min(p.rate/maxRate*100, 100);
-    const avgPos=avgRate/maxRate*100;
-    html+='<div class="diffrate-row" style="background:'+drBg(p.rate)+';border-radius:6px;padding:10px;margin:3px 0" title="'+p.name+' 差异项: '+(p.topItems.length?p.topItems.map(x=>x[0]+'×'+x[1]).join(' / '):'无')+'">';
-    html+='<div class="rank" style="color:'+drText(p.rate)+'">'+(i+1)+'</div>';
-    html+='<div class="name">'+p.name+' <span class="region-tag">'+p.region+'</span>';
-    // diff item mini tags
-    if(p.topItems.length){
-      html+='<div class="diffrate-item-tags">';
-      p.topItems.forEach(([it,ct])=>{
-        html+='<span class="diffrate-item-tag">'+it+'×'+ct+'</span>';
-      });
-      html+='</div>';
-    }
-    html+='</div>';
-    html+='<div class="bar-col"><div class="bar-track">';
-    html+='<div class="bar-fill" style="width:'+barW+'%;background:'+drColor(p.rate)+'"></div>';
-    html+='<div class="bar-avg" style="left:'+avgPos+'%" title="团队均值 '+avgRate.toFixed(1)+'%"></div>';
-    html+='</div></div>';
-    html+='<div class="rate-val" style="color:'+drText(p.rate)+'">'+p.rate.toFixed(1)+'%</div>';
-    html+='<div class="detail">'+p.diff+'<span style="color:var(--muted)">/'+p.qty+'</span></div>';
-    html+='</div>';
-  });
-
-  document.getElementById('diffRateChart').innerHTML=html;
+  document.getElementById('diffRateTable').innerHTML=
+    `<thead><tr>
+      <th>#</th><th>巡检人员</th><th>大区</th><th class="num">质检台数</th><th class="num">差异台数</th><th class="num">差异率</th>
+    </tr></thead><tbody>${rows}</tbody>`;
 }
 
 /* =========================================================
