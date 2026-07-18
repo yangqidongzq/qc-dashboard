@@ -190,7 +190,18 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
       <div class="tablewrap"><table id="diffRateTable"></table></div>
     </div>
 
-    <!-- ═══ Section 4: Inspector Personnel ═══ -->
+    <!-- ═══ Section 4: 人员问题收集完成度 ═══ -->
+    <div class="card">
+      <h3>📋 人员问题收集完成度 <span class="hint">目标 3条/人/月 · 通过=已调整</span></h3>
+      <div class="csub">
+        「是否调整」=<span style="color:var(--good-ink)">是→通过</span> ·
+        <span style="color:var(--crit)">否→未通过</span>
+        <span style="margin-left:8px">| 数据源：problem-data.js（缺失则显示示例）</span>
+      </div>
+      <div class="tablewrap"><table id="problemTable"></table></div>
+    </div>
+
+    <!-- ═══ Section 5: Inspector Personnel ═══ -->
     <div class="card">
       <h3>
         <span>👤 巡检人员数据</span>
@@ -215,6 +226,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
 
 <!-- ═══ Scripts ═══ -->
 <script src="qc-data.js"></script>
+<script src="problem-data.js"></script>
 <script>
 /* =========================================================
    1. 配置
@@ -475,7 +487,97 @@ function renderDiffRate(){
 }
 
 /* =========================================================
-   7. 渲染：巡检人员数据
+   7. 人员问题收集完成度
+   ========================================================= */
+// 数据：window.PROBLEM_DATA = [{inspector, date, description, adjusted}]  adjusted: 是/否
+let PROBLEM_RECORDS = (typeof window!=='undefined' && window.PROBLEM_DATA && window.PROBLEM_DATA.length)
+  ? window.PROBLEM_DATA
+  : genProblemData();
+
+function genProblemData(){
+  // 示例数据：每人每月目标3条
+  const inspectors = ['杨启栋','胡江海','张天东','火东云','刘辉崇','刘先浩','旷小波','尚杰','谢志亮','苏凯','黄少博','米小三','赵子龙','张晰梦','吴恩惠','杨涛'];
+  const descriptions = ['屏幕划痕判定标准不一致','充电异常未复现即判定合格','外观磕碰计量方式争议','电池健康度阈值需明确','浸液判定缺少辅助工具','功能测试流程遗漏步骤'];
+  const out = [];
+  inspectors.forEach(name => {
+    const n = Math.random() < 0.15 ? 0 : (Math.random() < 0.3 ? 1 : Math.random() < 0.35 ? 2 : 3 + Math.floor(Math.random()*2));
+    for(let i=0; i<n; i++){
+      out.push({
+        inspector: name,
+        date: '2026-07-' + String(Math.floor(Math.random()*17)+1).padStart(2,'0'),
+        description: descriptions[Math.floor(Math.random()*descriptions.length)],
+        adjusted: Math.random() < 0.6 ? '是' : '否'
+      });
+    }
+  });
+  return out;
+}
+
+function renderProblem(){
+  const TARGET = 3;
+  const map = {};
+  for(const r of PROBLEM_RECORDS){
+    const m = map[r.inspector] || (map[r.inspector] = {collected:0, passed:0});
+    m.collected++;
+    if(r.adjusted === '是') m.passed++;
+  }
+
+  // also include inspectors from QC data who may have 0 problem records
+  const allInsp = [...new Set(RECORDS.map(r=>r.inspector))].sort();
+  allInsp.forEach(n => { if(!map[n]) map[n] = {collected:0, passed:0}; });
+
+  const people = Object.entries(map).map(([name, v]) => ({
+    name,
+    collected: v.collected,
+    passed: v.passed,
+    failed: v.collected - v.passed,
+    remain: Math.max(0, TARGET - v.passed),
+    done: v.passed >= TARGET
+  })).sort((a,b) => a.remain - b.remain); // closest to target first, then those needing most
+
+  if(!people.length){
+    document.getElementById('problemTable').innerHTML = '<div style="color:var(--muted);padding:16px;text-align:center">暂无问题收集数据，请导入 problem-data.js</div>';
+    return;
+  }
+
+  const barColor = r => r<=0?'var(--good)':r===1?'var(--warn)':'var(--crit)';
+  const textColor = r => r<=0?'var(--good-ink)':r===1?'#8b6914':'var(--crit)';
+
+  let rows = people.map(p => {
+    const remain = p.remain;
+    const pctDone = TARGET>0 ? Math.min(p.passed/TARGET*100, 100) : 0;
+    return `<tr>
+      <td>${p.name}</td>
+      <td class="num tnum">${p.collected}</td>
+      <td class="num tnum" style="color:var(--good-ink);font-weight:600">${p.passed}</td>
+      <td class="num tnum" style="color:${p.failed>0?'var(--crit)':'var(--muted)'}">${p.failed||'—'}</td>
+      <td class="num tnum">
+        <span style="display:inline-block;width:${pctDone}%;max-width:80px;height:14px;background:${barColor(remain)};border-radius:3px;vertical-align:middle;margin-right:5px;opacity:.4"></span>
+        <span style="color:${textColor(remain)};font-weight:600">${remain<=0?'✅ 已完成':remain+' 条'}</span>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // summary
+  const totalPassed = sum(people, p=>p.passed);
+  const totalDone = people.filter(p=>p.done).length;
+  const totalNeed = people.filter(p=>!p.done).length;
+
+  document.getElementById('problemTable').innerHTML =
+    `<thead><tr>
+      <th>巡检人员</th><th class="num">已收集</th><th class="num">已通过</th><th class="num">未通过</th><th class="num">还差 (目标${TARGET}条)</th>
+    </tr></thead><tbody>${rows}</tbody>
+    <tfoot><tr style="background:var(--surface-1);font-weight:600">
+      <td>合计 · ${people.length}人</td>
+      <td class="num tnum">${sum(people,p=>p.collected)}</td>
+      <td class="num tnum" style="color:var(--good-ink)">${totalPassed}</td>
+      <td class="num tnum">${sum(people,p=>p.failed)}</td>
+      <td class="num tnum">✅ ${totalDone}人完成 · 🔴 ${totalNeed}人未完成</td>
+    </tr></tfoot>`;
+}
+
+/* =========================================================
+   8. 渲染：巡检人员数据
    ========================================================= */
 function renderInspectors(){
   const map={};
@@ -672,6 +774,7 @@ function renderAll(){
   renderKPIs();
   renderDaily();
   renderDiffRate();
+  renderProblem();
   renderInspectors();
 }
 
