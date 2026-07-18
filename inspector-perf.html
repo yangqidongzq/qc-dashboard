@@ -485,20 +485,21 @@ function renderDaily(){
            p>0.2?'color-mix(in srgb,var(--s1) 10%,transparent)':'transparent';
   };
 
-  let html='<div class="tablewrap scroll" style="max-height:400px"><table style="font-size:12px"><thead><tr><th>日期</th>';
-  inspOrder.forEach(n=>html+='<th class="num">'+n+'</th>');
+  // 转置：行为人员，列为日期
+  let html='<div class="tablewrap scroll" style="max-height:400px"><table style="font-size:12px"><thead><tr><th>巡检人员</th>';
+  days.forEach(d=>html+='<th class="num">'+d+'日</th>');
   html+='<th class="num">合计</th></tr></thead><tbody>';
-  days.forEach(d=>{
-    html+='<tr><td class="tnum" style="font-weight:600">'+d+'日</td>';
-    inspOrder.forEach(n=>{
+  inspOrder.forEach(n=>{
+    html+='<tr><td style="font-weight:600">'+n+'</td>';
+    days.forEach(d=>{
       const v=data[d][n]||0;
       const color=v>=CFG.dailyTarget?'var(--good-ink)':v>0?'var(--crit)':'var(--muted)';
       html+='<td class="num tnum" style="background:'+heat(v)+';color:'+color+';font-weight:'+(v>0?'600':'400')+'">'+(v>0?v:'<span style="font-size:13px;font-weight:600;color:var(--ink-2)">休</span>')+'</td>';
     });
-    html+='<td class="num tnum" style="font-weight:600;background:var(--surface-1)">'+dTotals[d]+'</td></tr>';
+    html+='<td class="num tnum" style="font-weight:600;background:var(--surface-1)">'+iTotals[n]+'</td></tr>';
   });
   html+='<tr style="border-top:2px solid var(--ink)"><td style="font-weight:700">合计</td>';
-  inspOrder.forEach(n=>html+='<td class="num tnum" style="font-weight:600;color:var(--ink)">'+iTotals[n]+'</td>');
+  days.forEach(d=>html+='<td class="num tnum" style="font-weight:600;color:var(--ink)">'+dTotals[d]+'</td>');
   html+='<td class="num tnum" style="font-weight:700;color:var(--s1)">'+f.filter(r=>filteredInsp.includes(r.inspector)).length+'</td></tr>';
   html+='</tbody></table></div>';
   document.getElementById('dailyChart').innerHTML=html;
