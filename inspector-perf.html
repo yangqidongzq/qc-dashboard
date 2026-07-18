@@ -199,7 +199,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
         </span>
       </h3>
       <div class="csub" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <span>「是否调整」=<span style="color:var(--good-ink)">是→通过</span> · <span style="color:var(--crit)">否→未通过</span> · <span style="color:var(--s5)">待验证→返回</span></span>
+        <span>「是否调整」=<span style="color:var(--good-ink)">是→通过</span> · <span style="color:var(--crit)">否→未通过</span></span>
         <span style="color:var(--muted)">|</span>
         <span>月份：<select id="fProblemMonth" style="border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:12px;background:var(--surface-1);color:var(--ink);font-family:inherit"></select></span>
       </div>
@@ -565,7 +565,6 @@ function renderProblem(){
     rows += `<tr class="reg-sub" style="background:color-mix(in srgb,${rc} 10%,transparent);font-weight:600;cursor:pointer" onclick="state.collapsed['prob_${reg}']=${!col};renderProblem();">
       <td colspan="2"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${rc};margin-right:7px;vertical-align:middle"></span><span>${col?'▶':'▼'}</span> ${reg} 小计 · ${ppl.length}人</td>
       <td class="num tnum">${q}</td><td class="num tnum" style="color:var(--good-ink)">${passed}</td>
-      <td class="num tnum" style="color:${pending>0?'var(--s5)':'var(--muted)'}">${pending||'—'}</td>
       <td class="num tnum" style="color:var(--crit)">${sum(ppl,p=>p.failed)||'—'}</td>
       <td class="num tnum">${sum(ppl,p=>p.remain)}</td>
     </tr>`;
@@ -581,14 +580,13 @@ function renderProblem(){
         <td style="color:var(--muted);font-size:11px">${p.region}</td>
         <td class="num tnum">${p.collected||'—'}</td>
         <td class="num tnum" style="color:var(--good-ink);font-weight:600">${p.passed||'—'}</td>
-        <td class="num tnum" style="color:${p.pending>0?'var(--s5);font-weight:600':'var(--muted)'}">${p.pending>0?'⏳ '+p.pending:'—'}</td>
         <td class="num tnum" style="color:${p.failed>0?'var(--crit)':'var(--muted)'}">${p.failed>0?p.failed:'—'}</td>
-        <td class="num tnum" style="color:${cc(p.passed+p.pending)};font-weight:600">${p.remain<=0?'✅':'差 '+p.remain}</td>
+        <td class="num tnum" style="color:${cc(p.passed)};font-weight:600">${p.remain<=0?'✅':'差 '+p.remain}</td>
       </tr>`;
 
       // 明细展开
       if(isExp && p.recs.length > 0){
-        rows += `<tr style="${col?'display:none':''}"><td colspan="7" style="padding:0;background:var(--surface-1)">
+        rows += `<tr style="${col?'display:none':''}"><td colspan="6" style="padding:0;background:var(--surface-1)">
           <div style="overflow-x:auto;max-height:360px;padding:8px 14px;font-size:11px">
           <table style="font-size:11px;min-width:1100px">
             <thead><tr style="background:var(--track)">
@@ -609,7 +607,7 @@ function renderProblem(){
       }
     }
   }
-  if(!hasAny) rows = `<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:16px">${state.problemMonth} 暂无巡检人员问题收集数据</td></tr>`;
+  if(!hasAny) rows = `<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:16px">${state.problemMonth} 暂无巡检人员问题收集数据</td></tr>`;
 
   const totalPassed = sum(people,p=>p.passed);
   const totalDone = people.filter(p=>p.done).length;
@@ -622,15 +620,14 @@ function renderProblem(){
     `<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;padding:8px 12px;background:var(--surface-1);border-radius:8px">
       <span>📊 <b>总收集：${totalCollected}</b> 条</span>
       <span style="color:var(--good-ink)">✅ <b>通过：${totalPassed}</b> 条</span>
-      <span style="color:var(--s5)">⏳ <b>返回：${totalPending}</b> 条</span>
-      <span style="color:var(--crit)">❌ <b>未通过：${totalFailed}</b> 条</span>
+<span style="color:var(--crit)">❌ <b>未通过：${totalFailed}</b> 条</span>
       <span>|</span>
       <span>👤 ${people.length}人 · 🎯 已完成 <b>${totalDone}</b> 人</span>
     </div>`;
 
   document.getElementById('problemTable').innerHTML =
     `<thead><tr>
-      <th>巡检人员</th><th>大区</th><th class="num">已收集</th><th class="num">已通过</th><th class="num">返回</th><th class="num">未通过</th><th class="num">达成 (目标${TARGET})</th>
+      <th>巡检人员</th><th>大区</th><th class="num">已收集</th><th class="num">已通过</th><th class="num">未通过</th><th class="num">达成 (目标${TARGET})</th>
     </tr></thead><tbody>${rows}</tbody>
     <tfoot></tfoot>`;
 }
