@@ -1040,6 +1040,8 @@ function renderInspectors(){
   const RANK_BADGE=Object.fromEntries(regScores.map((s,i)=>[s.region,rankBadge(i,regScores.length)]));
   // underOnly filter
   const UNDER=state.underOnly?85:-1;
+  // 只看未达标时自动展开所有区域
+  if(state.underOnly){ for(const r of regOrder){ state.collapsed[r]=false; } }
   const cc=c=>c>=100?'var(--good-ink)':c>=85?'var(--ink)':'var(--crit)';
   let rows='', hasAny=false;
   for(const reg of regOrder){
