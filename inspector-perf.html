@@ -193,7 +193,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
     <!-- ═══ Section 4: 人员问题收集完成度 ═══ -->
     <div class="card">
       <h3>
-        <span>📋 人员问题收集完成度 <span class="hint">目标 3条/人/月 · 区域分组 · 月度统计</span></span>
+        <span>📋 人员问题收集完成度 <span class="hint">目标 华东9/华南18/华西9/华北12 条/月</span></span>
         <span style="display:flex;gap:6px;flex:none">
           <button class="chip" id="problemToggleBtn">📁 一键折叠</button>
         </span>
@@ -502,6 +502,7 @@ let PROBLEM_RECORDS = (typeof window!=='undefined' && window.PROBLEM_DATA && win
 
 function renderProblem(){
   const TARGET = 3;
+  const REGION_TARGET = {华东:9, 华南:18, 华西:9, 华北:12};
   const QC_INSPECTORS = new Set(Object.keys(INSPECTOR_REGION));
 
   // 可用月份
@@ -566,7 +567,7 @@ function renderProblem(){
       <td colspan="2"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${rc};margin-right:7px;vertical-align:middle"></span><span>${col?'▶':'▼'}</span> ${reg} 小计 · ${ppl.length}人</td>
       <td class="num tnum">${q}</td><td class="num tnum" style="color:var(--good-ink)">${passed}</td>
       <td class="num tnum" style="color:var(--crit)">${sum(ppl,p=>p.failed)}</td>
-      <td class="num tnum">${sum(ppl,p=>p.remain)}</td>
+      <td class="num tnum" style="color:${passed>=(REGION_TARGET[reg]||TARGET*ppl.length)?'var(--good-ink)':'var(--crit)'};font-weight:600">${passed}/${REGION_TARGET[reg]||TARGET*ppl.length}</td>
     </tr>`;
 
     for(const p of ppl){
