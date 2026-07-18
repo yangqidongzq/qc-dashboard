@@ -423,7 +423,7 @@ function renderDaily(){
     inspOrder.forEach(n=>{
       const v=data[d][n]||0;
       const color=v>=CFG.dailyTarget?'var(--good-ink)':v>0?'var(--crit)':'var(--muted)';
-      html+='<td class="num tnum" style="background:'+heat(v)+';color:'+color+';font-weight:'+(v>0?'600':'400')+'">'+(v>0?v:'<span style="font-size:11px">休</span>')+'</td>';
+      html+='<td class="num tnum" style="background:'+heat(v)+';color:'+color+';font-weight:'+(v>0?'600':'400')+'">'+(v>0?v:'<span style="font-size:11px;color:var(--ink-2)">休</span>')+'</td>';
     });
     html+='<td class="num tnum" style="font-weight:600;background:var(--surface-1)">'+dTotals[d]+'</td></tr>';
   });
