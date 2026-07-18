@@ -63,8 +63,8 @@ h1,h2,h3{margin:0; font-weight:600}
 @media(max-width:1080px){.col-8,.col-7,.col-6,.col-5,.col-4{grid-column:span 12}.col-3{grid-column:span 6}}
 @media(max-width:640px){.col-3{grid-column:span 12}}
 
-.kpis{display:grid; grid-template-columns:1.3fr repeat(4,1fr); gap:16px; margin-bottom:18px}
-@media(max-width:1080px){.kpis{grid-template-columns:repeat(3,1fr)}}
+.kpis{display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:18px}
+@media(max-width:520px){.kpis{grid-template-columns:1fr}}
 @media(max-width:520px){.kpis{grid-template-columns:1fr}}
 .kpi{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:15px 17px; box-shadow:var(--shadow)}
 .kpi .klabel{font-size:12px; color:var(--muted); margin-bottom:7px}
@@ -194,25 +194,6 @@ svg{display:block; width:100%; height:auto}
       <h3>全区域完成情况 <span class="hint">华东 / 华南 / 华西 / 华北</span></h3>
       <div class="csub">各大区实际质检台数、占比与差异率（受全局筛选影响；大区Tab仅高亮不隐藏）。</div>
       <div class="regiongrid" id="regionGrid"></div>
-    </div>
-
-    <div class="card col-12">
-      <h3>运营全景 · 每日单人明细 <span class="hint">100台/人/日 · 达标绿色</span></h3>
-      <div id="dailyChart"></div>
-    </div>
-
-    <div class="card col-12">
-      <h3>巡检人员数据 <span class="hint">达成率 = 实际 / (100×出勤天)</span></h3>
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
-        <div class="csub" style="margin-bottom:0">按大区分组、每区带小计行与排名；组内按达成率排序。达成率≥100%绿、85%~100%常规、＜85%红。</div>
-        <div style="display:flex;gap:6px;flex:none">
-          <button class="chip" id="expandAll">📂 一键展开</button>
-          <button class="chip" id="collapseAll">📁 一键折叠</button>
-          <button class="chip" id="underFilter">⚡ 仅看未达标</button>
-          <button class="chip" id="inspExp">⬇ 导出分区小计</button>
-        </div>
-      </div>
-      <div class="tablewrap" style="margin-top:10px"><table id="inspectorTable"></table></div>
     </div>
 
     <div class="card col-12">
@@ -629,8 +610,8 @@ function renderAnaWarehouse(){
 function renderAnalysisAll(){try{renderAnaModel();}catch(e){}try{renderAnaSubjDefect();}catch(e){}try{renderAnaWarehouse();}catch(e){}}
 /* ====== 差异分析模块 END ====== */
 
-function renderAll(){ renderKPIs(); renderDaily(); renderRegions();
-  renderCenterDiff(); renderInspectorDiff(); renderMerchantTop(); renderDiffItems(); renderSplits(); renderDescAnalysis(); renderInspectors(); renderDetail();
+function renderAll(){ renderKPIs(); renderRegions();
+  renderCenterDiff(); renderInspectorDiff(); renderMerchantTop(); renderDiffItems(); renderSplits(); renderDescAnalysis(); renderDetail();
   renderAnalysisAll(); }
 
 function renderKPIs(){
@@ -641,16 +622,9 @@ function renderKPIs(){
   const daysActive=uniq(f,r=>r.day);
   const bar=comp>=100?'var(--good)':comp>=85?'var(--s1)':'var(--warn)';
   document.getElementById('kpis').innerHTML=`
-    <div class="kpi hero">
-      <div class="klabel">目标完成率 · ${CFG.dailyTarget}台/人/日</div>
-      <div class="kval">${comp.toFixed(1)}<span class="kunit">%</span></div>
-      <div class="meter"><span style="width:${Math.min(comp,100)}%;background:${bar}"></span></div>
-      <div class="kdelta ${comp>=100?'up':'down'}">${fmt(checked)} / ${fmt(target)} 台 · ${uniq(f,r=>r.inspector)} 人在岗 · 出勤 ${insDays} 天</div>
-    </div>
     ${tile('累计质检台数', fmt(checked),'台',`日均 ${daysActive?Math.round(checked/daysActive):0} 台`, false)}
     ${tile('差异台数', fmt(diff),'台',`差异率 ${pct1(pct(diff,checked))}`, false, true)}
-    ${tile('覆盖商户', uniq(f,r=>r.merchant),'家',`中心仓 ${uniq(f,r=>r.center)} 个`, true)}
-    ${tile('在岗人员', uniq(f,r=>r.inspector),'人',`出勤天数共 ${insDays} 天`, true)}`;
+    ${tile('覆盖商户', uniq(f,r=>r.merchant),'家',`中心仓 ${uniq(f,r=>r.center)} 个`, true)}`;
 }
 function tile(l,v,u,d,good,bad){ return `<div class="kpi"><div class="klabel">${l}</div>
   <div class="kval tnum">${v}<span class="kunit">${u}</span></div>
