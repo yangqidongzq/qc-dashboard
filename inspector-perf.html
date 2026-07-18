@@ -195,6 +195,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
       <h3>
         <span>👤 巡检人员数据</span>
         <span style="display:flex;gap:6px;flex:none">
+          <button class="chip" id="toggleAllBtn">📂 一键折叠</button>
           <button class="chip" id="underFilter">⚡ 仅看未达标</button>
         </span>
       </h3>
@@ -311,7 +312,7 @@ function genData(){
 const state = {
   region:'全区域', center:'全部', category:'全部', inspector:'全部',
   bizline:'全部', from:1, to:CFG.asOfDay, preset:'todate',
-  underOnly:false, collapsed:{}
+  underOnly:false, collapseAll:false, collapsed:{}
 };
 
 function baseFilter(r, ignore={}){
@@ -519,7 +520,7 @@ function renderInspectors(){
     const q=sum(ppl,p=>p.qty), tgt=sum(ppl,p=>p.tgt), days=sum(ppl,p=>p.days);
     const comp=pct(q,tgt), rc=cssv(REGION_COLOR[reg]||'--muted');
     const badge=RANK_BADGE[reg]||'';
-    const collapsed=state.collapsed[reg]!==undefined?state.collapsed[reg]:false; // default expanded
+    const collapsed=state.collapsed[reg]!==undefined?state.collapsed[reg]:state.collapseAll;
 
     rows+=`<tr class="reg-sub" data-reg="${reg}" style="background:color-mix(in srgb,${rc} 10%,transparent);font-weight:600;cursor:pointer" onclick="state.collapsed['${reg}']=!state.collapsed['${reg}'];renderInspectors();">
       <td colspan="2"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${rc};margin-right:7px;vertical-align:middle"></span><span class="toggle-icon">${collapsed?"▶":"▼"}</span> ${reg} 小计 · ${ppl.length}人${badge?' <span style="font-size:16px;line-height:1">'+badge+'</span>':''}</td>
@@ -599,6 +600,19 @@ function buildControls(){
   if(ub){
     ub.classList.toggle('active',state.underOnly);
     ub.onclick=()=>{ state.underOnly=!state.underOnly; ub.classList.toggle('active',state.underOnly); renderInspectors(); };
+  }
+  const tb=document.getElementById('toggleAllBtn');
+  if(tb){
+    tb.textContent=state.collapseAll?'📂 一键展开':'📁 一键折叠';
+    tb.onclick=()=>{
+      state.collapseAll=!state.collapseAll;
+      // toggle all known region keys
+      Object.keys(state.collapsed).forEach(k=>{ state.collapsed[k]=state.collapseAll; });
+      // also pre-set for all CFG regions
+      CFG.regions.forEach(r=>{ state.collapsed[r]=state.collapseAll; });
+      tb.textContent=state.collapseAll?'📂 一键展开':'📁 一键折叠';
+      renderInspectors();
+    };
   }
 }
 
