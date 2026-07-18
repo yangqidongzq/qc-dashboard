@@ -206,6 +206,8 @@ svg{display:block; width:100%; height:auto}
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
         <div class="csub" style="margin-bottom:0">按大区分组、每区带小计行与排名；组内按达成率排序。达成率≥100%绿、85%~100%常规、＜85%红。</div>
         <div style="display:flex;gap:6px;flex:none">
+          <button class="chip" id="expandAll">📂 一键展开</button>
+          <button class="chip" id="collapseAll">📁 一键折叠</button>
           <button class="chip" id="underFilter">⚡ 仅看未达标</button>
           <button class="chip" id="inspExp">⬇ 导出分区小计</button>
         </div>
@@ -1157,6 +1159,8 @@ function buildControls(){
     b.onclick=()=>applyPreset(b.dataset.p); });
   // underOnly toggle
   const ub=document.getElementById('underFilter'); if(ub){ ub.classList.toggle('active',state.underOnly); ub.onclick=()=>{ state.underOnly=!state.underOnly; ub.classList.toggle('active',state.underOnly); renderInspectors(); }; }
+  const eb=document.getElementById('expandAll'); if(eb){ eb.onclick=()=>{ CFG.regions.forEach(r=>state.collapsed[r]=false); renderInspectors(); }; }
+  const cb=document.getElementById('collapseAll'); if(cb){ cb.onclick=()=>{ CFG.regions.forEach(r=>state.collapsed[r]=true); renderInspectors(); }; }
   const ib=document.getElementById('inspExp'); if(ib){ ib.onclick=()=>{ if(window._inspExport) window._inspExport(); }; }
   // 差异项 chips
   const dc=document.getElementById('dDiffChips'); if(dc){
