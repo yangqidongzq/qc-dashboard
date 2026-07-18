@@ -324,7 +324,7 @@ function genData(){
 const state = {
   region:'全区域', center:'全部', category:'全部', inspector:'全部',
   bizline:'全部', from:1, to:CFG.asOfDay, preset:'todate',
-  underOnly:false, collapseAll:false, collapsed:{}, problemMonth:''
+  underOnly:false, collapseAll:false, collapsed:{}, problemMonth:'', problemExpand:''
 };
 
 function baseFilter(r, ignore={}){
@@ -537,14 +537,15 @@ function renderProblem(){
   // 聚合：每人 collected / passed / pending
   const map = {};
   for(const r of filtered){
-    const m = map[r.inspector] || (map[r.inspector] = {collected:0, passed:0, pending:0});
+    const m = map[r.inspector] || (map[r.inspector] = {collected:0, passed:0, pending:0, recs:[]});
     m.collected++;
+    m.recs.push(r);
     if(r.adjusted === '是') m.passed++;
     else if(r.reviewResult === '待验证') m.pending++;
   }
 
   // 所有巡检人员（包括0条的）
-  QC_INSPECTORS.forEach(n => { if(!map[n]) map[n] = {collected:0, passed:0, pending:0}; });
+  QC_INSPECTORS.forEach(n => { if(!map[n]) map[n] = {collected:0, passed:0, pending:0, recs:[]}; });
 
   const people = Object.entries(map).map(([name, v]) => ({
     name,
@@ -554,7 +555,8 @@ function renderProblem(){
     failed: v.collected - v.passed - v.pending,
     pending: v.pending,
     remain: Math.max(0, TARGET - v.passed - v.pending),
-    done: (v.passed + v.pending) >= TARGET
+    done: (v.passed + v.pending) >= TARGET,
+    recs: v.recs.sort((a,b) => b.date.localeCompare(a.date)) // newest first
   }));
 
   // 区域分组
@@ -564,6 +566,7 @@ function renderProblem(){
 
   const cc = c => c>=TARGET?'var(--good-ink)':c>=1?'var(--ink)':'var(--crit)';
   const collapsed = reg => state.collapsed['prob_'+reg] !== undefined ? state.collapsed['prob_'+reg] : false;
+  const expanded = name => state.problemExpand === name;
 
   let rows = '', hasAny = false;
   for(const reg of regOrder){
@@ -583,8 +586,13 @@ function renderProblem(){
     </tr>`;
 
     for(const p of ppl){
-      rows += `<tr style="${col?'display:none':''}">
-        <td style="padding-left:22px">${p.name}${p.done?' <span style="font-size:11px;color:var(--good-ink)">✅</span>':''}${p.collected===0?' <span style="font-size:11px;color:var(--muted)">—</span>':''}</td>
+      const isExp = expanded(p.name);
+      const adjCol = r => r.adjusted==='是'?'var(--good-ink)':r.reviewResult==='待验证'?'var(--s5)':'var(--crit)';
+      const adjTag = r => r.adjusted==='是'?'✅ 通过':r.reviewResult==='待验证'?'⏳ 评估中':'❌ 未通过';
+      const short = (s,max) => s && s.length>max ? `<span title="${s.replace(/"/g,'&quot;')}">${s.slice(0,max)}…</span>` : (s||'—');
+
+      rows += `<tr style="${col?'display:none':''};cursor:pointer" onclick="state.problemExpand=state.problemExpand==='${p.name}'?'':'${p.name}';renderProblem();">
+        <td style="padding-left:22px">${p.name}${p.done?' <span style="font-size:11px;color:var(--good-ink)">✅</span>':''}${p.collected===0?' <span style="font-size:11px;color:var(--muted)">—</span>':''} ${p.collected>0?`<span style="font-size:10px;color:var(--muted)">${isExp?'▲':'▼'}</span>`:''}</td>
         <td style="color:var(--muted);font-size:11px">${p.region}</td>
         <td class="num tnum">${p.collected||'—'}</td>
         <td class="num tnum" style="color:var(--good-ink);font-weight:600">${p.passed||'—'}</td>
@@ -592,6 +600,28 @@ function renderProblem(){
         <td class="num tnum" style="color:${p.failed>0?'var(--crit)':'var(--muted)'}">${p.failed>0?p.failed:'—'}</td>
         <td class="num tnum" style="color:${cc(p.passed+p.pending)};font-weight:600">${p.remain<=0?'✅':'差 '+p.remain}</td>
       </tr>`;
+
+      // 明细展开
+      if(isExp && p.recs.length > 0){
+        rows += `<tr style="${col?'display:none':''}"><td colspan="7" style="padding:0;background:var(--surface-1)">
+          <div style="overflow-x:auto;max-height:360px;padding:8px 14px;font-size:11px">
+          <table style="font-size:11px;min-width:1100px">
+            <thead><tr style="background:var(--track)">
+              <th>日期</th><th>站点</th><th>品类</th><th>现象归类</th><th>质检差异项</th><th style="min-width:180px">问题描述</th><th>审核结论</th><th>是否调整</th><th>状态</th>
+            </tr></thead><tbody>
+            ${p.recs.map(r => `<tr>
+              <td class="tnum" style="white-space:nowrap">${r.date}</td>
+              <td style="white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis" title="${(r.station||'').replace(/"/g,'&quot;')}">${r.station||'—'}</td>
+              <td>${r.category||'—'}</td>
+              <td>${r.phenomenon||'—'}</td>
+              <td>${r.problemType||'—'}</td>
+              <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(r.description||'').replace(/"/g,'&quot;')}">${short(r.description, 50)}</td>
+              <td style="color:${r.reviewResult==='待验证'?'var(--s5)':'var(--ink-2)'}">${r.reviewResult||'—'}</td>
+              <td style="color:${adjCol(r)};font-weight:600;white-space:nowrap">${adjTag(r)}</td>
+              <td>${r.status||'—'}</td>
+            </tr>`).join('')}
+          </tbody></table></div></td></tr>`;
+      }
     }
   }
   if(!hasAny) rows = `<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:16px">${state.problemMonth} 暂无巡检人员问题收集数据</td></tr>`;
