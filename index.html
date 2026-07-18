@@ -1039,10 +1039,10 @@ function renderInspectors(){
   const rankBadge=(i,total)=>{ if(total<=1) return ''; if(i===0) return '🥇'; if(i===1) return '🥈'; if(i===2) return '🥉'; return (i+1)+''; };
   const RANK_BADGE=Object.fromEntries(regScores.map((s,i)=>[s.region,rankBadge(i,regScores.length)]));
   // underOnly filter
-  const UNDER=state.underOnly?85:-1;
+  const UNDER=state.underOnly?100:-1;
   // 只看未达标时自动展开所有区域
   if(state.underOnly){ for(const r of regOrder){ state.collapsed[r]=false; } }
-  const cc=c=>c>=100?'var(--good-ink)':c>=85?'var(--ink)':'var(--crit)';
+  const cc=c=>c>=100?'var(--good-ink)':'var(--crit)';
   let rows='', hasAny=false;
   for(const reg of regOrder){
     const ppl=byReg[reg].filter(p=>p.comp<UNDER||UNDER<0).sort((a,b)=>b.comp-a.comp);
