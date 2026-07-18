@@ -192,9 +192,9 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
 
     <!-- ═══ Section 4: 人员问题收集完成度 ═══ -->
     <div class="card">
-      <h3>📋 人员问题收集完成度 <span class="hint">目标 3条/人/月 · 仅巡检人员 · 月度统计</span></h3>
+      <h3>📋 人员问题收集完成度 <span class="hint">目标 3条/人/月 · 区域分组 · 月度统计</span></h3>
       <div class="csub" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <span>「是否调整」=<span style="color:var(--good-ink)">是→通过</span> · <span style="color:var(--crit)">否→未通过</span></span>
+        <span>「是否调整」=<span style="color:var(--good-ink)">是→通过</span> · <span style="color:var(--crit)">否→未通过</span> · <span style="color:var(--s5)">待验证→评估中</span></span>
         <span style="color:var(--muted)">|</span>
         <span>月份：<select id="fProblemMonth" style="border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:12px;background:var(--surface-1);color:var(--ink);font-family:inherit"></select></span>
       </div>
@@ -506,7 +506,9 @@ function genProblemData(){
         inspector: name,
         date: '2026-07-' + String(Math.floor(Math.random()*17)+1).padStart(2,'0'),
         description: descriptions[Math.floor(Math.random()*descriptions.length)],
-        adjusted: Math.random() < 0.6 ? '是' : '否'
+        adjusted: Math.random() < 0.6 ? '是' : '否',
+        reviewResult: Math.random() < 0.1 ? '待验证' : '',
+        status: '已完成',
       });
     }
   });
@@ -515,81 +517,99 @@ function genProblemData(){
 
 function renderProblem(){
   const TARGET = 3;
-
-  // 巡检人员名单（来自 INSPECTOR_REGION，只展示这些人）
   const QC_INSPECTORS = new Set(Object.keys(INSPECTOR_REGION));
 
-  // 可用月份列表
+  // 可用月份
   const months = [...new Set(PROBLEM_RECORDS.map(r => r.date.slice(0,7)))].sort();
   if(!state.problemMonth && months.length) state.problemMonth = months[months.length-1];
 
-  // 月份选择器
   const sel = document.getElementById('fProblemMonth');
   if(sel && sel.options.length===0){
     sel.innerHTML = months.map(m => `<option ${m===state.problemMonth?'selected':''}>${m}</option>`).join('');
     sel.onchange = () => { state.problemMonth = sel.value; renderProblem(); };
   }
 
-  // 按月份筛选 + 只保留巡检人员
+  // 按月筛选 + 只保留巡检人员
   const filtered = PROBLEM_RECORDS.filter(r =>
     r.date.slice(0,7) === state.problemMonth && QC_INSPECTORS.has(r.inspector)
   );
 
+  // 聚合：每人 collected / passed / pending
   const map = {};
   for(const r of filtered){
-    const m = map[r.inspector] || (map[r.inspector] = {collected:0, passed:0});
+    const m = map[r.inspector] || (map[r.inspector] = {collected:0, passed:0, pending:0});
     m.collected++;
     if(r.adjusted === '是') m.passed++;
+    else if(r.reviewResult === '待验证') m.pending++;
   }
 
-  // 所有巡检人员都展示（包括0条收集的）
-  QC_INSPECTORS.forEach(n => { if(!map[n]) map[n] = {collected:0, passed:0}; });
+  // 所有巡检人员（包括0条的）
+  QC_INSPECTORS.forEach(n => { if(!map[n]) map[n] = {collected:0, passed:0, pending:0}; });
 
   const people = Object.entries(map).map(([name, v]) => ({
     name,
+    region: INSPECTOR_REGION[name] || '其他',
     collected: v.collected,
     passed: v.passed,
-    failed: v.collected - v.passed,
-    remain: Math.max(0, TARGET - v.passed),
-    done: v.passed >= TARGET
-  })).sort((a,b) => a.remain - b.remain);
+    failed: v.collected - v.passed - v.pending,
+    pending: v.pending,
+    remain: Math.max(0, TARGET - v.passed - v.pending),
+    done: (v.passed + v.pending) >= TARGET
+  }));
 
-  if(!people.length){
-    document.getElementById('problemTable').innerHTML = '<div style="color:var(--muted);padding:16px;text-align:center">暂无问题收集数据</div>';
-    return;
-  }
+  // 区域分组
+  const byReg = {};
+  people.forEach(p => (byReg[p.region] = byReg[p.region] || []).push(p));
+  const regOrder = [...CFG.regions.filter(r => byReg[r]), ...Object.keys(byReg).filter(r => !CFG.regions.includes(r))];
 
-  const barColor = r => r<=0?'var(--good)':r===1?'var(--warn)':'var(--crit)';
-  const textColor = r => r<=0?'var(--good-ink)':r===1?'#8b6914':'var(--crit)';
+  const cc = c => c>=TARGET?'var(--good-ink)':c>=1?'var(--ink)':'var(--crit)';
+  const collapsed = reg => state.collapsed['prob_'+reg] !== undefined ? state.collapsed['prob_'+reg] : false;
 
-  let rows = people.map(p => {
-    const pctDone = TARGET>0 ? Math.min(p.passed/TARGET*100, 100) : 0;
-    return `<tr>
-      <td>${p.name}</td>
-      <td class="num tnum">${p.collected}</td>
-      <td class="num tnum" style="color:var(--good-ink);font-weight:600">${p.passed}</td>
-      <td class="num tnum" style="color:${p.failed>0?'var(--crit)':'var(--muted)'}">${p.failed||'—'}</td>
-      <td class="num tnum">
-        <span style="display:inline-block;width:${pctDone}%;max-width:80px;height:14px;background:${barColor(p.remain)};border-radius:3px;vertical-align:middle;margin-right:5px;opacity:.4"></span>
-        <span style="color:${textColor(p.remain)};font-weight:600">${p.remain<=0?'✅ 已完成':p.remain+' 条'}</span>
-      </td>
+  let rows = '', hasAny = false;
+  for(const reg of regOrder){
+    const ppl = byReg[reg].sort((a,b) => b.passed - a.passed || b.pending - a.pending);
+    if(!ppl.length) continue;
+    hasAny = true;
+    const q = sum(ppl,p=>p.collected), passed = sum(ppl,p=>p.passed), pending = sum(ppl,p=>p.pending);
+    const rc = cssv(REGION_COLOR[reg]||'--muted');
+    const col = collapsed(reg);
+
+    rows += `<tr class="reg-sub" style="background:color-mix(in srgb,${rc} 10%,transparent);font-weight:600;cursor:pointer" onclick="state.collapsed['prob_${reg}']=${!col};renderProblem();">
+      <td colspan="2"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${rc};margin-right:7px;vertical-align:middle"></span><span>${col?'▶':'▼'}</span> ${reg} 小计 · ${ppl.length}人</td>
+      <td class="num tnum">${q}</td><td class="num tnum" style="color:var(--good-ink)">${passed}</td>
+      <td class="num tnum" style="color:${pending>0?'var(--s5)':'var(--muted)'}">${pending||'—'}</td>
+      <td class="num tnum" style="color:var(--crit)">${sum(ppl,p=>p.failed)||'—'}</td>
+      <td class="num tnum">${sum(ppl,p=>p.remain)}</td>
     </tr>`;
-  }).join('');
 
-  const totalPassed = sum(people, p=>p.passed);
+    for(const p of ppl){
+      rows += `<tr style="${col?'display:none':''}">
+        <td style="padding-left:22px">${p.name}${p.done?' <span style="font-size:11px;color:var(--good-ink)">✅</span>':''}${p.collected===0?' <span style="font-size:11px;color:var(--muted)">—</span>':''}</td>
+        <td style="color:var(--muted);font-size:11px">${p.region}</td>
+        <td class="num tnum">${p.collected||'—'}</td>
+        <td class="num tnum" style="color:var(--good-ink);font-weight:600">${p.passed||'—'}</td>
+        <td class="num tnum" style="color:${p.pending>0?'var(--s5);font-weight:600':'var(--muted)'}">${p.pending>0?'⏳ '+p.pending:'—'}</td>
+        <td class="num tnum" style="color:${p.failed>0?'var(--crit)':'var(--muted)'}">${p.failed>0?p.failed:'—'}</td>
+        <td class="num tnum" style="color:${cc(p.passed+p.pending)};font-weight:600">${p.remain<=0?'✅':'差 '+p.remain}</td>
+      </tr>`;
+    }
+  }
+  if(!hasAny) rows = `<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:16px">${state.problemMonth} 暂无巡检人员问题收集数据</td></tr>`;
+
+  const totalPassed = sum(people,p=>p.passed);
   const totalDone = people.filter(p=>p.done).length;
-  const totalNeed = people.filter(p=>!p.done).length;
 
   document.getElementById('problemTable').innerHTML =
     `<thead><tr>
-      <th>巡检人员</th><th class="num">已收集</th><th class="num">已通过</th><th class="num">未通过</th><th class="num">还差 (目标${TARGET}条)</th>
+      <th>巡检人员</th><th>大区</th><th class="num">已收集</th><th class="num">已通过</th><th class="num">评估中</th><th class="num">未通过</th><th class="num">达成 (目标${TARGET})</th>
     </tr></thead><tbody>${rows}</tbody>
     <tfoot><tr style="background:var(--surface-1);font-weight:600">
-      <td>${state.problemMonth} · ${people.length}人</td>
+      <td colspan="2">${state.problemMonth} · ${people.length}人</td>
       <td class="num tnum">${sum(people,p=>p.collected)}</td>
       <td class="num tnum" style="color:var(--good-ink)">${totalPassed}</td>
+      <td class="num tnum">${sum(people,p=>p.pending)}</td>
       <td class="num tnum">${sum(people,p=>p.failed)}</td>
-      <td class="num tnum">✅ ${totalDone}人完成 · 🔴 ${totalNeed}人未完成</td>
+      <td class="num tnum">✅ ${totalDone}人完成</td>
     </tr></tfoot>`;
 }
 
