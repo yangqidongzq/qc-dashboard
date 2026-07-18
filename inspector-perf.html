@@ -192,11 +192,11 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
 
     <!-- ═══ Section 4: 人员问题收集完成度 ═══ -->
     <div class="card">
-      <h3>📋 人员问题收集完成度 <span class="hint">目标 3条/人/月 · 通过=已调整</span></h3>
-      <div class="csub">
-        「是否调整」=<span style="color:var(--good-ink)">是→通过</span> ·
-        <span style="color:var(--crit)">否→未通过</span>
-        <span style="margin-left:8px">| 数据源：problem-data.js（缺失则显示示例）</span>
+      <h3>📋 人员问题收集完成度 <span class="hint">目标 3条/人/月 · 仅巡检人员 · 月度统计</span></h3>
+      <div class="csub" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span>「是否调整」=<span style="color:var(--good-ink)">是→通过</span> · <span style="color:var(--crit)">否→未通过</span></span>
+        <span style="color:var(--muted)">|</span>
+        <span>月份：<select id="fProblemMonth" style="border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:12px;background:var(--surface-1);color:var(--ink);font-family:inherit"></select></span>
       </div>
       <div class="tablewrap"><table id="problemTable"></table></div>
     </div>
@@ -324,7 +324,7 @@ function genData(){
 const state = {
   region:'全区域', center:'全部', category:'全部', inspector:'全部',
   bizline:'全部', from:1, to:CFG.asOfDay, preset:'todate',
-  underOnly:false, collapseAll:false, collapsed:{}
+  underOnly:false, collapseAll:false, collapsed:{}, problemMonth:''
 };
 
 function baseFilter(r, ignore={}){
@@ -515,16 +515,35 @@ function genProblemData(){
 
 function renderProblem(){
   const TARGET = 3;
+
+  // 巡检人员名单（来自 INSPECTOR_REGION，只展示这些人）
+  const QC_INSPECTORS = new Set(Object.keys(INSPECTOR_REGION));
+
+  // 可用月份列表
+  const months = [...new Set(PROBLEM_RECORDS.map(r => r.date.slice(0,7)))].sort();
+  if(!state.problemMonth && months.length) state.problemMonth = months[months.length-1];
+
+  // 月份选择器
+  const sel = document.getElementById('fProblemMonth');
+  if(sel && sel.options.length===0){
+    sel.innerHTML = months.map(m => `<option ${m===state.problemMonth?'selected':''}>${m}</option>`).join('');
+    sel.onchange = () => { state.problemMonth = sel.value; renderProblem(); };
+  }
+
+  // 按月份筛选 + 只保留巡检人员
+  const filtered = PROBLEM_RECORDS.filter(r =>
+    r.date.slice(0,7) === state.problemMonth && QC_INSPECTORS.has(r.inspector)
+  );
+
   const map = {};
-  for(const r of PROBLEM_RECORDS){
+  for(const r of filtered){
     const m = map[r.inspector] || (map[r.inspector] = {collected:0, passed:0});
     m.collected++;
     if(r.adjusted === '是') m.passed++;
   }
 
-  // also include inspectors from QC data who may have 0 problem records
-  const allInsp = [...new Set(RECORDS.map(r=>r.inspector))].sort();
-  allInsp.forEach(n => { if(!map[n]) map[n] = {collected:0, passed:0}; });
+  // 所有巡检人员都展示（包括0条收集的）
+  QC_INSPECTORS.forEach(n => { if(!map[n]) map[n] = {collected:0, passed:0}; });
 
   const people = Object.entries(map).map(([name, v]) => ({
     name,
@@ -533,10 +552,10 @@ function renderProblem(){
     failed: v.collected - v.passed,
     remain: Math.max(0, TARGET - v.passed),
     done: v.passed >= TARGET
-  })).sort((a,b) => a.remain - b.remain); // closest to target first, then those needing most
+  })).sort((a,b) => a.remain - b.remain);
 
   if(!people.length){
-    document.getElementById('problemTable').innerHTML = '<div style="color:var(--muted);padding:16px;text-align:center">暂无问题收集数据，请导入 problem-data.js</div>';
+    document.getElementById('problemTable').innerHTML = '<div style="color:var(--muted);padding:16px;text-align:center">暂无问题收集数据</div>';
     return;
   }
 
@@ -544,7 +563,6 @@ function renderProblem(){
   const textColor = r => r<=0?'var(--good-ink)':r===1?'#8b6914':'var(--crit)';
 
   let rows = people.map(p => {
-    const remain = p.remain;
     const pctDone = TARGET>0 ? Math.min(p.passed/TARGET*100, 100) : 0;
     return `<tr>
       <td>${p.name}</td>
@@ -552,13 +570,12 @@ function renderProblem(){
       <td class="num tnum" style="color:var(--good-ink);font-weight:600">${p.passed}</td>
       <td class="num tnum" style="color:${p.failed>0?'var(--crit)':'var(--muted)'}">${p.failed||'—'}</td>
       <td class="num tnum">
-        <span style="display:inline-block;width:${pctDone}%;max-width:80px;height:14px;background:${barColor(remain)};border-radius:3px;vertical-align:middle;margin-right:5px;opacity:.4"></span>
-        <span style="color:${textColor(remain)};font-weight:600">${remain<=0?'✅ 已完成':remain+' 条'}</span>
+        <span style="display:inline-block;width:${pctDone}%;max-width:80px;height:14px;background:${barColor(p.remain)};border-radius:3px;vertical-align:middle;margin-right:5px;opacity:.4"></span>
+        <span style="color:${textColor(p.remain)};font-weight:600">${p.remain<=0?'✅ 已完成':p.remain+' 条'}</span>
       </td>
     </tr>`;
   }).join('');
 
-  // summary
   const totalPassed = sum(people, p=>p.passed);
   const totalDone = people.filter(p=>p.done).length;
   const totalNeed = people.filter(p=>!p.done).length;
@@ -568,7 +585,7 @@ function renderProblem(){
       <th>巡检人员</th><th class="num">已收集</th><th class="num">已通过</th><th class="num">未通过</th><th class="num">还差 (目标${TARGET}条)</th>
     </tr></thead><tbody>${rows}</tbody>
     <tfoot><tr style="background:var(--surface-1);font-weight:600">
-      <td>合计 · ${people.length}人</td>
+      <td>${state.problemMonth} · ${people.length}人</td>
       <td class="num tnum">${sum(people,p=>p.collected)}</td>
       <td class="num tnum" style="color:var(--good-ink)">${totalPassed}</td>
       <td class="num tnum">${sum(people,p=>p.failed)}</td>
