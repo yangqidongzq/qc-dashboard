@@ -146,6 +146,9 @@ td.mcell{max-width:190px; white-space:nowrap; overflow:hidden; text-overflow:ell
 .toast.err{background:var(--crit)}
 .foot{margin-top:26px; text-align:center; color:var(--muted); font-size:12px}
 svg{display:block; width:100%; height:auto}
+
+/* inspector-only: hide modules below */
+.insp-hide{display:none !important}
 </style>
 </head>
 <body>
@@ -211,21 +214,132 @@ svg{display:block; width:100%; height:auto}
         </div>
       </div>
       <div class="tablewrap" style="margin-top:10px"><table id="inspectorTable"></table></div>
-    
-</div>
-</div>
-<div class="foot">数据看板框架 · 示例数据（可用「数据导入」替换为线下真实数据）· 字段对齐线下质检模板</div>
+    </div>
+
+    <div class="card col-12 insp-hide">
+      <h3>🏢 各中心仓差异汇总 <span class="hint">按差异率排序 · 点击展开明细 · 支持导出</span></h3>
+      <div class="csub">各仓质检总数、差异台数、差异率，点击中心仓行展开具体问题明细。</div>
+      <div id="centerDiff"></div>
+    </div>
+
+    <div class="card col-6 insp-hide">
+      <h3>👤 巡检个人差异率 <span class="hint">按差异率排序</span></h3>
+      <div class="csub">个人差异台数/质检总数，差异率≥8%标红。</div>
+      <div id="inspectorDiff"></div>
+    </div>
+
+    <div class="card col-12 insp-hide">
+      <h3>商户差异明细 TOP20 <span class="hint">含差异项拆分明细</span></h3>
+      <div class="csub">按差异台数排序，点击行下钻明细，点击差异标签联动描述。</div>
+      <div id="merchantTop"></div>
+    </div>
+
+    <div class="card col-12 insp-hide">
+      <h3>差异项分析 · 商户拆分 <span class="hint">各差异项下TOP5商户 · 来源 · 主客观</span></h3>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+        <span style="font-size:12px;color:var(--muted)">拆修/功能/外观/显示/浸液/其他 → TOP商户</span>
+        <span style="flex:1"></span>
+        <span id="sourceSplit" style="font-size:11px"></span>
+        <span style="color:var(--muted);font-size:11px">|</span>
+        <span id="subjSplit" style="font-size:11px"></span>
+      </div>
+      <div id="diffItems"></div>
+    </div>
+
+    <div class="card col-12 insp-hide">
+      <h3>差异描述 TOP15 <span class="hint">含分类·商户</span></h3>
+      <div class="csub">按频次排序，彩色分类标签，⏳=暂存。</div>
+      <div id="descAnalysis"></div>
+    </div>
+
+    <div class="card col-6 insp-hide"><h3>📱 高频差异机型 TOP 10 · 差异合理性分析 <span class="hint">24条全品类通病 · 描述一致性 · 通病匹配</span></h3><div class="csub">机型常见差异 & 已知通病自动匹配</div><div class="scroll" id="anaModel"></div></div>
+
+    <div class="card col-6 insp-hide"><h3>⚖️ 主观争议排行 <span class="hint">争议度+量化建议</span></h3><div class="csub">主观率>60%的差异项需增加客观判定标准</div><div class="scroll" id="anaSubjDefect"></div></div>
+
+    <div class="card col-12 insp-hide"><h3>🏢 各仓根因诊断 & 改善方向</h3><div class="csub">执行问题/标准模糊/商户集中 → 针对性改善行动</div><div class="scroll" id="anaWarehouse"></div></div>
+
+    <div class="card col-12 insp-hide">
+      <h3>
+        <span>前置后验 / 入仓质检明细</span>
+        <span class="stage-tabs" id="stageTabs"></span>
+      </h3>
+      <div class="csub">业务线：前置/后验=商户发货前后核验 · 入仓质检=入库全检。共 <b id="detailCount">0</b> 条记录（每条=1 台机型）。15条/页。</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+        <span style="font-size:12px;color:var(--muted)">筛选明细：</span>
+        <select id="dSubjObj" style="border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;background:var(--surface-1);color:var(--ink);font-family:inherit"></select>
+        <select id="dStatus" style="border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;background:var(--surface-1);color:var(--ink);font-family:inherit"></select>
+        <span style="font-size:11px;color:var(--muted)">|</span>
+        <span id="dDiffChips" style="display:flex;gap:4px;flex-wrap:wrap"></span>
+      </div>
+      <div class="tablewrap scroll"><table id="detailTable"></table></div>
+    </div>
+
+  </div>
+
+  <div class="foot">数据看板框架 · 示例数据（可用「数据导入」替换为线下真实数据）· 字段对齐线下质检模板</div>
 </div>
 
 <!-- push overlay -->
 <div class="overlay" id="pushOverlay">
   <div class="modal">
     <div class="mh"><h2>📤 推送群聊 · 飞书日报</h2><button class="x" id="closePush">✕</button></div>
+    <div class="mb">
+      <div class="frow" style="margin-bottom:12px">
+        <div class="field"><label>推送日期</label><input type="date" id="pushDate"></div>
+        <div class="field"><label>参考区间</label><select id="pushRange"><option value="day">仅当日</option><option value="mtd" selected>当月至今（1日～选中日）</option></select></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <button class="btn" id="refreshPush">🔄 生成日报</button>
+        <button class="btn primary" id="copyPush">📋 复制文本</button>
+      </div>
+      <div class="field" style="margin-bottom:8px"><label>飞书 Webhook 直推（可选）</label></div>
+      <div style="display:flex;gap:6px;margin-bottom:14px">
+        <input type="text" id="webhookUrl" placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/xxx" style="flex:1;border:1px solid var(--border);background:var(--surface-1);color:var(--ink);border-radius:8px;padding:7px 10px;font-size:13px;font-family:inherit">
+        <button class="btn primary" id="sendWebhook">🚀 发送到群</button>
+      </div>
+      <pre id="pushPreview" style="background:var(--surface-1);border:1px solid var(--grid);border-radius:10px;padding:14px 16px;font-size:13px;line-height:1.55;white-space:pre-wrap;font-family:system-ui,-apple-system,'Microsoft YaHei',sans-serif;max-height:50vh;overflow:auto;margin:0"></pre>
+    </div>
+  </div>
 </div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div class="mh"><h2>线下数据导入 / 获取</h2><button class="x" id="closeModal">✕</button></div>
+    <div class="mb">
+      <div class="src">
+        <div class="srcbox drop" id="drop">
+          <div class="ic">📄</div>
+          <div class="t">上传 CSV / Excel</div>
+          <div class="d">点击选择或拖拽文件到此<br>（.csv 直接解析，UTF-8/GBK 自适应；.xlsx 请先另存为 CSV）</div>
+          <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" hidden>
+        </div>
+        <div class="srcbox">
+          <div class="ic">🔌</div>
+          <div class="t">系统对接（预留）</div>
+          <div class="d">WMS / ERP / 质检系统 API<br>按下方字段定时拉取</div>
+          <button class="btn" style="margin-top:10px" id="apiBtn">配置数据源</button>
+        </div>
+      </div>
+      <button class="btn" id="tplBtn" style="margin-bottom:14px">⬇ 下载导入模板 (CSV)</button>
+      <div class="field-note">
+        <b>字段规范（表头需与线下质检模板一致，共 13 列，列顺序不限、按表头名识别）：</b><br>
+        <code>日期</code> <code>中心仓</code> <code>商户</code> <code>品类</code> <code>巡检人员</code>
+        <code>来源</code> <code>业务线</code> <code>机型</code> <code>质检码</code> <code>差异</code> <code>差异项</code>
+        <code>差异原因描述</code> <code>主客观</code><br>
+        · 日期格式 <code>2026/7/1</code> 或 <code>2026-07-01</code>；每行=1 台机型<br>
+        · 中心仓自动归属大区（华东/华南/华西/华北）；<b>差异</b> 取 是/否<br>
+        · 业务线取 前置/后验 或 入仓质检；差异项取 拆修/功能/外观/显示/浸液/其他<br>
+        · 主客观取 主观/客观（差异定责）。导入将<b>追加</b>到当前数据集并即时刷新看板。
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tt" id="tt"></div>
+<div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/gh/yangqidongzq/qc-dashboard@main/qc-data.js"></script>
 <script>
-
 /* =========================================================
    1. 配置（对齐线下质检模板字段）
    ========================================================= */
@@ -516,7 +630,9 @@ function renderAnaWarehouse(){
 function renderAnalysisAll(){try{renderAnaModel();}catch(e){}try{renderAnaSubjDefect();}catch(e){}try{renderAnaWarehouse();}catch(e){}}
 /* ====== 差异分析模块 END ====== */
 
-function renderAll(){ renderKPIs(); renderDaily(); renderRegions(); renderInspectors(); }
+function renderAll(){ renderKPIs(); renderDaily(); renderRegions();
+  renderCenterDiff(); renderInspectorDiff(); renderMerchantTop(); renderDiffItems(); renderSplits(); renderDescAnalysis(); renderInspectors(); renderDetail();
+  renderAnalysisAll(); }
 
 function renderKPIs(){
   const f=getFiltered();
@@ -1265,7 +1381,6 @@ deriveDims();
 buildControls();
 renderAll();
 updateFoot();
-
 </script>
 </body>
 </html>
