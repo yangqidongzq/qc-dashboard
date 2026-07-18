@@ -516,8 +516,7 @@ function renderAnaWarehouse(){
 function renderAnalysisAll(){try{renderAnaModel();}catch(e){}try{renderAnaSubjDefect();}catch(e){}try{renderAnaWarehouse();}catch(e){}}
 /* ====== 差异分析模块 END ====== */
 
-function renderAll(){ renderKPIs(); renderDaily(); renderRegions();
-  renderCenterDiff(); renderInspectorDiff(); renderMerchantTop(); renderDiffItems(); renderSplits(); renderDescAnalysis(); renderInspectors(); renderDetail();
+function renderAll(){ renderKPIs(); renderDaily(); renderRegions(); renderInspectors(); }
   renderAnalysisAll(); }
 
 function renderKPIs(){
