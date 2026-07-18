@@ -177,10 +177,6 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
       <div class="csub" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <span style="color:var(--muted)">巡检人员：</span>
         <select id="fDailyInspector" style="border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:12px;background:var(--surface-1);color:var(--ink);font-family:inherit"></select>
-        <span style="color:var(--muted)">| 列筛选：</span>
-        <span id="dailyPersonFilter" style="display:flex;gap:4px;flex-wrap:wrap"></span>
-        <button class="chip" id="dailyAllBtn" style="font-size:11px;padding:2px 8px">全选</button>
-        <button class="chip" id="dailyNoneBtn" style="font-size:11px;padding:2px 8px">清除</button>
       </div>
       <div id="dailyChart"></div>
     </div>
@@ -336,7 +332,7 @@ function genData(){
 const state = {
   region:'全区域', center:'全部', category:'全部', inspector:'全部',
   bizline:'全部', from:1, to:CFG.asOfDay, preset:'todate',
-  underOnly:false, collapseAll:true, collapsed:{}, problemMonth:'', problemExpand:'', problemCollapseAll:true, dailyFilter:new Set(), dailyInspector:'全部'
+  underOnly:false, collapseAll:true, collapsed:{}, problemMonth:'', problemExpand:'', problemCollapseAll:true, dailyInspector:'全部'
 };
 
 function baseFilter(r, ignore={}){
@@ -434,39 +430,7 @@ function renderDaily(){
   }
 
   const allInsp=[...new Set(f.map(r=>r.inspector))].sort();
-
-  // 人员筛选 chips
-  const chipContainer=document.getElementById('dailyPersonFilter');
-  if(chipContainer && chipContainer.children.length===0){
-    allInsp.forEach(n=>{
-      const chip=document.createElement('button');
-      chip.className='chip';
-      chip.style.cssText='font-size:11px;padding:2px 8px';
-      chip.textContent=n;
-      chip.dataset.name=n;
-      // default: all selected (empty filter = show all)
-      chip.classList.toggle('active', !state.dailyFilter.size || state.dailyFilter.has(n));
-      chip.onclick=()=>{
-        if(state.dailyFilter.has(n)) state.dailyFilter.delete(n);
-        else state.dailyFilter.add(n);
-        renderDaily();
-      };
-      chipContainer.appendChild(chip);
-    });
-    document.getElementById('dailyAllBtn').onclick=()=>{ state.dailyFilter.clear(); renderDaily(); };
-    document.getElementById('dailyNoneBtn').onclick=()=>{
-      allInsp.forEach(n=>state.dailyFilter.add(n));
-      state.dailyFilter.delete(allInsp[0]); // at least keep one, or keep all
-      // Actually user wants to clear, show nobody:
-      state.dailyFilter=new Set(allInsp); // selecting none = all marked filtered
-      renderDaily();
-    };
-  }
-
-  // 应用筛选：state.dailyFilter 为空=显示全部，非空=只显示selected
-  const filteredInsp = state.dailyFilter.size>0
-    ? allInsp.filter(n => !state.dailyFilter.has(n))
-    : allInsp;
+  const filteredInsp = allInsp;
 
   // data[day][inspector] = count
   const data={};
