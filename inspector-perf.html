@@ -330,7 +330,7 @@ function genData(){
 const state = {
   region:'全区域', center:'全部', category:'全部', inspector:'全部',
   bizline:'全部', from:1, to:CFG.asOfDay, preset:'todate',
-  underOnly:false, collapseAll:false, collapsed:{}, problemMonth:'', problemExpand:'', problemCollapseAll:false
+  underOnly:false, collapseAll:true, collapsed:{}, problemMonth:'', problemExpand:'', problemCollapseAll:true
 };
 
 function baseFilter(r, ignore={}){
@@ -632,14 +632,7 @@ function renderProblem(){
     `<thead><tr>
       <th>巡检人员</th><th>大区</th><th class="num">已收集</th><th class="num">已通过</th><th class="num">返回</th><th class="num">未通过</th><th class="num">达成 (目标${TARGET})</th>
     </tr></thead><tbody>${rows}</tbody>
-    <tfoot><tr style="background:var(--surface-1);font-weight:600">
-      <td colspan="2">合计</td>
-      <td class="num tnum">${sum(people,p=>p.collected)}</td>
-      <td class="num tnum" style="color:var(--good-ink)">${totalPassed}</td>
-      <td class="num tnum">${sum(people,p=>p.pending)}</td>
-      <td class="num tnum">${sum(people,p=>p.failed)}</td>
-      <td class="num tnum">✅ ${totalDone}人完成</td>
-    </tr></tfoot>`;
+    <tfoot></tfoot>`;
 }
 
 /* =========================================================
