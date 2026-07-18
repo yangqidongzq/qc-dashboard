@@ -199,7 +199,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
         </span>
       </h3>
       <div class="csub" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <span>「是否调整」=<span style="color:var(--good-ink)">是→通过</span> · <span style="color:var(--crit)">否→未通过</span> · <span style="color:var(--s5)">待验证→评估中</span></span>
+        <span>「是否调整」=<span style="color:var(--good-ink)">是→通过</span> · <span style="color:var(--crit)">否→未通过</span> · <span style="color:var(--s5)">待验证→返回</span></span>
         <span style="color:var(--muted)">|</span>
         <span>月份：<select id="fProblemMonth" style="border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:12px;background:var(--surface-1);color:var(--ink);font-family:inherit"></select></span>
       </div>
@@ -594,7 +594,7 @@ function renderProblem(){
     for(const p of ppl){
       const isExp = expanded(p.name);
       const adjCol = r => r.adjusted==='是'?'var(--good-ink)':r.reviewResult==='待验证'?'var(--s5)':'var(--crit)';
-      const adjTag = r => r.adjusted==='是'?'✅ 通过':r.reviewResult==='待验证'?'⏳ 评估中':'❌ 未通过';
+      const adjTag = r => r.adjusted==='是'?'✅ 通过':r.reviewResult==='待验证'?'⏳ 返回':'❌ 未通过';
       const short = (s,max) => s && s.length>max ? `<span title="${s.replace(/"/g,'&quot;')}">${s.slice(0,max)}…</span>` : (s||'—');
 
       rows += `<tr style="${col?'display:none':''};cursor:pointer" onclick="state.problemExpand=state.problemExpand==='${p.name}'?'':'${p.name}';renderProblem();">
@@ -643,7 +643,7 @@ function renderProblem(){
     `<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;padding:8px 12px;background:var(--surface-1);border-radius:8px">
       <span>📊 <b>总收集：${totalCollected}</b> 条</span>
       <span style="color:var(--good-ink)">✅ <b>通过：${totalPassed}</b> 条</span>
-      <span style="color:var(--s5)">⏳ <b>评估中：${totalPending}</b> 条</span>
+      <span style="color:var(--s5)">⏳ <b>返回：${totalPending}</b> 条</span>
       <span style="color:var(--crit)">❌ <b>未通过：${totalFailed}</b> 条</span>
       <span>|</span>
       <span>👤 ${people.length}人 · 🎯 已完成 <b>${totalDone}</b> 人</span>
@@ -651,7 +651,7 @@ function renderProblem(){
 
   document.getElementById('problemTable').innerHTML =
     `<thead><tr>
-      <th>巡检人员</th><th>大区</th><th class="num">已收集</th><th class="num">已通过</th><th class="num">评估中</th><th class="num">未通过</th><th class="num">达成 (目标${TARGET})</th>
+      <th>巡检人员</th><th>大区</th><th class="num">已收集</th><th class="num">已通过</th><th class="num">返回</th><th class="num">未通过</th><th class="num">达成 (目标${TARGET})</th>
     </tr></thead><tbody>${rows}</tbody>
     <tfoot><tr style="background:var(--surface-1);font-weight:600">
       <td colspan="2">${state.problemMonth} · ${people.length}人</td>
