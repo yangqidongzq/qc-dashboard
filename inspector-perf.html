@@ -654,7 +654,7 @@ function renderProblem(){
       <th>巡检人员</th><th>大区</th><th class="num">已收集</th><th class="num">已通过</th><th class="num">返回</th><th class="num">未通过</th><th class="num">达成 (目标${TARGET})</th>
     </tr></thead><tbody>${rows}</tbody>
     <tfoot><tr style="background:var(--surface-1);font-weight:600">
-      <td colspan="2">${state.problemMonth} · ${people.length}人</td>
+      <td colspan="2">合计</td>
       <td class="num tnum">${sum(people,p=>p.collected)}</td>
       <td class="num tnum" style="color:var(--good-ink)">${totalPassed}</td>
       <td class="num tnum">${sum(people,p=>p.pending)}</td>
