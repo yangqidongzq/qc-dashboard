@@ -565,7 +565,7 @@ function renderProblem(){
     rows += `<tr class="reg-sub" style="background:color-mix(in srgb,${rc} 10%,transparent);font-weight:600;cursor:pointer" onclick="state.collapsed['prob_${reg}']=${!col};renderProblem();">
       <td colspan="2"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${rc};margin-right:7px;vertical-align:middle"></span><span>${col?'▶':'▼'}</span> ${reg} 小计 · ${ppl.length}人</td>
       <td class="num tnum">${q}</td><td class="num tnum" style="color:var(--good-ink)">${passed}</td>
-      <td class="num tnum" style="color:var(--crit)">${sum(ppl,p=>p.failed)||'—'}</td>
+      <td class="num tnum" style="color:var(--crit)">${sum(ppl,p=>p.failed)}</td>
       <td class="num tnum">${sum(ppl,p=>p.remain)}</td>
     </tr>`;
 
@@ -578,9 +578,9 @@ function renderProblem(){
       rows += `<tr style="${col?'display:none':''};cursor:pointer" onclick="state.problemExpand=state.problemExpand==='${p.name}'?'':'${p.name}';renderProblem();">
         <td style="padding-left:22px">${p.name}${p.done?' <span style="font-size:11px;color:var(--good-ink)">✅</span>':''}${p.collected===0?' <span style="font-size:11px;color:var(--muted)">—</span>':''} ${p.collected>0?`<span style="font-size:10px;color:var(--muted)">${isExp?'▲':'▼'}</span>`:''}</td>
         <td style="color:var(--muted);font-size:11px">${p.region}</td>
-        <td class="num tnum">${p.collected||'—'}</td>
-        <td class="num tnum" style="color:var(--good-ink);font-weight:600">${p.passed||'—'}</td>
-        <td class="num tnum" style="color:${p.failed>0?'var(--crit)':'var(--muted)'}">${p.failed>0?p.failed:'—'}</td>
+        <td class="num tnum">${p.collected||0}</td>
+        <td class="num tnum" style="color:var(--good-ink);font-weight:600">${p.passed||0}</td>
+        <td class="num tnum" style="color:${p.failed>0?'var(--crit)':'var(--muted)'}">${p.failed}</td>
         <td class="num tnum" style="color:${cc(p.passed)};font-weight:600">${p.remain<=0?'✅':'差 '+p.remain}</td>
       </tr>`;
 
