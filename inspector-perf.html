@@ -498,28 +498,7 @@ function renderDiffRate(){
 // 数据：window.PROBLEM_DATA = [{inspector, date, description, adjusted}]  adjusted: 是/否
 let PROBLEM_RECORDS = (typeof window!=='undefined' && window.PROBLEM_DATA && window.PROBLEM_DATA.length)
   ? window.PROBLEM_DATA
-  : genProblemData();
-
-function genProblemData(){
-  // 示例数据：每人每月目标3条
-  const inspectors = ['杨启栋','胡江海','张天东','火东云','刘辉崇','刘先浩','旷小波','尚杰','谢志亮','苏凯','黄少博','米小三','赵子龙','张晰梦','吴恩惠','杨涛'];
-  const descriptions = ['屏幕划痕判定标准不一致','充电异常未复现即判定合格','外观磕碰计量方式争议','电池健康度阈值需明确','浸液判定缺少辅助工具','功能测试流程遗漏步骤'];
-  const out = [];
-  inspectors.forEach(name => {
-    const n = Math.random() < 0.15 ? 0 : (Math.random() < 0.3 ? 1 : Math.random() < 0.35 ? 2 : 3 + Math.floor(Math.random()*2));
-    for(let i=0; i<n; i++){
-      out.push({
-        inspector: name,
-        date: '2026-07-' + String(Math.floor(Math.random()*17)+1).padStart(2,'0'),
-        description: descriptions[Math.floor(Math.random()*descriptions.length)],
-        adjusted: Math.random() < 0.6 ? '是' : '否',
-        reviewResult: Math.random() < 0.1 ? '待验证' : '',
-        status: '已完成',
-      });
-    }
-  });
-  return out;
-}
+  : [];
 
 function renderProblem(){
   const TARGET = 3;
