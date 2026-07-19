@@ -939,29 +939,36 @@ function renderPersonAnalysis(){
   var probDone=people.filter(function(p){return p.pc.p>=3;});
   var allPass=people.filter(function(p){return p.compQty>=100&&p.rate<=5&&p.pc.p>=3;});
 
-  var txt='';
-  // 逐人分析
+  // 生成样式化逐人分析卡片
+  var cards='';
   for(var ri2=0;ri2<regOrder.length;ri2++){
     var rg=regOrder[ri2];var rppl=byReg[rg];if(!rppl||!rppl.length)continue;
     var ld=REGION_LEAD[rg];
-    txt+='▎'+rg+'区域·负责人'+ld+'\\n';
+    cards+='<div style=\"margin-bottom:16px\"><div style=\"font-weight:700;font-size:14px;margin-bottom:8px;color:var(--s5)\">'+rg+'区域 · 负责人：'+ld+'</div><div style=\"display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px\">';
     for(var pi2=0;pi2<rppl.length;pi2++){
       var p5=rppl[pi2];
-      var status='';var suggest='';
-      if(p5.compQty>=100&&p5.rate<=5&&p5.pc.p>=3){status='★标杆';suggest='保持节奏即可';}
-      else if(p5.compQty>=100&&p5.rate>5){status='质检量达标·差异率高';suggest='重点降差异率，排查高频差异项，每天自查差异原因';}
-      else if(p5.compQty>=85&&p5.rate<=5){status='接近达标·质量好';suggest='日均再提'+(DAILY_TARGET-p5.avg)+'台即达标，可考虑加班或提升效率';}
-      else if(p5.compQty>=85&&p5.rate>5){status='接近达标·需降差异';suggest='同步提量+降差异，建议每天质检前先复查昨日差异项';}
-      else if(p5.compQty<85&&p5.rate<=5){status='量不足·质量好';suggest='日差'+(DAILY_TARGET-p5.avg)+'台，需大幅提量，建议连续加班追赶';}
-      else if(p5.compQty<85&&p5.rate>5){status='量质均需提升';suggest='需专项帮扶，建议'+ld+'一对一跟进，排查技能或流程问题';}
-      else{status='待评估';suggest='持续观察';}
-      if(p5.pc.p<3)suggest+='；问题收集差'+(3-p5.pc.p)+'条，月底前补足';
-      txt+='  '+p5.name+'(日均'+p5.avg+'台/差异率'+p5.rate.toFixed(1)+'%/问题收集'+p5.pc.p+'条)：'+status+'。→ '+suggest+'\\n';
+      var bg,badge,action;
+      if(p5.compQty>=100&&p5.rate<=5&&p5.pc.p>=3){bg='color-mix(in srgb,var(--good) 8%,transparent)';badge='<span style=\"background:var(--good);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px\">标杆</span>';action='保持节奏';}
+      else if(p5.compQty>=100&&p5.rate>5){bg='color-mix(in srgb,var(--warn) 10%,transparent)';badge='<span style=\"background:var(--warn);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px\">质量预警</span>';action='排查差异项，降差异率';}
+      else if(p5.compQty>=85&&p5.rate<=5){bg='color-mix(in srgb,var(--s1) 6%,transparent)';badge='<span style=\"background:var(--s1);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px\">接近达标</span>';action='日提'+(DAILY_TARGET-p5.avg)+'台即达标';}
+      else if(p5.compQty>=85&&p5.rate>5){bg='color-mix(in srgb,var(--serious) 10%,transparent)';badge='<span style=\"background:var(--serious);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px\">需关注</span>';action='同步提量+降差异';}
+      else if(p5.compQty<85&&p5.rate<=5){bg='color-mix(in srgb,var(--s3) 10%,transparent)';badge='<span style=\"background:var(--s3);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px\">量不足</span>';action='需大幅提量，日差'+(DAILY_TARGET-p5.avg)+'台';}
+      else {bg='color-mix(in srgb,var(--crit) 8%,transparent)';badge='<span style=\"background:var(--crit);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px\">重点帮扶</span>';action=ld+'跟进，排查技能流程';}
+      var probTag=p5.pc.p>=3?'<span style=\"color:var(--good-ink);font-size:11px\">✓问题收集完成</span>':'<span style=\"color:var(--crit);font-size:11px\">✗差'+(3-p5.pc.p)+'条问题</span>';
+      var trendIcon=p5.trend>0?' ↑':p5.trend<0?' ↓':' →';
+      cards+='<div style=\"background:'+bg+';border-radius:10px;padding:12px 14px;border-left:3px solid '+(p5.compQty>=100?'var(--good)':p5.compQty>=85?'var(--s1)':'var(--crit)')+'\">'+
+        '<div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:6px\"><span style=\"font-weight:600;font-size:14px\">'+(p5.name===ld?'👑 ':'')+p5.name+'</span>'+badge+'</div>'+
+        '<div style=\"display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;font-size:12px;margin-bottom:6px\">'+
+        '<div><span style=\"color:var(--muted)\">日均</span> <b style=\"color:'+cc(p5.compQty)+'\">'+p5.avg+'台</b></div>'+
+        '<div><span style=\"color:var(--muted)\">差异率</span> <b style=\"color:'+rc(p5.rate)+'\">'+p5.rate.toFixed(1)+'%</b></div>'+
+        '<div><span style=\"color:var(--muted)\">问题</span> <b>'+p5.pc.p+'/3条</b></div></div>'+
+        '<div style=\"font-size:12px;color:var(--ink-2);margin-bottom:4px\">'+probTag+' · 趋势'+trendIcon+'</div>'+
+        '<div style=\"font-size:12px;background:var(--card);padding:6px 8px;border-radius:6px\"><b>建议：</b>'+action+'</div></div>';
     }
-    txt+='\\n';
+    cards+='</div></div>';
   }
 
-  document.getElementById('personAnalysis').innerHTML+='<div style=\"margin-top:14px;padding:14px 16px;background:var(--surface-1);border-radius:10px;line-height:1.8;font-size:13px;white-space:pre-wrap\">'+txt+'</div>';
+  document.getElementById('personAnalysis').innerHTML+='<div style=\"margin-top:16px\">'+cards+'</div>';
 }
 
 function updateFoot(){
