@@ -698,7 +698,7 @@ function renderWeekTrend(){
     // 展开分析
     if(isExp){
       html+=`<tr><td colspan=\"6\" style=\"padding:10px 16px;background:var(--surface-1);border-radius:0 0 8px 8px\">
-        <div style=\"display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;font-size:12px\">
+        <div style=\"display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;font-size:11px\">
           <div>
             <b style=\"color:var(--s5)\">📋 差异项明细</b>
             <table style=\"font-size:11px;margin-top:4px;width:100%\"><tr><th>差异项</th><th class=\"num\">本周</th><th class=\"num\">上周</th></tr>`;
@@ -714,13 +714,15 @@ function renderWeekTrend(){
       d.topInsp.forEach(([n,v])=>html+=`<div>${n}: ${v.q}台 ${v.d>0?`<span style=\"color:var(--crit)\">差异${v.d}</span>`:'✅'}</div>`);
       html+=`</div></div>
           <div>
-            <b style=\"color:var(--s2)\">🏪 商户分布</b>
-            <div style=\"font-size:11px;margin-top:4px\">
-            <div style=\"color:var(--muted);margin-bottom:2px\">主要:</div>`;
-      d.topMerch.length?d.topMerch.forEach(([m,ct])=>html+=`<div>${m.length>15?m.slice(0,14)+'…':m}: ${ct}台</div>`):html+='<span style=\"color:var(--muted)\">—</span>';
-      html+=`<div style=\"color:var(--muted);margin:4px 0 2px\">差异:</div>`;
-      d.topDiffMerch.length?d.topDiffMerch.forEach(([m,v])=>html+=`<div>${m.length>15?m.slice(0,14)+'…':m}: <span style=\"color:var(--crit)\">${v.d}差异</span>/${v.t}台</div>`):html+='<span style=\"color:var(--muted)\">—</span>';
-      html+=`</div></div></div></td></tr>`;
+            <b style=\"color:var(--s3)\">🏪 主要商户</b>
+            <div style=\"font-size:11px;margin-top:4px\">`;
+      d.topMerch.length?d.topMerch.forEach(([m,ct])=>html+=`<div>${m.length>12?m.slice(0,11)+'…':m}: ${ct}台</div>`):html+='<span style=\"color:var(--muted)\">—</span>';
+      html+=`</div>
+          <div>
+            <b style=\"color:var(--crit)\">⚠️ 差异商户</b>
+            <div style=\"font-size:11px;margin-top:4px\">`;
+      d.topDiffMerch.length?d.topDiffMerch.forEach(([m,v])=>html+=`<div>${m.length>12?m.slice(0,11)+'…':m}: ${v.d}差/${v.t}台</div>`):html+='<span style=\"color:var(--muted)\">—</span>';
+      html+=`</div></div></td></tr>`;
     }
   });
   html+='</tbody></table></div>';
