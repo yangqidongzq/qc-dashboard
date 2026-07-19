@@ -632,20 +632,20 @@ function tile(l,v,u,d,good,bad){ return `<div class="kpi"><div class="klabel">${
 
 function renderWeekTrend(){
   const f=getFiltered();
-  // 用实际日期计算周：上周四→本周五为一个周期
+  // 用实际日期计算周：上周五→本周四为一个周期
   const dates=[...new Set(f.map(r=>r.date))].sort();
   const lastDate=new Date(dates[dates.length-1]);
-  // 找到最近的周五
-  const dow=lastDate.getDay(); // 0=Sun, 5=Fri
-  let thisFri=new Date(lastDate);
-  if(dow!==5) thisFri.setDate(thisFri.getDate()-(dow+2)%7); // 回退到最近周五
-  const thisThu=new Date(thisFri);thisThu.setDate(thisFri.getDate()-8); // 上周四
-  const lastFri=new Date(thisThu);lastFri.setDate(thisThu.getDate()-1); // 上上周五
-  const lastThu=new Date(lastFri);lastThu.setDate(lastFri.getDate()-8); // 上上周四
+  const dow=lastDate.getDay(); // 0=Sun, 4=Thu
+  // 找到最近的周四
+  let thisThu=new Date(lastDate);
+  if(dow!==4) thisThu.setDate(thisThu.getDate()-((dow+3)%7)); // 回退到最近周四
+  const lastFri=new Date(thisThu);lastFri.setDate(thisThu.getDate()-6); // 上周五
+  const prevThu=new Date(lastFri);prevThu.setDate(lastFri.getDate()-7); // 上上周四
+  const prevFri=new Date(prevThu);prevFri.setDate(prevThu.getDate()-6); // 上上周五
 
   const fmtD=d=>d.toISOString().slice(0,10);
-  const thisWeek=f.filter(r=>r.date>=fmtD(thisThu)&&r.date<=fmtD(thisFri));
-  const lastWeek=f.filter(r=>r.date>=fmtD(lastThu)&&r.date<=fmtD(lastFri));
+  const thisWeek=f.filter(r=>r.date>=fmtD(lastFri)&&r.date<=fmtD(thisThu));
+  const lastWeek=f.filter(r=>r.date>=fmtD(prevFri)&&r.date<=fmtD(prevThu));
 
   // 按中心仓统计
   const centers=[...new Set(f.map(r=>r.center))].sort();
