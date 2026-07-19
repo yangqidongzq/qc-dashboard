@@ -640,6 +640,9 @@ function renderWeekTrend(){
 
   // 按中心仓统计
   const centers=[...new Set(f.map(r=>r.center))].sort();
+  const expandKey='trendExpand';
+  if(!state[expandKey]) state[expandKey]='';
+
   const data=centers.map(c=>{
     const tw=thisWeek.filter(r=>r.center===c);
     const lw=lastWeek.filter(r=>r.center===c);
@@ -647,15 +650,22 @@ function renderWeekTrend(){
     const lwQty=sum(lw,r=>r.qty),lwDiff=sum(lw,r=>r.qtyDiff);
     const twRate=pct(twDiff,twQty),lwRate=pct(lwDiff,lwQty);
     const change=twRate-lwRate;
-    // 分析差异项分布变化
+    // 差异项明细
     const twItems={};tw.filter(r=>r.qtyDiff).forEach(r=>r.diffItems.forEach(i=>{twItems[i]=(twItems[i]||0)+1;}));
     const lwItems={};lw.filter(r=>r.qtyDiff).forEach(r=>r.diffItems.forEach(i=>{lwItems[i]=(lwItems[i]||0)+1;}));
     const allItems=[...new Set([...Object.keys(twItems),...Object.keys(lwItems)])];
+    // 原因
     let reason='';
     if(change>2) reason=allItems.filter(i=>(twItems[i]||0)>(lwItems[i]||0)).slice(0,2).map(i=>i+'增').join('、')||'整体上升';
     else if(change<-2) reason=allItems.filter(i=>(twItems[i]||0)<(lwItems[i]||0)).slice(0,2).map(i=>i+'减').join('、')||'整体下降';
     else reason='基本持平';
-    return {c,twQty,twDiff,twRate,lwQty,lwDiff,lwRate,change,reason};
+    // 巡检人员分布
+    const inspectors={};tw.forEach(r=>{inspectors[r.inspector]=(inspectors[r.inspector]||{q:0,d:0});inspectors[r.inspector].q++;if(r.qtyDiff)inspectors[r.inspector].d++;});
+    const topInsp=Object.entries(inspectors).sort((a,b)=>b[1].q-a[1].q).slice(0,3);
+    // 商户分布
+    const merchants={};tw.forEach(r=>{const m=r.merchant||'—';merchants[m]=(merchants[m]||0)+1;});
+    const topMerch=Object.entries(merchants).filter(([k])=>k!=='—').sort((a,b)=>b[1]-a[1]).slice(0,3);
+    return {c,twQty,twDiff,twRate,lwQty,lwDiff,lwRate,change,reason,twItems,lwItems,allItems,topInsp,topMerch};
   }).filter(d=>d.twQty>0||d.lwQty>0).sort((a,b)=>b.change-a.change);
 
   if(!data.length){document.getElementById('weekTrend').innerHTML='<div style=\"color:var(--muted);padding:12px\">数据不足（需至少14天）</div>';return;}
@@ -663,14 +673,41 @@ function renderWeekTrend(){
   const arrow=v=>v>1?'🔴 ↑':v>0.5?'🟡 ↗':v<-1?'🟢 ↓':v<-0.5?'🟢 ↘':'➡';
   const color=v=>v>2?'var(--crit)':v>1?'var(--serious)':v<-2?'var(--good-ink)':v<-1?'var(--good-ink)':'var(--ink-2)';
 
-  let html='<div class=\"tablewrap\" style=\"max-height:500px;overflow:auto\"><table style=\"font-size:12px\"><thead><tr><th>中心仓</th><th class=\"num\">本周台数</th><th class=\"num\">本周差异率</th><th class=\"num\">上周差异率</th><th class=\"num\">变化</th><th>趋势原因</th></tr></thead><tbody>';
+  let html='<div class=\"tablewrap\" style=\"max-height:600px;overflow:auto\"><table style=\"font-size:12px\"><thead><tr><th>中心仓</th><th class=\"num\">本周台数</th><th class=\"num\">本周差异率</th><th class=\"num\">上周差异率</th><th class=\"num\">变化</th><th>趋势原因</th></tr></thead><tbody>';
   data.forEach(d=>{
-    html+=`<tr><td style=\"font-weight:600\">${d.c}</td>
+    const isExp=state[expandKey]===d.c;
+    html+=`<tr style=\"cursor:pointer\" onclick=\"state.trendExpand=state.trendExpand==='${d.c}'?'':'${d.c}';renderWeekTrend();\">
+      <td style=\"font-weight:600\">${d.c} <span style=\"font-size:10px;color:var(--muted)\">${isExp?'▲':'▼'}</span></td>
       <td class=\"num tnum\">${fmt(d.twQty)}</td>
       <td class=\"num tnum\" style=\"color:${d.twRate>8?'var(--crit)':d.twRate>5?'var(--warn)':'var(--good-ink)'};font-weight:600\">${d.twRate.toFixed(1)}%</td>
       <td class=\"num tnum\" style=\"color:var(--ink-2)\">${d.lwRate.toFixed(1)}%</td>
       <td class=\"num tnum\" style=\"color:${color(d.change)};font-weight:600\">${arrow(d.change)} ${d.change>0?'+':''}${d.change.toFixed(1)}%</td>
       <td style=\"font-size:11px;color:var(--ink-2)\">${d.reason}${!d.reason||d.reason==='基本持平'?'':' 导致'}</td></tr>`;
+
+    // 展开分析
+    if(isExp){
+      html+=`<tr><td colspan=\"6\" style=\"padding:10px 16px;background:var(--surface-1);border-radius:0 0 8px 8px\">
+        <div style=\"display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;font-size:12px\">
+          <div>
+            <b style=\"color:var(--s5)\">📋 差异项明细</b>
+            <table style=\"font-size:11px;margin-top:4px;width:100%\"><tr><th>差异项</th><th class=\"num\">本周</th><th class=\"num\">上周</th></tr>`;
+      d.allItems.forEach(i=>{
+        const twc=d.twItems[i]||0,lwc=d.lwItems[i]||0;
+        const ch=twc-lwc;
+        html+=`<tr><td>${i}</td><td class=\"num\">${twc||'—'}</td><td class=\"num\" style=\"color:${ch>0?'var(--crit)':ch<0?'var(--good-ink)':'var(--ink-2)'}\">${lwc||'—'} ${ch!==0?(ch>0?'↑':'↓')+Math.abs(ch):''}</td></tr>`;
+      });
+      html+=`</table></div>
+          <div>
+            <b style=\"color:var(--s1)\">👤 本周主要巡检员</b>
+            <div style=\"font-size:11px;margin-top:4px\">`;
+      d.topInsp.forEach(([n,v])=>html+=`<div>${n}: ${v.q}台 ${v.d>0?`<span style=\"color:var(--crit)\">差异${v.d}</span>`:'✅'}</div>`);
+      html+=`</div></div>
+          <div>
+            <b style=\"color:var(--s2)\">🏪 本周主要商户</b>
+            <div style=\"font-size:11px;margin-top:4px\">`;
+      d.topMerch.length?d.topMerch.forEach(([m,ct])=>html+=`<div>${m.length>15?m.slice(0,14)+'…':m}: ${ct}台</div>`):html+='<span style=\"color:var(--muted)\">—</span>';
+      html+=`</div></div></div></td></tr>`;
+    }
   });
   html+='</tbody></table></div>';
   document.getElementById('weekTrend').innerHTML=html;
