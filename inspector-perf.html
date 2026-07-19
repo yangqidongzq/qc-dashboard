@@ -884,59 +884,106 @@ function renderAll(){
 }
 
 function renderPersonAnalysis(){
+  const MONTH_DAYS=26, DAILY_TARGET=100, PROBLEM_TARGET=3;
+  // 区域负责人
+  const REGION_LEAD={华东:'旷小波',华南:'杨启栋',华西:'苏凯',华北:'赵子龙'};
+
   const f=getFiltered();
   const dayList=[...new Set(f.map(r=>r.day))].sort((a,b)=>a-b);
   const maxDay=dayList[dayList.length-1]||0;
+  const workedDays=dayList.length;
+
+  // 个人QC数据
   const map={};
   for(const r of f){
-    const m=map[r.inspector]||(map[r.inspector]={region:r.region,qty:0,diff:0,days:new Set()});
-    m.qty+=r.qty;m.diff+=r.qtyDiff;m.days.add(r.day);
+    const m=map[r.inspector]||(map[r.inspector]={region:r.region,qty:0,diff:0,daysE:new Set()});
+    m.qty+=r.qty;m.diff+=r.qtyDiff;m.daysE.add(r.day);
   }
+
+  // 问题收集数据
+  const probMap={};
+  if(typeof PROBLEM_RECORDS!=='undefined'){
+    const pm=state.problemMonth||new Date().toISOString().slice(0,7);
+    PROBLEM_RECORDS.filter(r=>r.date.slice(0,7)===pm).forEach(r=>{
+      const m=probMap[r.inspector]||(probMap[r.inspector]={c:0,p:0});
+      m.c++;if(r.adjusted==='是')m.p++;
+    });
+  }
+
   const people=Object.entries(map).map(([name,v])=>{
-    const d=v.days.size,avg=d>0?Math.round(v.qty/d):0;
-    const comp=pct(avg,CFG.dailyTarget);
-    const rate=pct(v.diff,v.qty);
-    // 趋势:比较最近3天和前面3天
+    const d=v.daysE.size, totalQty=v.qty;
+    const avg=d>0?Math.round(totalQty/d):0;
+    const compQty=pct(avg,DAILY_TARGET);
+    const rate=pct(v.diff,totalQty);
+    // 月目标：26天×100=2600台
+    const monthTarget=MONTH_DAYS*DAILY_TARGET;
+    const monthComp=pct(totalQty,monthTarget);
+    // 趋势
     const last3=f.filter(r=>r.inspector===name&&r.day>maxDay-3);
     const prev3=f.filter(r=>r.inspector===name&&r.day>maxDay-6&&r.day<=maxDay-3);
-    const last3Avg=Math.round(uniq(last3,r=>r.day)>0?sum(last3,r=>r.qty)/uniq(last3,r=>r.day):0);
-    const prev3Avg=Math.round(uniq(prev3,r=>r.day)>0?sum(prev3,r=>r.qty)/uniq(prev3,r=>r.day):0);
+    const l3d=uniq(last3,r=>r.day),p3d=uniq(prev3,r=>r.day);
+    const last3Avg=l3d>0?Math.round(sum(last3,r=>r.qty)/l3d):0;
+    const prev3Avg=p3d>0?Math.round(sum(prev3,r=>r.qty)/p3d):0;
     const trend=last3Avg>prev3Avg?1:last3Avg<prev3Avg?-1:0;
-    // 建议
-    let advice='', priority='';
-    if(comp>=100&&rate<=5){advice='🏆 标杆·保持现有节奏';priority='A';}
-    else if(comp>=100&&rate>5){advice='质量优先·控制差异率';priority='B';}
-    else if(comp>=85&&rate<=5){advice='小幅提量·增加每日台数';priority='B';}
-    else if(comp>=85&&rate>5){advice='质量为主·降低差异再提量';priority='C';}
-    else if(comp<85&&rate<=5){advice='大幅提量·目标差距大';priority='C';}
-    else {advice='⚠️ 需重点关注·量质均低';priority='D';}
-    if(trend>0) advice+=' · 趋势📈';
-    else if(trend<0) advice+=' · 趋势📉';
-    return {name,v,region:v.region,days:d,avg,comp,rate,trend,advice,priority};
-  }).sort((a,b)=>a.comp-b.comp); // 达成率低排前面
+    // 问题收集
+    const pc=probMap[name]||{c:0,p:0};
+    const probComp=pc.p>=PROBLEM_TARGET?'已完成':'差'+(PROBLEM_TARGET-pc.p)+'条';
+    // 综合建议
+    let advice='';
+    if(avg>=DAILY_TARGET&&rate<=5&&pc.p>=PROBLEM_TARGET)advice='🏆 三项全能·标杆';
+    else if(avg>=DAILY_TARGET&&rate<=5)advice='质检达标·完善问题收集';
+    else if(avg>=DAILY_TARGET&&rate>5)advice='台数达标·控制差异率';
+    else if(avg>=85&&rate<=5)advice='小幅提量即达标';
+    else if(avg>=85)advice='提量+降差异';
+    else if(avg<85&&rate<=5)advice='需大幅提量';
+    else advice='⚠️ 重点帮扶对象';
+    if(trend>0)advice+=' 📈';
+    else if(trend<0)advice+=' 📉';
+    return {name,region:v.region,days:d,avg,totalQty,compQty,rate,trend,monthComp,pc,probComp,advice};
+  }).sort((a,b)=>a.compQty-b.compQty);
 
   if(!people.length){document.getElementById('personAnalysis').innerHTML='<div style=\"color:var(--muted);padding:16px\">暂无数据</div>';return;}
 
+  // 区域汇总
+  const byReg={};people.forEach(p=>(byReg[p.region]=byReg[p.region]||[]).push(p));
   const cc=c=>c>=100?'var(--good-ink)':c>=85?'var(--ink)':'var(--crit)';
   const rc=r=>r<=5?'var(--good-ink)':r<=8?'var(--warn)':'var(--crit)';
-  const pc=p=>p==='A'?'🟢':p==='B'?'🔵':p==='C'?'🟡':'🔴';
 
-  let rows=people.map(p=>{
-    const gap=Math.max(0,CFG.dailyTarget-p.avg);
-    return `<tr>
-      <td>${pc(p.priority)} ${p.name}</td><td>${p.region}</td>
-      <td class=\"num tnum\">${p.days}天</td>
-      <td class=\"num tnum\" style=\"color:${cc(p.comp)};font-weight:600\">${p.avg}台/日</td>
-      <td class=\"num tnum\" style=\"color:${cc(p.comp)};font-weight:600\">${p.comp.toFixed(0)}%</td>
-      <td class=\"num tnum\" style=\"color:${rc(p.rate)}\">${p.rate.toFixed(1)}%</td>
-      <td class=\"num tnum\" style=\"color:${gap>20?'var(--crit)':gap>10?'var(--warn)':'var(--ink)'}\">${gap>0?'差'+gap+'台':'✅'}</td>
-      <td>${p.trend>0?'📈':p.trend<0?'📉':'➡'}</td>
-      <td style=\"font-size:11px\">${p.advice}</td>
+  let rows='';
+  const regOrder=['华南','华东','华西','华北'];
+  for(const reg of regOrder){
+    const ppl=byReg[reg];if(!ppl||!ppl.length)continue;
+    const lead=REGION_LEAD[reg];
+    const regQty=sum(ppl,p=>p.totalQty),regTarget=ppl.length*MONTH_DAYS*DAILY_TARGET;
+    const regComp=pct(regQty,regTarget);
+    const regProbs=sum(ppl,p=>p.pc.p);
+
+    rows+=`<tr style=\"background:color-mix(in srgb,var(--s5) 6%,transparent);font-weight:600\">
+      <td colspan=\"3\">📂 ${reg} · ${lead}(负责人) · ${ppl.length}人</td>
+      <td class=\"num tnum\" style=\"color:${cc(pct(regQty/ppl.length/MONTH_DAYS,DAILY_TARGET))}\">${fmt(regQty)}台</td>
+      <td class=\"num tnum\" style=\"color:${cc(regComp)}\">${regComp.toFixed(0)}%</td>
+      <td class=\"num tnum\">—</td>
+      <td class=\"num tnum\">—</td>
+      <td class=\"num tnum\" style=\"color:${regProbs>=ppl.length*PROBLEM_TARGET?'var(--good-ink)':'var(--crit)'}\">${regProbs}/${ppl.length*PROBLEM_TARGET}</td>
     </tr>`;
-  }).join('');
+
+    for(const p of ppl){
+      const gap=Math.max(0,DAILY_TARGET-p.avg);
+      rows+=`<tr>
+        <td style=\"padding-left:20px\">${p.name}${p.name===lead?' 👑':''}</td>
+        <td style=\"font-size:11px\">${p.region}</td>
+        <td class=\"num tnum\">${p.days}天</td>
+        <td class=\"num tnum\" style=\"color:${cc(p.compQty)};font-weight:600\">${p.avg}台/日</td>
+        <td class=\"num tnum\" style=\"color:${cc(p.monthComp)}\">${p.monthComp.toFixed(0)}%</td>
+        <td class=\"num tnum\" style=\"color:${rc(p.rate)}\">${p.rate.toFixed(1)}%</td>
+        <td class=\"num tnum\" style=\"color:${gap>20?'var(--crit)':gap>10?'var(--warn)':'var(--ink)'}\">${gap>0?'缺'+gap:'✅'}</td>
+        <td class=\"num tnum\" style=\"color:${p.pc.p>=PROBLEM_TARGET?'var(--good-ink)':p.pc.p>0?'var(--warn)':'var(--crit)}\">${p.probComp}</td>
+      </tr>`;
+    }
+  }
 
   document.getElementById('personAnalysis').innerHTML=
-    `<thead><tr><th>巡检员</th><th>大区</th><th class=\"num\">出勤</th><th class=\"num\">日均</th><th class=\"num\">达成率</th><th class=\"num\">差异率</th><th class=\"num\">差距</th><th>趋势</th><th>改善建议</th></tr></thead><tbody>${rows}</tbody>`;
+    `<thead><tr><th>巡检员</th><th>大区</th><th class=\"num\">出勤</th><th class=\"num\">日均质检</th><th class=\"num\">月达成率<br>(${MONTH_DAYS}天)</th><th class=\"num\">差异率</th><th class=\"num\">日差距</th><th class=\"num\">问题收集<br>(目标${PROBLEM_TARGET})</th></tr></thead><tbody>${rows}</tbody>`;
 }
 
 function updateFoot(){
