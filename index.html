@@ -670,7 +670,7 @@ function renderWeekTrend(){
     else reason='基本持平';
     // 巡检人员分布
     const inspectors={};tw.forEach(r=>{inspectors[r.inspector]=(inspectors[r.inspector]||{q:0,d:0});inspectors[r.inspector].q++;if(r.qtyDiff)inspectors[r.inspector].d++;});
-    const topInsp=Object.entries(inspectors).sort((a,b)=>b[1].q-a[1].q).slice(0,3);
+    const topInsp=Object.entries(inspectors).sort((a,b)=>b[1].q-a[1].q).slice(0,8);
     // 主要商户 + 差异商户
     const merchants={};tw.forEach(r=>{const m=r.merchant||'—';merchants[m]=(merchants[m]||0)+1;});
     const topMerch=Object.entries(merchants).filter(([k])=>k!=='—').sort((a,b)=>b[1]-a[1]).slice(0,10);
