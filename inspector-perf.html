@@ -213,6 +213,13 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
       <div class="tablewrap"><table id="problemTable"></table></div>
     </div>
 
+    <!-- ═══ Section 4.5: Personnel Analysis ═══ -->
+    <div class="card">
+      <h3>📊 人员达成分析 & 改善建议 <span class="hint">按目标达成率排序 · 含具体方向建议</span></h3>
+      <div class="csub">100台/人/日 · 综合质检量+差异率+趋势给出个性化改善方向</div>
+      <div class="tablewrap"><table id="personAnalysis"></table></div>
+    </div>
+
     <!-- ═══ Section 5: Inspector Personnel ═══ -->
     <div class="card">
       <h3>
@@ -872,7 +879,63 @@ function renderAll(){
   renderDaily();
   renderDiffRate();
   renderProblem();
+  renderPersonAnalysis();
   renderInspectors();
+}
+
+function renderPersonAnalysis(){
+  const f=getFiltered();
+  const days=uniq(f,r=>r.day);
+  const map={};
+  for(const r of f){
+    const m=map[r.inspector]||(map[r.inspector]={region:r.region,qty:0,diff:0,days:new Set()});
+    m.qty+=r.qty;m.diff+=r.qtyDiff;m.days.add(r.day);
+  }
+  const people=Object.entries(map).map(([name,v])=>{
+    const d=v.days.size,avg=d>0?Math.round(v.qty/d):0;
+    const comp=pct(avg,CFG.dailyTarget);
+    const rate=pct(v.diff,v.qty);
+    // 趋势:比较最近3天和前面3天
+    const last3=f.filter(r=>r.inspector===name&&r.day>Math.max(...days)-3);
+    const prev3=f.filter(r=>r.inspector===name&&r.day>Math.max(...days)-6&&r.day<=Math.max(...days)-3);
+    const last3Avg=Math.round(uniq(last3,r=>r.day)>0?sum(last3,r=>r.qty)/uniq(last3,r=>r.day):0);
+    const prev3Avg=Math.round(uniq(prev3,r=>r.day)>0?sum(prev3,r=>r.qty)/uniq(prev3,r=>r.day):0);
+    const trend=last3Avg>prev3Avg?1:last3Avg<prev3Avg?-1:0;
+    // 建议
+    let advice='', priority='';
+    if(comp>=100&&rate<=5){advice='🏆 标杆·保持现有节奏';priority='A';}
+    else if(comp>=100&&rate>5){advice='质量优先·控制差异率';priority='B';}
+    else if(comp>=85&&rate<=5){advice='小幅提量·增加每日台数';priority='B';}
+    else if(comp>=85&&rate>5){advice='质量为主·降低差异再提量';priority='C';}
+    else if(comp<85&&rate<=5){advice='大幅提量·目标差距大';priority='C';}
+    else {advice='⚠️ 需重点关注·量质均低';priority='D';}
+    if(trend>0) advice+=' · 趋势📈';
+    else if(trend<0) advice+=' · 趋势📉';
+    return {name,v,region:v.region,days:d,avg,comp,rate,trend,advice,priority};
+  }).sort((a,b)=>a.comp-b.comp); // 达成率低排前面
+
+  if(!people.length){document.getElementById('personAnalysis').innerHTML='<div style=\"color:var(--muted);padding:16px\">暂无数据</div>';return;}
+
+  const cc=c=>c>=100?'var(--good-ink)':c>=85?'var(--ink)':'var(--crit)';
+  const rc=r=>r<=5?'var(--good-ink)':r<=8?'var(--warn)':'var(--crit)';
+  const pc=p=>p==='A'?'🟢':p==='B'?'🔵':p==='C'?'🟡':'🔴';
+
+  let rows=people.map(p=>{
+    const gap=Math.max(0,CFG.dailyTarget-p.avg);
+    return `<tr>
+      <td>${pc(p.priority)} ${p.name}</td><td>${p.region}</td>
+      <td class=\"num tnum\">${p.days}天</td>
+      <td class=\"num tnum\" style=\"color:${cc(p.comp)};font-weight:600\">${p.avg}台/日</td>
+      <td class=\"num tnum\" style=\"color:${cc(p.comp)};font-weight:600\">${p.comp.toFixed(0)}%</td>
+      <td class=\"num tnum\" style=\"color:${rc(p.rate)}\">${p.rate.toFixed(1)}%</td>
+      <td class=\"num tnum\" style=\"color:${gap>20?'var(--crit)':gap>10?'var(--warn)':'var(--ink)'}\">${gap>0?'差'+gap+'台':'✅'}</td>
+      <td>${p.trend>0?'📈':p.trend<0?'📉':'➡'}</td>
+      <td style=\"font-size:11px\">${p.advice}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('personAnalysis').innerHTML=
+    `<thead><tr><th>巡检员</th><th>大区</th><th class=\"num\">出勤</th><th class=\"num\">日均</th><th class=\"num\">达成率</th><th class=\"num\">差异率</th><th class=\"num\">差距</th><th>趋势</th><th>改善建议</th></tr></thead><tbody>${rows}</tbody>`;
 }
 
 function updateFoot(){
