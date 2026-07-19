@@ -885,7 +885,8 @@ function renderAll(){
 
 function renderPersonAnalysis(){
   const f=getFiltered();
-  const days=uniq(f,r=>r.day);
+  const dayList=[...new Set(f.map(r=>r.day))].sort((a,b)=>a-b);
+  const maxDay=dayList[dayList.length-1]||0;
   const map={};
   for(const r of f){
     const m=map[r.inspector]||(map[r.inspector]={region:r.region,qty:0,diff:0,days:new Set()});
@@ -896,8 +897,8 @@ function renderPersonAnalysis(){
     const comp=pct(avg,CFG.dailyTarget);
     const rate=pct(v.diff,v.qty);
     // 趋势:比较最近3天和前面3天
-    const last3=f.filter(r=>r.inspector===name&&r.day>Math.max(...days)-3);
-    const prev3=f.filter(r=>r.inspector===name&&r.day>Math.max(...days)-6&&r.day<=Math.max(...days)-3);
+    const last3=f.filter(r=>r.inspector===name&&r.day>maxDay-3);
+    const prev3=f.filter(r=>r.inspector===name&&r.day>maxDay-6&&r.day<=maxDay-3);
     const last3Avg=Math.round(uniq(last3,r=>r.day)>0?sum(last3,r=>r.qty)/uniq(last3,r=>r.day):0);
     const prev3Avg=Math.round(uniq(prev3,r=>r.day)>0?sum(prev3,r=>r.qty)/uniq(prev3,r=>r.day):0);
     const trend=last3Avg>prev3Avg?1:last3Avg<prev3Avg?-1:0;
