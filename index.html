@@ -191,6 +191,12 @@ svg{display:block; width:100%; height:auto}
   <div class="grid">
 
     <div class="card col-12">
+      <h3>📈 周维度趋势 <span class="hint">本周 vs 上周 · 质检台数/差异率变化</span></h3>
+      <div class="csub">对比最近7天与上一个7天的数据变化，分析上升/下降原因。</div>
+      <div id="weekTrend"></div>
+    </div>
+
+    <div class="card col-12">
       <h3>全区域完成情况 <span class="hint">华东 / 华南 / 华西 / 华北</span></h3>
       <div class="csub">各大区实际质检台数、占比与差异率（受全局筛选影响；大区Tab仅高亮不隐藏）。</div>
       <div class="regiongrid" id="regionGrid"></div>
@@ -604,7 +610,7 @@ function renderAnaWarehouse(){
 function renderAnalysisAll(){try{renderAnaModel();}catch(e){}try{renderAnaSubjDefect();}catch(e){}try{renderAnaWarehouse();}catch(e){}}
 /* ====== 差异分析模块 END ====== */
 
-function renderAll(){ renderKPIs(); renderRegions();
+function renderAll(){ renderKPIs(); renderWeekTrend(); renderRegions();
   renderCenterDiff(); renderMerchantTop(); renderDiffItems(); renderSplits(); renderDescAnalysis(); renderDetail();
   renderAnalysisAll(); }
 
@@ -623,6 +629,52 @@ function renderKPIs(){
 function tile(l,v,u,d,good,bad){ return `<div class="kpi"><div class="klabel">${l}</div>
   <div class="kval tnum">${v}<span class="kunit">${u}</span></div>
   <div class="kdelta ${bad?'down':good?'up':''}">${d}</div></div>`; }
+
+function renderWeekTrend(){
+  const f=getFiltered();
+  const days=[...new Set(f.map(r=>r.day))].sort((a,b)=>a-b);
+  const today=days[days.length-1]||18;
+  // 本周:最近7天, 上周:前7天
+  const thisWeek=f.filter(r=>r.day>today-7&&r.day<=today);
+  const lastWeek=f.filter(r=>r.day>today-14&&r.day<=today-7);
+
+  // 按中心仓统计
+  const centers=[...new Set(f.map(r=>r.center))].sort();
+  const data=centers.map(c=>{
+    const tw=thisWeek.filter(r=>r.center===c);
+    const lw=lastWeek.filter(r=>r.center===c);
+    const twQty=sum(tw,r=>r.qty),twDiff=sum(tw,r=>r.qtyDiff);
+    const lwQty=sum(lw,r=>r.qty),lwDiff=sum(lw,r=>r.qtyDiff);
+    const twRate=pct(twDiff,twQty),lwRate=pct(lwDiff,lwQty);
+    const change=twRate-lwRate;
+    // 分析差异项分布变化
+    const twItems={};tw.filter(r=>r.qtyDiff).forEach(r=>r.diffItems.forEach(i=>{twItems[i]=(twItems[i]||0)+1;}));
+    const lwItems={};lw.filter(r=>r.qtyDiff).forEach(r=>r.diffItems.forEach(i=>{lwItems[i]=(lwItems[i]||0)+1;}));
+    const allItems=[...new Set([...Object.keys(twItems),...Object.keys(lwItems)])];
+    let reason='';
+    if(change>2) reason=allItems.filter(i=>(twItems[i]||0)>(lwItems[i]||0)).slice(0,2).map(i=>i+'增').join('、')||'整体上升';
+    else if(change<-2) reason=allItems.filter(i=>(twItems[i]||0)<(lwItems[i]||0)).slice(0,2).map(i=>i+'减').join('、')||'整体下降';
+    else reason='基本持平';
+    return {c,twQty,twDiff,twRate,lwQty,lwDiff,lwRate,change,reason};
+  }).filter(d=>d.twQty>0||d.lwQty>0).sort((a,b)=>b.change-a.change);
+
+  if(!data.length){document.getElementById('weekTrend').innerHTML='<div style=\"color:var(--muted);padding:12px\">数据不足（需至少14天）</div>';return;}
+
+  const arrow=v=>v>1?'🔴 ↑':v>0.5?'🟡 ↗':v<-1?'🟢 ↓':v<-0.5?'🟢 ↘':'➡';
+  const color=v=>v>2?'var(--crit)':v>1?'var(--serious)':v<-2?'var(--good-ink)':v<-1?'var(--good-ink)':'var(--ink-2)';
+
+  let html='<div class=\"tablewrap\" style=\"max-height:500px;overflow:auto\"><table style=\"font-size:12px\"><thead><tr><th>中心仓</th><th class=\"num\">本周台数</th><th class=\"num\">本周差异率</th><th class=\"num\">上周差异率</th><th class=\"num\">变化</th><th>趋势原因</th></tr></thead><tbody>';
+  data.forEach(d=>{
+    html+=`<tr><td style=\"font-weight:600\">${d.c}</td>
+      <td class=\"num tnum\">${fmt(d.twQty)}</td>
+      <td class=\"num tnum\" style=\"color:${d.twRate>8?'var(--crit)':d.twRate>5?'var(--warn)':'var(--good-ink)'};font-weight:600\">${d.twRate.toFixed(1)}%</td>
+      <td class=\"num tnum\" style=\"color:var(--ink-2)\">${d.lwRate.toFixed(1)}%</td>
+      <td class=\"num tnum\" style=\"color:${color(d.change)};font-weight:600\">${arrow(d.change)} ${d.change>0?'+':''}${d.change.toFixed(1)}%</td>
+      <td style=\"font-size:11px;color:var(--ink-2)\">${d.reason}${!d.reason||d.reason==='基本持平'?'':' 导致'}</td></tr>`;
+  });
+  html+='</tbody></table></div>';
+  document.getElementById('weekTrend').innerHTML=html;
+}
 
 function renderDaily(){
   const f=getFiltered();
