@@ -720,7 +720,7 @@ function renderInspectors(){
     const badge=RANK_BADGE[reg]||'';
     const collapsed=state.collapsed[reg]!==undefined?state.collapsed[reg]:state.collapseAll;
 
-    rows+=`<tr class="reg-sub" data-reg="${reg}" style="background:color-mix(in srgb,${rc} 10%,transparent);font-weight:600;cursor:pointer" onclick="state.collapsed['${reg}']=!state.collapsed['${reg}'];renderInspectors();">
+    rows+=`<tr class="reg-sub" data-reg="${reg}" style="background:color-mix(in srgb,${rc} 10%,transparent);font-weight:600;cursor:pointer" onclick="state.collapsed['${reg}']=!state.collapsed['${reg}'];rrenderInspectors();">
       <td colspan="2"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${rc};margin-right:7px;vertical-align:middle"></span><span class="toggle-icon">${collapsed?"▶":"▼"}</span> ${reg} 小计 · ${ppl.length}人${badge?' <span style="font-size:16px;line-height:1">'+badge+'</span>':''}</td>
       <td></td>
       <td class="num tnum">${days}</td>
@@ -931,9 +931,6 @@ function renderPersonAnalysis(){
   document.getElementById('personAnalysis').innerHTML=hdr;
 }
 
-enderInspectors();
-}
-
 function updateFoot(){
   const foot=document.querySelector('.foot');
   if(!foot) return;
@@ -952,6 +949,9 @@ try{
 }catch(e){
   document.getElementById('kpis').innerHTML='<div style=\"color:var(--crit);padding:20px;font-size:14px\">❌ 错误: '+e.message+'<br><pre style=\"font-size:11px\">'+e.stack+'</pre></div>';
 }
+</script>
+</body>
+</html>
 </script>
 </body>
 </html>
