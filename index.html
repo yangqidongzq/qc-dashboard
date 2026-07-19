@@ -671,10 +671,10 @@ function renderWeekTrend(){
     // 巡检人员分布
     const inspectors={};tw.forEach(r=>{inspectors[r.inspector]=(inspectors[r.inspector]||{q:0,d:0});inspectors[r.inspector].q++;if(r.qtyDiff)inspectors[r.inspector].d++;});
     const topInsp=Object.entries(inspectors).sort((a,b)=>b[1].q-a[1].q).slice(0,3);
-    // 商户分布
-    const merchants={};tw.forEach(r=>{const m=r.merchant||'—';merchants[m]=(merchants[m]||0)+1;});
-    const topMerch=Object.entries(merchants).filter(([k])=>k!=='—').sort((a,b)=>b[1]-a[1]).slice(0,3);
-    return {c,twQty,twDiff,twRate,lwQty,lwDiff,lwRate,change,reason,twItems,lwItems,allItems,topInsp,topMerch};
+    // 差异商户分布
+    const diffMerchants={};tw.filter(r=>r.qtyDiff).forEach(r=>{const m=r.merchant||'—';diffMerchants[m]=(diffMerchants[m]||{t:0,d:0});diffMerchants[m].t++;diffMerchants[m].d+=r.qtyDiff;});
+    const topDiffMerch=Object.entries(diffMerchants).filter(([k])=>k!=='—').sort((a,b)=>b[1].d-a[1].d).slice(0,3);
+    return {c,twQty,twDiff,twRate,lwQty,lwDiff,lwRate,change,reason,twItems,lwItems,allItems,topInsp,topDiffMerch};
   }).filter(d=>d.twQty>0||d.lwQty>0).sort((a,b)=>b.change-a.change);
 
   if(!data.length){document.getElementById('weekTrend').innerHTML='<div style=\"color:var(--muted);padding:12px\">数据不足（需至少14天）</div>';return;}
@@ -712,9 +712,9 @@ function renderWeekTrend(){
       d.topInsp.forEach(([n,v])=>html+=`<div>${n}: ${v.q}台 ${v.d>0?`<span style=\"color:var(--crit)\">差异${v.d}</span>`:'✅'}</div>`);
       html+=`</div></div>
           <div>
-            <b style=\"color:var(--s2)\">🏪 本周主要商户</b>
+            <b style=\"color:var(--s2)\">🏪 本周差异商户</b>
             <div style=\"font-size:11px;margin-top:4px\">`;
-      d.topMerch.length?d.topMerch.forEach(([m,ct])=>html+=`<div>${m.length>15?m.slice(0,14)+'…':m}: ${ct}台</div>`):html+='<span style=\"color:var(--muted)\">—</span>';
+      d.topDiffMerch.length?d.topDiffMerch.forEach(([m,v])=>html+=`<div>${m.length>15?m.slice(0,14)+'…':m}: <span style=\"color:var(--crit)\">${v.d}差异</span>/${v.t}台</div>`):html+='<span style=\"color:var(--muted)\">—</span>';
       html+=`</div></div></div></td></tr>`;
     }
   });
