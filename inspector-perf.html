@@ -940,38 +940,26 @@ function renderPersonAnalysis(){
   var allPass=people.filter(function(p){return p.compQty>=100&&p.rate<=5&&p.pc.p>=3;});
 
   var txt='';
-  txt+='【总体概况】数据覆盖'+dayList.length+'个工作日(目标26天/月)，'+totalPeople+'人在岗。';
-  if(allPass.length>0)txt+='三项全达标('+allPass.map(function(p){return p.name;}).join('、')+')共'+allPass.length+'人，是团队标杆。';
-  if(goodOnes.length>0)txt+='质检达标(≥100台/日)：'+goodOnes.map(function(p){return p.name;}).join('、')+'共'+goodOnes.length+'人。';
-  if(midOnes.length>0)txt+='接近达标(85~100台/日)：'+midOnes.map(function(p){return p.name;}).join('、')+'共'+midOnes.length+'人，需小幅提量。';
-  if(badOnes.length>0)txt+='未达标(<85台/日)：'+badOnes.map(function(p){return p.name;}).join('、')+'共'+badOnes.length+'人，需重点干预。';
-
-  txt+='\\n';
-  txt+='【质量分析】差异率>8%：'+(highDiff.length>0?highDiff.map(function(p){return p.name+'('+p.rate.toFixed(1)+'%)';}).join('、'):'无')+'。差异率≤5%：'+(goodDiff.length>0?goodDiff.map(function(p){return p.name;}).join('、'):'无')+'共'+goodDiff.length+'人，质量控制较好。';
-
-  txt+='\\n';
-  txt+='【问题收集】已完成3条/月：'+(probDone.length>0?probDone.map(function(p){return p.name;}).join('、'):'无')+'共'+probDone.length+'人。';
-
-  // 区域分析
+  // 逐人分析
   for(var ri2=0;ri2<regOrder.length;ri2++){
     var rg=regOrder[ri2];var rppl=byReg[rg];if(!rppl||!rppl.length)continue;
-    var ld=REGION_LEAD[rg];var rq=sum(rppl,function(x){return x.totalQty;});
-    var rcomp=pct(rq,rppl.length*MONTH_DAYS*DAILY_TARGET);
-    var rbelow=rppl.filter(function(p){return p.compQty<DAILY_TARGET;});
+    var ld=REGION_LEAD[rg];
+    txt+='▎'+rg+'区域·负责人'+ld+'\\n';
+    for(var pi2=0;pi2<rppl.length;pi2++){
+      var p5=rppl[pi2];
+      var status='';var suggest='';
+      if(p5.compQty>=100&&p5.rate<=5&&p5.pc.p>=3){status='★标杆';suggest='保持节奏即可';}
+      else if(p5.compQty>=100&&p5.rate>5){status='质检量达标·差异率高';suggest='重点降差异率，排查高频差异项，每天自查差异原因';}
+      else if(p5.compQty>=85&&p5.rate<=5){status='接近达标·质量好';suggest='日均再提'+(DAILY_TARGET-p5.avg)+'台即达标，可考虑加班或提升效率';}
+      else if(p5.compQty>=85&&p5.rate>5){status='接近达标·需降差异';suggest='同步提量+降差异，建议每天质检前先复查昨日差异项';}
+      else if(p5.compQty<85&&p5.rate<=5){status='量不足·质量好';suggest='日差'+(DAILY_TARGET-p5.avg)+'台，需大幅提量，建议连续加班追赶';}
+      else if(p5.compQty<85&&p5.rate>5){status='量质均需提升';suggest='需专项帮扶，建议'+ld+'一对一跟进，排查技能或流程问题';}
+      else{status='待评估';suggest='持续观察';}
+      if(p5.pc.p<3)suggest+='；问题收集差'+(3-p5.pc.p)+'条，月底前补足';
+      txt+='  '+p5.name+'(日均'+p5.avg+'台/差异率'+p5.rate.toFixed(1)+'%/问题收集'+p5.pc.p+'条)：'+status+'。→ '+suggest+'\\n';
+    }
     txt+='\\n';
-    txt+='【'+rg+'区域·负责人'+ld+'】小组'+rppl.length+'人，月达成率'+rcomp.toFixed(0)+'%。';
-    if(rbelow.length>0)txt+='未达标人员：'+rbelow.map(function(p){return p.name+'('+p.compQty.toFixed(0)+'%)';}).join('、')+'。';
-    else txt+='全员达标。';
-    if(rcomp<85)txt+='建议'+ld+'牵头组织小组复盘，重点解决质检量不足问题。';
-    else if(rcomp<100)txt+='建议'+ld+'协调资源，确保月底前达标。';
-    else txt+='建议保持节奏，关注差异率波动。';
   }
-
-  txt+='\\n';
-  txt+='【行动建议】';
-  if(badOnes.length>0||highDiff.length>0)txt+='①重点关注对象需每日追踪质检量与差异率变化；';
-  if(probDone.length<totalPeople)txt+='②问题收集进度落后人员需在月底前补齐3条；';
-  txt+='③月底前建议按区域分组复盘，由区域负责人主持；④下周数据更新后持续关注趋势变化。';
 
   document.getElementById('personAnalysis').innerHTML+='<div style=\"margin-top:14px;padding:14px 16px;background:var(--surface-1);border-radius:10px;line-height:1.8;font-size:13px;white-space:pre-wrap\">'+txt+'</div>';
 }
