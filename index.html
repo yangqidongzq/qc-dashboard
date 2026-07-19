@@ -407,7 +407,7 @@ function genData(){
    3. 状态 & 筛选
    ========================================================= */
 const state = {region:'全区域', center:'全部', category:'全部', inspector:'全部',
-  bizline:'全部', from:1, to:CFG.asOfDay, preset:'todate', underOnly:false, hlDesc:'', collapsed:{}, detailPage:1, dSubjObj:'全部', dStatus:'全部', dDiffItem:'全部', selMerchant:''};
+  bizline:'全部', from:1, to:CFG.asOfDay, preset:'todate', underOnly:false, hlDesc:'', collapsed:{}, trendExpand:'', detailPage:1, dSubjObj:'全部', dStatus:'全部', dDiffItem:'全部', selMerchant:''};
 const PAGE_SIZE=15;
 
 function baseFilter(r, ignore={}){
@@ -632,11 +632,20 @@ function tile(l,v,u,d,good,bad){ return `<div class="kpi"><div class="klabel">${
 
 function renderWeekTrend(){
   const f=getFiltered();
-  const days=[...new Set(f.map(r=>r.day))].sort((a,b)=>a-b);
-  const today=days[days.length-1]||18;
-  // 本周:最近7天, 上周:前7天
-  const thisWeek=f.filter(r=>r.day>today-7&&r.day<=today);
-  const lastWeek=f.filter(r=>r.day>today-14&&r.day<=today-7);
+  // 用实际日期计算周：上周四→本周五为一个周期
+  const dates=[...new Set(f.map(r=>r.date))].sort();
+  const lastDate=new Date(dates[dates.length-1]);
+  // 找到最近的周五
+  const dow=lastDate.getDay(); // 0=Sun, 5=Fri
+  let thisFri=new Date(lastDate);
+  if(dow!==5) thisFri.setDate(thisFri.getDate()-(dow+2)%7); // 回退到最近周五
+  const thisThu=new Date(thisFri);thisThu.setDate(thisFri.getDate()-8); // 上周四
+  const lastFri=new Date(thisThu);lastFri.setDate(thisThu.getDate()-1); // 上上周五
+  const lastThu=new Date(lastFri);lastThu.setDate(lastFri.getDate()-8); // 上上周四
+
+  const fmtD=d=>d.toISOString().slice(0,10);
+  const thisWeek=f.filter(r=>r.date>=fmtD(thisThu)&&r.date<=fmtD(thisFri));
+  const lastWeek=f.filter(r=>r.date>=fmtD(lastThu)&&r.date<=fmtD(lastFri));
 
   // 按中心仓统计
   const centers=[...new Set(f.map(r=>r.center))].sort();
