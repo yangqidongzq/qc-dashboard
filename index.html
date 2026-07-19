@@ -563,7 +563,7 @@ function renderAnaWarehouse(){
     if(d.miss.length>0){
       html+='<div style="font-size:10px;color:var(--ink-2);margin-top:4px">前置/后验+入仓质检中的机器，质检员已验证→差异归属中心仓</div>';
       var msTypes={};d.miss.forEach(function(x){var t=(x.kw?x.kw.tag:x.reason)||'差异记录';msTypes[t]=(msTypes[t]||0)+1;});
-      var topMS=Object.entries(msTypes).sort(function(a,b){return b[1]-a[1];}).slice(0,3);
+      var topMS=Object.entries(msTypes).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
       topMS.forEach(function(t){html+='<div style="font-size:10px;margin:2px 0">• '+t[0]+'：<b>'+t[1]+'台</b></div>';});
     }else{html+='<div style="font-size:10px;color:var(--good-ink)">✅ 无明显漏测</div>';}
     html+='</div>';
@@ -673,9 +673,9 @@ function renderWeekTrend(){
     const topInsp=Object.entries(inspectors).sort((a,b)=>b[1].q-a[1].q).slice(0,3);
     // 主要商户 + 差异商户
     const merchants={};tw.forEach(r=>{const m=r.merchant||'—';merchants[m]=(merchants[m]||0)+1;});
-    const topMerch=Object.entries(merchants).filter(([k])=>k!=='—').sort((a,b)=>b[1]-a[1]).slice(0,3);
+    const topMerch=Object.entries(merchants).filter(([k])=>k!=='—').sort((a,b)=>b[1]-a[1]).slice(0,10);
     const diffMerchants={};tw.filter(r=>r.qtyDiff).forEach(r=>{const m=r.merchant||'—';diffMerchants[m]=(diffMerchants[m]||{t:0,d:0});diffMerchants[m].t++;diffMerchants[m].d+=r.qtyDiff;});
-    const topDiffMerch=Object.entries(diffMerchants).filter(([k])=>k!=='—').sort((a,b)=>b[1].d-a[1].d).slice(0,3);
+    const topDiffMerch=Object.entries(diffMerchants).filter(([k])=>k!=='—').sort((a,b)=>b[1].d-a[1].d).slice(0,10);
     return {c,twQty,twDiff,twRate,lwQty,lwDiff,lwRate,change,reason,twItems,lwItems,allItems,topInsp,topMerch,topDiffMerch};
   }).filter(d=>d.twQty>0||d.lwQty>0).sort((a,b)=>b.change-a.change);
 
@@ -1043,9 +1043,9 @@ window.exportCenterDiff = function(){
   const csv = ['中心仓,大区,质检台,差异台,差异率,差异项(TOP3),主要差异原因(TOP3),主要商户(TOP3)'];
   const data = window._cdData || [];
   data.forEach(a => {
-    const items = Object.entries(a.diffItems||{}).sort((x,y)=>y[1]-x[1]).slice(0,3).map(e=>e[0]+'('+e[1]+')').join('/')||'—';
-    const reasons = Object.entries(a.reasons||{}).sort((x,y)=>y[1]-x[1]).slice(0,3).map(e=>e[0]+'('+e[1]+')').join('/')||'—';
-    const merchants = Object.entries(a.merchants||{}).sort((x,y)=>y[1]-x[1]).slice(0,3).map(e=>e[0]+'('+e[1]+')').join('/')||'—';
+    const items = Object.entries(a.diffItems||{}).sort((x,y)=>y[1]-x[1]).slice(0,10).map(e=>e[0]+'('+e[1]+')').join('/')||'—';
+    const reasons = Object.entries(a.reasons||{}).sort((x,y)=>y[1]-x[1]).slice(0,10).map(e=>e[0]+'('+e[1]+')').join('/')||'—';
+    const merchants = Object.entries(a.merchants||{}).sort((x,y)=>y[1]-x[1]).slice(0,10).map(e=>e[0]+'('+e[1]+')').join('/')||'—';
     csv.push(`"${a.center}","${a.region}","${a.qty}","${a.diff}","${a.rate.toFixed(1)}%","${items}","${reasons}","${merchants}"`);
   });
   downloadFile('中心仓差异汇总.csv','﻿'+csv.join('\r\n'));
