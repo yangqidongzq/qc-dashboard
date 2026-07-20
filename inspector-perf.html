@@ -54,7 +54,7 @@ h1,h2,h3{margin:0; font-weight:600}
 .chip{padding:6px 11px; border-radius:7px; border:1px solid var(--border); background:transparent; color:var(--ink-2); cursor:pointer; font-size:12px; font-family:inherit}
 .chip.active{background:var(--s1); color:#fff; border-color:var(--s1)}
 
-/* ── KPI cards ── */
+/* KPI cards */
 .kpis{display:grid; grid-template-columns:1.3fr repeat(4,1fr); gap:16px; margin-bottom:18px}
 @media(max-width:1080px){.kpis{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:520px){.kpis{grid-template-columns:1fr}}
@@ -68,14 +68,14 @@ h1,h2,h3{margin:0; font-weight:600}
 .meter{height:8px; border-radius:5px; background:var(--track); overflow:hidden; margin-top:11px}
 .meter>span{display:block; height:100%; border-radius:5px}
 
-/* ── Card ── */
+/* Card */
 .grid{display:grid; grid-template-columns:1fr; gap:16px}
 .card{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px 18px; box-shadow:var(--shadow); min-width:0}
 .card h3{font-size:14px; display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:2px}
 .card .hint{font-size:11px; color:var(--muted); font-weight:400}
 .card .csub{font-size:12px; color:var(--muted); margin-bottom:12px}
 
-/* ── Tables ── */
+/* Tables */
 table{width:100%; border-collapse:collapse; font-size:13px}
 th,td{text-align:left; padding:9px 10px; border-bottom:1px solid var(--grid)}
 th{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; font-weight:600}
@@ -89,39 +89,14 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
 .tablewrap{overflow-x:auto}
 .scroll{max-height:450px; overflow:auto}
 
-/* ── Diff rate bar in inspector table ── */
-.diffbar{display:inline-block; height:16px; border-radius:3px; vertical-align:middle; margin-right:4px}
-
-/* ── Personal Diff Rate Chart ── */
-.diffrate-grid{display:grid; grid-template-columns:1fr 1fr; gap:18px}
-@media(max-width:768px){.diffrate-grid{grid-template-columns:1fr}}
-.diffrate-row{display:grid; grid-template-columns:70px 1fr 90px 70px; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--grid)}
-.diffrate-row.header-row{padding:4px 0; border-bottom:2px solid var(--axis); font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px}
-.diffrate-row .rank{font-size:18px; font-weight:700; text-align:center}
-.diffrate-row .name{font-size:13px; font-weight:600}
-.diffrate-row .name .region-tag{font-size:10px; color:var(--muted); font-weight:400}
-.diffrate-row .bar-col{position:relative}
-.diffrate-row .bar-track{height:22px; background:var(--track); border-radius:5px; overflow:hidden; position:relative}
-.diffrate-row .bar-fill{height:100%; border-radius:5px; transition:width .3s}
-.diffrate-row .bar-avg{position:absolute; top:0; bottom:0; width:2px; background:var(--ink); opacity:.5; z-index:2}
-.diffrate-row .rate-val{font-size:15px; font-weight:700; text-align:right}
-.diffrate-row .detail{font-size:11px; color:var(--muted); text-align:right}
-.diffrate-summary{display:flex; gap:14px; flex-wrap:wrap; margin-bottom:14px}
-.diffrate-summary .ds{flex:1; min-width:80px; background:var(--surface-1); border-radius:10px; padding:12px 14px; text-align:center}
-.diffrate-summary .ds .ds-val{font-size:22px; font-weight:700}
-.diffrate-summary .ds .ds-label{font-size:10px; color:var(--muted); margin-top:2px}
-.diffrate-item-tags{display:flex; gap:3px; flex-wrap:wrap; margin-top:2px}
-.diffrate-item-tag{padding:1px 5px; border-radius:3px; font-size:9px; background:var(--surface-1); color:var(--ink-2)}
-
-/* ── Footer ── */
+/* Footer */
 .foot{margin-top:26px; text-align:center; color:var(--muted); font-size:12px}
 
-/* ── Toast ── */
+/* Toast */
 .toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--good); color:#fff; padding:11px 18px; border-radius:10px; font-size:13px; box-shadow:0 8px 24px rgba(0,0,0,.25); opacity:0; transition:.25s; z-index:90; pointer-events:none}
 .toast.on{opacity:1; transform:translateX(-50%) translateY(0)}
 .toast.err{background:var(--crit)}
 
-/* ── Responsive ── */
 @media(max-width:768px){
   .wrap{padding:10px 12px 40px}
   .kpi .kval{font-size:22px}
@@ -132,7 +107,6 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
 <body>
 <div class="wrap">
 
-  <!-- ═══ Header ═══ -->
   <div class="topbar">
     <div class="brand">
       <div class="logo">检</div>
@@ -142,11 +116,9 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
       </div>
     </div>
     <div class="spacer"></div>
-    <button class="btn" id="exportInspBtn">⬇ 导出巡检数据</button>
     <button class="btn" id="themeBtn">🌙 深色</button>
   </div>
 
-  <!-- ═══ Filters ═══ -->
   <div class="filters">
     <div class="region-tabs" id="regionTabs"></div>
     <div class="frow">
@@ -166,12 +138,10 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
     </div>
   </div>
 
-  <!-- ═══ Section 1: KPI Cards ═══ -->
   <div class="kpis" id="kpis"></div>
 
   <div class="grid">
 
-    <!-- ═══ Section 2: Daily Per-Person Detail ═══ -->
     <div class="card">
       <h3>📅 每人单日明细 <span class="hint">100台/人/日 · 达标绿色 · 未达标红色 · 休息灰色</span></h3>
       <div class="csub" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -185,7 +155,6 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
       <div id="dailyChart"></div>
     </div>
 
-    <!-- ═══ Section 3: Personal Diff Rate ═══ -->
     <div class="card">
       <h3>⚠️ 巡检个人差异率 <span class="hint">差异台 / 质检台</span></h3>
       <div class="csub">
@@ -196,7 +165,6 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
       <div class="tablewrap"><table id="diffRateTable"></table></div>
     </div>
 
-    <!-- ═══ Section 4: 人员问题收集完成度 ═══ -->
     <div class="card">
       <h3>
         <span>📋 人员问题收集完成度 <span class="hint">目标 华东9/华南18/华西9/华北12 条/月</span></span>
@@ -213,37 +181,17 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
       <div class="tablewrap"><table id="problemTable"></table></div>
     </div>
 
-    <!-- ═══ Section 4.5: Personnel Analysis ═══ -->
     <div class="card">
-      <h3>📊 人员达成分析 & 改善建议 <span class="hint">按目标达成率排序 · 含具体方向建议</span></h3>
-      <div class="csub">100台/人/日 · 综合质检量+差异率+趋势给出个性化改善方向</div>
+      <h3>📊 人员达成分析 & 改善建议 <span class="hint">四区域双列 · 个性化改善方向</span></h3>
+      <div class="csub">100台/人/日 · 左列华东+华南 · 右列华西+华北</div>
       <div class="tablewrap"><table id="personAnalysis"></table></div>
-    </div>
-
-    <!-- ═══ Section 5: Inspector Personnel ═══ -->
-    <div class="card">
-      <h3>
-        <span>👤 巡检人员数据</span>
-        <span style="display:flex;gap:6px;flex:none">
-          <button class="chip" id="toggleAllBtn">📂 一键折叠</button>
-          <button class="chip" id="underFilter">⚡ 仅看未达标</button>
-        </span>
-      </h3>
-      <div class="csub">
-        达成率 = 实际台数 / (100 × 出勤天) ·
-        <span style="color:var(--good-ink)">≥100% 绿色</span> ·
-        <span style="color:var(--ink)">85%~100% 常规</span> ·
-        <span style="color:var(--crit)"><85% 红色</span>
-      </div>
-      <div class="tablewrap"><table id="inspectorTable"></table></div>
     </div>
 
   </div>
 
-  <div class="foot">巡检人员效能看板 · 数据源同质检主看板（qc-data.js）· 聚焦 KPI / 单日明细 / 巡检人员 / 个人差异率</div>
+  <div class="foot">巡检人员效能看板 · 数据源同质检主看板（qc-data.js）· 聚焦 KPI / 单日明细 / 个人差异率</div>
 </div>
 
-<!-- ═══ Scripts ═══ -->
 <script src="qc-data.js?v=20260718"></script>
 <script src="problem-data.js?v=20260718"></script>
 <script>
@@ -295,7 +243,7 @@ const MODELS = {
   '智能穿戴':['Apple Watch S8','华为Watch GT4','小米手环8'],
 };
 
-/* ── utils ── */
+/* utils */
 const cssv = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const dayToDate = d => `${CFG.cycleMonth}-${String(d).padStart(2,'0')}`;
 const pad2 = n => String(n).padStart(2,'0');
@@ -305,7 +253,7 @@ function parseDate(s){
   return {norm:`${m[1]}-${pad2(m[2])}-${pad2(m[3])}`, day:+m[3]};
 }
 
-/* ── RNG ── */
+/* RNG */
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 const rnd = mulberry32(20260701);
 const ri = (a,b)=>a+Math.floor(rnd()*(b-a+1));
@@ -430,7 +378,6 @@ function renderDaily(){
   const allInspGlobal=[...new Set(RECORDS.map(r=>r.inspector))].sort();
   const allDates=[...new Set(RECORDS.map(r=>r.date))].sort();
 
-  // 巡检人员下拉
   const selInsp=document.getElementById('fDailyInspector');
   if(selInsp){
     selInsp.innerHTML=['全部',...allInspGlobal].map(n=>`<option ${n===state.dailyInspector?'selected':''}>${n}</option>`).join('');
@@ -440,7 +387,6 @@ function renderDaily(){
     f=f.filter(r=>r.inspector===state.dailyInspector);
   }
 
-  // 日期筛选
   const df=document.getElementById('fDailyFrom'), dt=document.getElementById('fDailyTo');
   if(df && dt){
     if(!state.dailyFrom) state.dailyFrom=allDates[0]||'';
@@ -455,7 +401,6 @@ function renderDaily(){
   const allInsp=[...new Set(f.map(r=>r.inspector))].sort();
   const filteredInsp = allInsp;
 
-  // data[day][inspector] = count
   const data={};
   days.forEach(d=>{ data[d]={}; filteredInsp.forEach(n=>data[d][n]=0); });
   f.forEach(r=>{ if(data[r.day] && data[r.day][r.inspector]!==undefined) data[r.day][r.inspector]=(data[r.day][r.inspector]||0)+r.qty; });
@@ -472,7 +417,6 @@ function renderDaily(){
            p>0.2?'color-mix(in srgb,var(--s1) 10%,transparent)':'transparent';
   };
 
-  // 转置：行为人员，列为日期
   let html='<div class="tablewrap scroll" style="max-height:400px"><table style="font-size:12px"><thead><tr><th>巡检人员</th>';
   days.forEach(d=>html+='<th class="num">'+d+'日</th>');
   html+='<th class="num">合计</th></tr></thead><tbody>';
@@ -493,7 +437,7 @@ function renderDaily(){
 }
 
 /* =========================================================
-   6. 渲染：巡检个人差异率（独立模块）
+   6. 渲染：巡检个人差异率
    ========================================================= */
 function renderDiffRate(){
   const f=getFiltered();
@@ -534,7 +478,6 @@ function renderDiffRate(){
 /* =========================================================
    7. 人员问题收集完成度
    ========================================================= */
-// 数据：window.PROBLEM_DATA = [{inspector, date, description, adjusted}]  adjusted: 是/否
 let PROBLEM_RECORDS = (typeof window!=='undefined' && window.PROBLEM_DATA && window.PROBLEM_DATA.length)
   ? window.PROBLEM_DATA
   : [];
@@ -544,7 +487,6 @@ function renderProblem(){
   const REGION_TARGET = {华东:9, 华南:18, 华西:9, 华北:12};
   const QC_INSPECTORS = new Set(Object.keys(INSPECTOR_REGION));
 
-  // 可用月份
   const months = [...new Set(PROBLEM_RECORDS.map(r => r.date.slice(0,7)))].sort();
   if(!state.problemMonth && months.length) state.problemMonth = months[months.length-1];
 
@@ -554,12 +496,10 @@ function renderProblem(){
     sel.onchange = () => { state.problemMonth = sel.value; renderProblem(); };
   }
 
-  // 按月筛选 + 只保留巡检人员
   const filtered = PROBLEM_RECORDS.filter(r =>
     r.date.slice(0,7) === state.problemMonth && QC_INSPECTORS.has(r.inspector)
   );
 
-  // 聚合：每人 collected / passed / pending
   const map = {};
   for(const r of filtered){
     const m = map[r.inspector] || (map[r.inspector] = {collected:0, passed:0, pending:0, recs:[]});
@@ -569,7 +509,6 @@ function renderProblem(){
     else if(r.reviewResult === '待验证') m.pending++;
   }
 
-  // 所有巡检人员（包括0条的）
   QC_INSPECTORS.forEach(n => { if(!map[n]) map[n] = {collected:0, passed:0, pending:0, recs:[]}; });
 
   const people = Object.entries(map).map(([name, v]) => ({
@@ -581,10 +520,9 @@ function renderProblem(){
     pending: v.pending,
     remain: Math.max(0, TARGET - v.passed - v.pending),
     done: (v.passed + v.pending) >= TARGET,
-    recs: v.recs.sort((a,b) => b.date.localeCompare(a.date)) // newest first
+    recs: v.recs.sort((a,b) => b.date.localeCompare(a.date))
   }));
 
-  // 区域分组
   const byReg = {};
   people.forEach(p => (byReg[p.region] = byReg[p.region] || []).push(p));
   const regOrder = [...CFG.regions.filter(r => byReg[r]), ...Object.keys(byReg).filter(r => !CFG.regions.includes(r))];
@@ -624,7 +562,6 @@ function renderProblem(){
         <td class="num tnum" style="color:${cc(p.passed)};font-weight:600">${p.remain<=0?'✅':'差 '+p.remain}</td>
       </tr>`;
 
-      // 明细展开
       if(isExp && p.recs.length > 0){
         rows += `<tr style="${col?'display:none':''}"><td colspan="6" style="padding:0;background:var(--surface-1)">
           <div style="overflow-x:auto;max-height:360px;padding:8px 14px;font-size:11px">
@@ -655,12 +592,11 @@ function renderProblem(){
   const totalPending = sum(people,p=>p.pending);
   const totalFailed = sum(people,p=>p.failed);
 
-  // 全区域汇总条
   document.getElementById('problemSummary').innerHTML =
     `<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;padding:8px 12px;background:var(--surface-1);border-radius:8px">
       <span>📊 <b>总收集：${totalCollected}</b> 条</span>
       <span style="color:var(--good-ink)">✅ <b>通过：${totalPassed}</b> 条</span>
-<span style="color:var(--crit)">❌ <b>未通过：${totalFailed}</b> 条</span>
+      <span style="color:var(--crit)">❌ <b>未通过：${totalFailed}</b> 条</span>
       <span>|</span>
       <span>👤 ${people.length}人 · 🎯 已完成 <b>${totalDone}</b> 人</span>
     </div>`;
@@ -673,99 +609,83 @@ function renderProblem(){
 }
 
 /* =========================================================
-   8. 渲染：巡检人员数据
+   8. 渲染：人员达成分析（四区域双列卡片）
    ========================================================= */
-function renderInspectors(){
-  const map={};
-  for(const r of getFiltered()){
-    const m=map[r.inspector]||(map[r.inspector]={region:r.region,centers:{},days:new Set(),qty:0,diff:0});
-    m.qty+=r.qty;
-    m.diff+=r.qtyDiff;
-    m.days.add(r.day);
-    m.centers[r.center]=(m.centers[r.center]||0)+1;
+function renderPersonAnalysis(){
+  var MONTH_DAYS=26, DAILY_TARGET=100, PROBLEM_TARGET=3;
+  var REGION_LEAD={华东:'旷小波',华南:'杨启栋',华西:'苏凯',华北:'赵子龙'};
+  var f=getFiltered();
+  var dayList=[],i;for(i=0;i<f.length;i++){var d=f[i].day;if(dayList.indexOf(d)<0)dayList.push(d);}
+  dayList.sort(function(a,b){return a-b;});
+  var maxDay=dayList[dayList.length-1]||0;
+  var map={};for(i=0;i<f.length;i++){var r=f[i];var m=map[r.inspector]||(map[r.inspector]={region:r.region,qty:0,diff:0,daysE:{}});m.qty+=r.qty;m.diff+=r.qtyDiff;m.daysE[r.day]=1;}
+  var probMap={};
+  if(typeof PROBLEM_RECORDS!=='undefined'){
+    var pm=state.problemMonth||'2026-07';
+    for(i=0;i<PROBLEM_RECORDS.length;i++){var pr=PROBLEM_RECORDS[i];if(pr.date.slice(0,7)===pm){var pm2=probMap[pr.inspector]||(probMap[pr.inspector]={c:0,p:0});pm2.c++;if(pr.adjusted==='是')pm2.p++;}}
   }
-  const people=Object.entries(map).map(([k,v])=>{
-    const days=v.days.size, tgt=days*CFG.dailyTarget;
-    const center=Object.entries(v.centers).sort((a,b)=>b[1]-a[1])[0][0];
-    return {name:k, region:v.region, center, days, qty:v.qty, diff:v.diff, tgt,
-      comp:pct(v.qty,tgt), rate:pct(v.diff,v.qty)};
-  });
-
-  const byReg={};
-  people.forEach(p=>(byReg[p.region]=byReg[p.region]||[]).push(p));
-  const regOrder=[...CFG.regions.filter(r=>byReg[r]), ...Object.keys(byReg).filter(r=>!CFG.regions.includes(r))];
-
-  // region ranking for badges
-  const regScores=regOrder.map(r=>{
-    const ppl=byReg[r];
-    return {region:r, comp:pct(sum(ppl,p=>p.qty),sum(ppl,p=>p.tgt)), q:sum(ppl,p=>p.qty)};
-  }).sort((a,b)=>b.comp-a.comp);
-  const rankBadge=(i,total)=>{
-    if(total<=1) return '';
-    if(i===0) return '🥇'; if(i===1) return '🥈'; if(i===2) return '🥉';
-    return (i+1)+'';
-  };
-  const RANK_BADGE=Object.fromEntries(regScores.map((s,i)=>[s.region,rankBadge(i,regScores.length)]));
-
-  const UNDER=state.underOnly?85:-1;
-  const cc=c=>c>=100?'var(--good-ink)':c>=85?'var(--ink)':'var(--crit)';
-
-  let rows='', hasAny=false;
-  for(const reg of regOrder){
-    const ppl=byReg[reg].filter(p=>p.comp<UNDER||UNDER<0).sort((a,b)=>b.comp-a.comp);
-    if(!ppl.length) continue;
-    hasAny=true;
-    const q=sum(ppl,p=>p.qty), tgt=sum(ppl,p=>p.tgt), days=sum(ppl,p=>p.days);
-    const comp=pct(q,tgt), rc=cssv(REGION_COLOR[reg]||'--muted');
-    const badge=RANK_BADGE[reg]||'';
-    const collapsed=state.collapsed[reg]!==undefined?state.collapsed[reg]:state.collapseAll;
-
-    rows+=`<tr class="reg-sub" data-reg="${reg}" style="background:color-mix(in srgb,${rc} 10%,transparent);font-weight:600;cursor:pointer" onclick="state.collapsed['${reg}']=!state.collapsed['${reg}'];rrenderInspectors();">
-      <td colspan="2"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${rc};margin-right:7px;vertical-align:middle"></span><span class="toggle-icon">${collapsed?"▶":"▼"}</span> ${reg} 小计 · ${ppl.length}人${badge?' <span style="font-size:16px;line-height:1">'+badge+'</span>':''}</td>
-      <td></td>
-      <td class="num tnum">${days}</td>
-      <td class="num tnum">${fmt(q)}</td>
-      <td class="num tnum">${fmt(tgt)}</td>
-      <td class="num tnum" style="color:${cc(comp)}">${comp.toFixed(0)}%</td>
-    </tr>`;
-
-    for(const a of ppl){
-      rows+=`<tr class="reg-mem reg-mem-${reg}" style="${collapsed?"display:none":""}">
-        <td style="padding-left:24px">${a.name}${a.comp<85?' <span style="font-size:11px;color:var(--crit);font-weight:400">⚠未达标</span>':''}${a.comp>=100?' <span style="font-size:11px;color:var(--good-ink)">✅</span>':''}</td>
-        <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${rc};margin-right:6px;vertical-align:middle"></span>${a.region}</td>
-        <td>${a.center}</td>
-        <td class="num tnum">${a.days}</td>
-        <td class="num tnum">${fmt(a.qty)}</td>
-        <td class="num tnum">${fmt(a.tgt)}</td>
-        <td class="num tnum" style="color:${cc(a.comp)};font-weight:600">${a.comp.toFixed(0)}%</td>
-      </tr>`;
-    }
+  var people=[];
+  for(var name in map){
+    var v=map[name];var d2=Object.keys(v.daysE).length;var totalQty=v.qty;
+    var avg=d2>0?Math.round(totalQty/d2):0;var compQty=pct(avg,DAILY_TARGET);
+    var rate=pct(v.diff,totalQty);var monthTarget=MONTH_DAYS*DAILY_TARGET;var monthComp=pct(totalQty,monthTarget);
+    var last3=[],prev3=[];for(i=0;i<f.length;i++){var r2=f[i];if(r2.inspector===name){if(r2.day>maxDay-3)last3.push(r2);if(r2.day>maxDay-6&&r2.day<=maxDay-3)prev3.push(r2);}}
+    var l3d=uniq(last3,function(x){return x.day;});var p3d=uniq(prev3,function(x){return x.day;});
+    var last3Avg=l3d>0?Math.round(sum(last3,function(x){return x.qty;})/l3d):0;
+    var prev3Avg=p3d>0?Math.round(sum(prev3,function(x){return x.qty;})/p3d):0;
+    var trend=last3Avg>prev3Avg?1:last3Avg<prev3Avg?-1:0;
+    var pc=probMap[name]||{c:0,p:0};var probComp=pc.p>=PROBLEM_TARGET?'已完成':'差'+(PROBLEM_TARGET-pc.p)+'条';
+    var advice='';if(avg>=DAILY_TARGET&&rate<=5&&pc.p>=PROBLEM_TARGET)advice='三项全能·标杆';else if(avg>=DAILY_TARGET&&rate<=5)advice='质检达标·完善问题收集';else if(avg>=DAILY_TARGET&&rate>5)advice='台数达标·控制差异率';else if(avg>=85&&rate<=5)advice='小幅提量即达标';else if(avg>=85)advice='提量+降差异';else if(avg<85&&rate<=5)advice='需大幅提量';else advice='重点帮扶对象';
+    if(trend>0)advice+=' [↑]';else if(trend<0)advice+=' [↓]';
+    people.push({name:name,region:v.region,days:d2,avg:avg,totalQty:totalQty,compQty:compQty,rate:rate,monthComp:monthComp,trend:trend,pc:pc,probComp:probComp,advice:advice});
   }
-  if(!hasAny) rows=`<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:16px">${state.underOnly?'当前筛选无不达标人员 ✅ 全部达标':'暂无数据'}</td></tr>`;
+  people.sort(function(a,b){return a.compQty-b.compQty;});
+  if(!people.length){document.getElementById('personAnalysis').innerHTML='<div style="color:var(--muted);padding:16px">暂无数据</div>';return;}
+  var byReg={};for(i=0;i<people.length;i++){var p3=people[i];var reg=p3.region;(byReg[reg]=byReg[reg]||[]).push(p3);}
+  var cc=function(c){return c>=100?'var(--good-ink)':c>=85?'var(--ink)':'var(--crit)';};
+  var rc=function(r){return r<=5?'var(--good-ink)':r<=8?'var(--warn)':'var(--crit)';};
 
-  document.getElementById('inspectorTable').innerHTML=
-    `<thead><tr>
-      <th>巡检人员</th><th>大区</th><th>中心仓</th>
-      <th class="num">出勤天</th><th class="num">质检台</th><th class="num">目标</th>
-      <th class="num">达成率</th>
-    </tr></thead><tbody>${rows}</tbody>`;
-
-  // store export data
-  window._inspExport=()=>{
-    const csv=['巡检人员,大区,中心仓,出勤天,质检台,目标,达成率'];
-    for(const reg of regOrder){
-      const ppl=byReg[reg].sort((a,b)=>b.comp-a.comp);
-      const q=sum(ppl,p=>p.qty),tgt=sum(ppl,p=>p.tgt),days=sum(ppl,p=>p.days);
-      csv.push(`● ${reg} 小计(${ppl.length}人),,,"${days}","${q}","${tgt}","${pct(q,tgt).toFixed(0)}%"`);
-      ppl.forEach(p=>csv.push(`${p.name},${p.region},${p.center},"${p.days}","${p.qty}","${p.tgt}","${p.comp.toFixed(0)}%"`));
+  // ===== 四区域双列卡片 =====
+  function buildRegionCards(reg){
+    var ppl=byReg[reg]; if(!ppl||!ppl.length) return '';
+    var ld=REGION_LEAD[reg];
+    var rc2=cssv(REGION_COLOR[reg]||'--muted');
+    var cardsHtml='';
+    for(var pi=0;pi<ppl.length;pi++){
+      var p5=ppl[pi];
+      var bg,badge,action;
+      if(p5.compQty>=100&&p5.rate<=5&&p5.pc.p>=3){bg='color-mix(in srgb,var(--good) 8%,transparent)';badge='<span style="background:var(--good);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">标杆</span>';action='保持节奏';}
+      else if(p5.compQty>=100&&p5.rate>5){bg='color-mix(in srgb,var(--warn) 10%,transparent)';badge='<span style="background:var(--warn);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">质量预警</span>';action='排查差异项，降差异率';}
+      else if(p5.compQty>=85&&p5.rate<=5){bg='color-mix(in srgb,var(--s1) 6%,transparent)';badge='<span style="background:var(--s1);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">接近达标</span>';action='日提'+(DAILY_TARGET-p5.avg)+'台即达标';}
+      else if(p5.compQty>=85&&p5.rate>5){bg='color-mix(in srgb,var(--serious) 10%,transparent)';badge='<span style="background:var(--serious);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">需关注</span>';action='同步提量+降差异';}
+      else if(p5.compQty<85&&p5.rate<=5){bg='color-mix(in srgb,var(--s3) 10%,transparent)';badge='<span style="background:var(--s3);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">量不足</span>';action='需大幅提量，日差'+(DAILY_TARGET-p5.avg)+'台';}
+      else {bg='color-mix(in srgb,var(--crit) 8%,transparent)';badge='<span style="background:var(--crit);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">重点帮扶</span>';action=ld+'跟进，排查技能流程';}
+      var probTag=p5.pc.p>=3?'<span style="color:var(--good-ink);font-size:11px">✓问题收集完成</span>':'<span style="color:var(--crit);font-size:11px">✗差'+(3-p5.pc.p)+'条问题</span>';
+      var trendIcon=p5.trend>0?' ↑':p5.trend<0?' ↓':' →';
+      cardsHtml+='<div style="background:'+bg+';border-radius:10px;padding:14px 16px;border-left:3px solid '+(p5.compQty>=100?'var(--good)':p5.compQty>=85?'var(--s1)':'var(--crit)')+'">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-weight:600;font-size:14px">'+(p5.name===ld?'👑 ':'')+p5.name+'</span>'+badge+'</div>'+
+        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:12px;margin-bottom:8px">'+
+        '<div><span style="color:var(--muted)">日均</span> <b style="color:'+cc(p5.compQty)+'">'+p5.avg+'台</b></div>'+
+        '<div><span style="color:var(--muted)">差异率</span> <b style="color:'+rc(p5.rate)+'">'+p5.rate.toFixed(1)+'%</b></div>'+
+        '<div><span style="color:var(--muted)">月达成</span> <b style="color:'+cc(p5.monthComp)+'">'+p5.monthComp.toFixed(0)+'%</b></div>'+
+        '<div><span style="color:var(--muted)">趋势</span> <b>'+trendIcon+'</b></div></div>'+
+        '<div style="display:flex;align-items:center;gap:12px;font-size:12px;margin-bottom:6px">'+probTag+'<span style="color:var(--muted);font-size:11px">出勤'+p5.days+'天 · 合计'+p5.totalQty+'台</span></div>'+
+        '<div style="font-size:12px;background:var(--card);padding:6px 10px;border-radius:6px"><b>建议：</b>'+action+'</div></div>';
     }
-    downloadFile('巡检人员效能数据_'+state.region+'.csv','﻿'+csv.join('\r\n'));
-    toast('已导出巡检人员效能数据');
-  };
+    return '<div style="margin-bottom:16px">'+
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;font-weight:700;font-size:14px;color:var(--s5)">'+
+      '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+rc2+'"></span>'+reg+'区域 · 负责人：'+ld+' · '+ppl.length+'人</div>'+
+      '<div style="display:flex;flex-direction:column;gap:10px">'+cardsHtml+'</div></div>';
+  }
+
+  var leftCol=buildRegionCards('华东')+buildRegionCards('华南');
+  var rightCol=buildRegionCards('华西')+buildRegionCards('华北');
+  var cards='<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px"><div>'+leftCol+'</div><div>'+rightCol+'</div></div>';
+  document.getElementById('personAnalysis').innerHTML=cards;
 }
 
 /* =========================================================
-   7. 筛选控件
+   9. 筛选控件
    ========================================================= */
 function buildControls(){
   const rt=document.getElementById('regionTabs'), regs=['全区域',...CFG.regions];
@@ -793,23 +713,6 @@ function buildControls(){
     b.onclick=()=>applyPreset(b.dataset.p);
   });
 
-  const ub=document.getElementById('underFilter');
-  if(ub){
-    ub.classList.toggle('active',state.underOnly);
-    ub.onclick=()=>{ state.underOnly=!state.underOnly; ub.classList.toggle('active',state.underOnly); renderInspectors(); };
-  }
-  const tb=document.getElementById('toggleAllBtn');
-  if(tb){
-    tb.textContent=state.collapseAll?'📂 一键展开':'📁 一键折叠';
-    tb.onclick=()=>{
-      state.collapseAll=!state.collapseAll;
-      Object.keys(state.collapsed).forEach(k=>{ state.collapsed[k]=state.collapseAll; });
-      CFG.regions.forEach(r=>{ state.collapsed[r]=state.collapseAll; });
-      tb.textContent=state.collapseAll?'📂 一键展开':'📁 一键折叠';
-      renderInspectors();
-    };
-  }
-  // 问题收集模块的折叠按钮
   const ptb=document.getElementById('problemToggleBtn');
   if(ptb){
     ptb.textContent=state.problemCollapseAll?'📂 一键展开':'📁 一键折叠';
@@ -838,7 +741,7 @@ function applyPreset(p){
 function syncPreset(){ state.preset=''; document.querySelectorAll('#presets .chip').forEach(b=>b.classList.remove('active')); }
 
 /* =========================================================
-   8. 主题
+   10. 主题
    ========================================================= */
 document.getElementById('themeBtn').onclick=()=>{
   const dark=document.documentElement.getAttribute('data-theme')==='dark';
@@ -848,19 +751,8 @@ document.getElementById('themeBtn').onclick=()=>{
 };
 
 /* =========================================================
-   9. 导出
+   11. 工具
    ========================================================= */
-document.getElementById('exportInspBtn').onclick=()=>{
-  if(window._inspExport) window._inspExport();
-};
-
-function downloadFile(name,content){
-  const blob=new Blob([content],{type:'text/csv;charset=utf-8'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob); a.download=name; a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-}
-
 const toastEl=document.getElementById('toast');
 let toastTimer;
 function toast(msg,err){
@@ -871,8 +763,15 @@ function toast(msg,err){
   toastTimer=setTimeout(()=>toastEl.classList.remove('on'),2800);
 }
 
+function downloadFile(name,content){
+  const blob=new Blob([content],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+
 /* =========================================================
-   10. 启动
+   12. 启动
    ========================================================= */
 function renderAll(){
   renderKPIs();
@@ -880,95 +779,6 @@ function renderAll(){
   renderDiffRate();
   renderProblem();
   renderPersonAnalysis();
-  renderInspectors();
-}
-
-function renderPersonAnalysis(){
-  var MONTH_DAYS=26, DAILY_TARGET=100, PROBLEM_TARGET=3;
-  var REGION_LEAD={华东:'旷小波',华南:'杨启栋',华西:'苏凯',华北:'赵子龙'};
-  var f=getFiltered();
-  var dayList=[],i;for(i=0;i<f.length;i++){var d=f[i].day;if(dayList.indexOf(d)<0)dayList.push(d);}
-  dayList.sort(function(a,b){return a-b;});
-  var maxDay=dayList[dayList.length-1]||0;
-  var map={};for(i=0;i<f.length;i++){var r=f[i];var m=map[r.inspector]||(map[r.inspector]={region:r.region,qty:0,diff:0,daysE:{}});m.qty+=r.qty;m.diff+=r.qtyDiff;m.daysE[r.day]=1;}
-  var probMap={};
-  if(typeof PROBLEM_RECORDS!=='undefined'){
-    var pm=state.problemMonth||'2026-07';
-    for(i=0;i<PROBLEM_RECORDS.length;i++){var pr=PROBLEM_RECORDS[i];if(pr.date.slice(0,7)===pm){var pm2=probMap[pr.inspector]||(probMap[pr.inspector]={c:0,p:0});pm2.c++;if(pr.adjusted==='是')pm2.p++;}}
-  }
-  var people=[];
-  for(var name in map){
-    var v=map[name];var d2=Object.keys(v.daysE).length;var totalQty=v.qty;
-    var avg=d2>0?Math.round(totalQty/d2):0;var compQty=pct(avg,DAILY_TARGET);
-    var rate=pct(v.diff,totalQty);var monthTarget=MONTH_DAYS*DAILY_TARGET;var monthComp=pct(totalQty,monthTarget);
-    var last3=[],prev3=[];for(i=0;i<f.length;i++){var r2=f[i];if(r2.inspector===name){if(r2.day>maxDay-3)last3.push(r2);if(r2.day>maxDay-6&&r2.day<=maxDay-3)prev3.push(r2);}}
-    var l3d=uniq(last3,function(x){return x.day;});var p3d=uniq(prev3,function(x){return x.day;});
-    var last3Avg=l3d>0?Math.round(sum(last3,function(x){return x.qty;})/l3d):0;
-    var prev3Avg=p3d>0?Math.round(sum(prev3,function(x){return x.qty;})/p3d):0;
-    var trend=last3Avg>prev3Avg?1:last3Avg<prev3Avg?-1:0;
-    var pc=probMap[name]||{c:0,p:0};var probComp=pc.p>=PROBLEM_TARGET?'已完成':'差'+(PROBLEM_TARGET-pc.p)+'条';
-    var advice='';if(avg>=DAILY_TARGET&&rate<=5&&pc.p>=PROBLEM_TARGET)advice='三项全能·标杆';else if(avg>=DAILY_TARGET&&rate<=5)advice='质检达标·完善问题收集';else if(avg>=DAILY_TARGET&&rate>5)advice='台数达标·控制差异率';else if(avg>=85&&rate<=5)advice='小幅提量即达标';else if(avg>=85)advice='提量+降差异';else if(avg<85&&rate<=5)advice='需大幅提量';else advice='重点帮扶对象';
-    if(trend>0)advice+=' [↑]';else if(trend<0)advice+=' [↓]';
-    people.push({name:name,region:v.region,days:d2,avg:avg,totalQty:totalQty,compQty:compQty,rate:rate,monthComp:monthComp,pc:pc,probComp:probComp,advice:advice});
-  }
-  people.sort(function(a,b){return a.compQty-b.compQty;});
-  if(!people.length){document.getElementById('personAnalysis').innerHTML='<div style=\"color:var(--muted);padding:16px\">暂无数据</div>';return;}
-  var byReg={};for(i=0;i<people.length;i++){var p3=people[i];var reg=p3.region;(byReg[reg]=byReg[reg]||[]).push(p3);}
-  var cc=function(c){return c>=100?'var(--good-ink)':c>=85?'var(--ink)':'var(--crit)';};
-  var rc=function(r){return r<=5?'var(--good-ink)':r<=8?'var(--warn)':'var(--crit)';};
-  var rows='';var regOrder=['华南','华东','华西','华北'];
-  for(var ri=0;ri<regOrder.length;ri++){
-    var reg2=regOrder[ri];var ppl=byReg[reg2];if(!ppl||!ppl.length)continue;
-    var lead=REGION_LEAD[reg2];var regQty=sum(ppl,function(x){return x.totalQty;}),regTarget=ppl.length*MONTH_DAYS*DAILY_TARGET;
-    var regComp=pct(regQty,regTarget);var regProbs=sum(ppl,function(x){return x.pc.p;});
-    rows+='<tr style=\"background:color-mix(in srgb,var(--s5) 6%,transparent);font-weight:600\"><td colspan=\"3\">'+reg2+' / '+lead+'(负责人) / '+ppl.length+'人</td><td class=\"num tnum\" style=\"color:'+cc(pct(regQty/ppl.length/MONTH_DAYS,DAILY_TARGET))+'\">'+fmt(regQty)+'台</td><td class=\"num tnum\" style=\"color:'+cc(regComp)+'\">'+regComp.toFixed(0)+'%</td><td class=\"num tnum\">—</td><td class=\"num tnum\">—</td><td class=\"num tnum\" style=\"color:'+(regProbs>=ppl.length*PROBLEM_TARGET?'var(--good-ink)':'var(--crit)')+'\">'+regProbs+'/'+(ppl.length*PROBLEM_TARGET)+'</td></tr>';
-    for(var pi=0;pi<ppl.length;pi++){
-      var p4=ppl[pi];var gap=Math.max(0,DAILY_TARGET-p4.avg);
-      rows+='<tr><td style=\"padding-left:20px\">'+p4.name+(p4.name===lead?' [负责人]':'')+'</td><td style=\"font-size:11px\">'+p4.region+'</td><td class=\"num tnum\">'+p4.days+'天</td><td class=\"num tnum\" style=\"color:'+cc(p4.compQty)+';font-weight:600\">'+p4.avg+'台/日</td><td class=\"num tnum\" style=\"color:'+cc(p4.monthComp)+'\">'+p4.monthComp.toFixed(0)+'%</td><td class=\"num tnum\" style=\"color:'+rc(p4.rate)+'\">'+p4.rate.toFixed(1)+'%</td><td class=\"num tnum\" style=\"color:'+(gap>20?'var(--crit)':gap>10?'var(--warn)':'var(--ink)')+'\">'+(gap>0?'缺'+gap:'OK')+'</td><td class=\"num tnum\" style=\"color:'+(p4.pc.p>=PROBLEM_TARGET?'var(--good-ink)':p4.pc.p>0?'var(--warn)':'var(--crit)')+'\">'+p4.probComp+'</td></tr>';
-    }
-  }
-  var hdr='<thead><tr><th>巡检员</th><th>大区</th><th class=\"num\">出勤</th><th class=\"num\">日均</th><th class=\"num\">月达成率(26天)</th><th class=\"num\">差异率</th><th class=\"num\">日差距</th><th class=\"num\">问题收集(3条)</th></tr></thead><tbody>'+rows+'</tbody>';
-  document.getElementById('personAnalysis').innerHTML=hdr;
-  // 生成文字叙述分析
-  var totalPeople=people.length;
-  var goodOnes=people.filter(function(p){return p.compQty>=100;});
-  var midOnes=people.filter(function(p){return p.compQty>=85&&p.compQty<100;});
-  var badOnes=people.filter(function(p){return p.compQty<85;});
-  var highDiff=people.filter(function(p){return p.rate>8;});
-  var goodDiff=people.filter(function(p){return p.rate<=5;});
-  var probDone=people.filter(function(p){return p.pc.p>=3;});
-  var allPass=people.filter(function(p){return p.compQty>=100&&p.rate<=5&&p.pc.p>=3;});
-
-  // 生成样式化逐人分析卡片
-  var cards='';
-  for(var ri2=0;ri2<regOrder.length;ri2++){
-    var rg=regOrder[ri2];var rppl=byReg[rg];if(!rppl||!rppl.length)continue;
-    var ld=REGION_LEAD[rg];
-    cards+='<div style=\"margin-bottom:16px\"><div style=\"font-weight:700;font-size:14px;margin-bottom:8px;color:var(--s5)\">'+rg+'区域 · 负责人：'+ld+'</div><div style=\"display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px\">';
-    for(var pi2=0;pi2<rppl.length;pi2++){
-      var p5=rppl[pi2];
-      var bg,badge,action;
-      if(p5.compQty>=100&&p5.rate<=5&&p5.pc.p>=3){bg='color-mix(in srgb,var(--good) 8%,transparent)';badge='<span style=\"background:var(--good);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px\">标杆</span>';action='保持节奏';}
-      else if(p5.compQty>=100&&p5.rate>5){bg='color-mix(in srgb,var(--warn) 10%,transparent)';badge='<span style=\"background:var(--warn);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px\">质量预警</span>';action='排查差异项，降差异率';}
-      else if(p5.compQty>=85&&p5.rate<=5){bg='color-mix(in srgb,var(--s1) 6%,transparent)';badge='<span style=\"background:var(--s1);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px\">接近达标</span>';action='日提'+(DAILY_TARGET-p5.avg)+'台即达标';}
-      else if(p5.compQty>=85&&p5.rate>5){bg='color-mix(in srgb,var(--serious) 10%,transparent)';badge='<span style=\"background:var(--serious);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px\">需关注</span>';action='同步提量+降差异';}
-      else if(p5.compQty<85&&p5.rate<=5){bg='color-mix(in srgb,var(--s3) 10%,transparent)';badge='<span style=\"background:var(--s3);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px\">量不足</span>';action='需大幅提量，日差'+(DAILY_TARGET-p5.avg)+'台';}
-      else {bg='color-mix(in srgb,var(--crit) 8%,transparent)';badge='<span style=\"background:var(--crit);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px\">重点帮扶</span>';action=ld+'跟进，排查技能流程';}
-      var probTag=p5.pc.p>=3?'<span style=\"color:var(--good-ink);font-size:11px\">✓问题收集完成</span>':'<span style=\"color:var(--crit);font-size:11px\">✗差'+(3-p5.pc.p)+'条问题</span>';
-      var trendIcon=p5.trend>0?' ↑':p5.trend<0?' ↓':' →';
-      cards+='<div style=\"background:'+bg+';border-radius:10px;padding:12px 14px;border-left:3px solid '+(p5.compQty>=100?'var(--good)':p5.compQty>=85?'var(--s1)':'var(--crit)')+'\">'+
-        '<div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:6px\"><span style=\"font-weight:600;font-size:14px\">'+(p5.name===ld?'👑 ':'')+p5.name+'</span>'+badge+'</div>'+
-        '<div style=\"display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;font-size:12px;margin-bottom:6px\">'+
-        '<div><span style=\"color:var(--muted)\">日均</span> <b style=\"color:'+cc(p5.compQty)+'\">'+p5.avg+'台</b></div>'+
-        '<div><span style=\"color:var(--muted)\">差异率</span> <b style=\"color:'+rc(p5.rate)+'\">'+p5.rate.toFixed(1)+'%</b></div>'+
-        '<div><span style=\"color:var(--muted)\">问题</span> <b>'+p5.pc.p+'/3条</b></div></div>'+
-        '<div style=\"font-size:12px;color:var(--ink-2);margin-bottom:4px\">'+probTag+' · 趋势'+trendIcon+'</div>'+
-        '<div style=\"font-size:12px;background:var(--card);padding:6px 8px;border-radius:6px\"><b>建议：</b>'+action+'</div></div>';
-    }
-    cards+='</div></div>';
-  }
-
-  document.getElementById('personAnalysis').innerHTML+='<div style=\"margin-top:16px\">'+cards+'</div>';
 }
 
 function updateFoot(){
@@ -987,11 +797,8 @@ try{
   renderAll();
   updateFoot();
 }catch(e){
-  document.getElementById('kpis').innerHTML='<div style=\"color:var(--crit);padding:20px;font-size:14px\">❌ 错误: '+e.message+'<br><pre style=\"font-size:11px\">'+e.stack+'</pre></div>';
+  document.getElementById('kpis').innerHTML='<div style="color:var(--crit);padding:20px;font-size:14px">❌ 错误: '+e.message+'<br><pre style="font-size:11px">'+e.stack+'</pre></div>';
 }
-</script>
-</body>
-</html>
 </script>
 </body>
 </html>
