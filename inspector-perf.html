@@ -158,9 +158,9 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
     <div class="card">
       <h3>⚠️ 巡检个人差异率 <span class="hint">差异台 / 质检台</span></h3>
       <div class="csub">
-        <span style="color:var(--good-ink)">≤5% 低风险</span> ·
-        <span style="color:var(--warn)">5%~10% 关注</span> ·
-        <span style="color:var(--crit)">>10% 重点改善</span>
+        <span style="color:var(--good-ink)">>10% 差异发现高·检测认真</span> ·
+        <span style="color:var(--warn)">5%~10% 正常范围</span> ·
+        <span style="color:var(--crit)"><5% 差异偏低·需关注是否漏检</span>
       </div>
       <div class="tablewrap"><table id="diffRateTable"></table></div>
     </div>
@@ -456,7 +456,8 @@ function renderDiffRate(){
     return;
   }
 
-  const drColor=r=>r<=5?'var(--good-ink)':r<=10?'var(--warn)':'var(--crit)';
+  // 差异率高=检测认真(绿)，差异率低=可能漏检(红)
+  const drColor=r=>r>10?'var(--good-ink)':r>5?'var(--warn)':'var(--crit)';
 
   let rows=people.map((p,i)=>{
     return `<tr>
@@ -635,7 +636,8 @@ function renderPersonAnalysis(){
     var prev3Avg=p3d>0?Math.round(sum(prev3,function(x){return x.qty;})/p3d):0;
     var trend=last3Avg>prev3Avg?1:last3Avg<prev3Avg?-1:0;
     var pc=probMap[name]||{c:0,p:0};var probComp=pc.p>=PROBLEM_TARGET?'已完成':'差'+(PROBLEM_TARGET-pc.p)+'条';
-    var advice='';if(avg>=DAILY_TARGET&&rate<=5&&pc.p>=PROBLEM_TARGET)advice='三项全能·标杆';else if(avg>=DAILY_TARGET&&rate<=5)advice='质检达标·完善问题收集';else if(avg>=DAILY_TARGET&&rate>5)advice='台数达标·控制差异率';else if(avg>=85&&rate<=5)advice='小幅提量即达标';else if(avg>=85)advice='提量+降差异';else if(avg<85&&rate<=5)advice='需大幅提量';else advice='重点帮扶对象';
+    // 差异率高=检测认真，差异率低=可能漏检
+    var advice='';if(avg>=DAILY_TARGET&&rate>10&&pc.p>=PROBLEM_TARGET)advice='三项全能·标杆';else if(avg>=DAILY_TARGET&&rate>10)advice='台数达标·检测认真';else if(avg>=DAILY_TARGET&&rate<=5)advice='台数达标·差异偏低需关注';else if(avg>=DAILY_TARGET)advice='台数达标·正常范围';else if(avg>=85&&rate>10)advice='提量即可·检测认真';else if(avg>=85&&rate<=5)advice='提量+加强检测';else if(avg>=85)advice='提量即可达标';else if(avg<85&&rate<=5)advice='需大幅提量+加强检测';else advice='重点帮扶对象';
     if(trend>0)advice+=' [↑]';else if(trend<0)advice+=' [↓]';
     people.push({name:name,region:v.region,days:d2,avg:avg,totalQty:totalQty,compQty:compQty,rate:rate,monthComp:monthComp,trend:trend,pc:pc,probComp:probComp,advice:advice});
   }
@@ -643,7 +645,8 @@ function renderPersonAnalysis(){
   if(!people.length){document.getElementById('personAnalysis').innerHTML='<div style="color:var(--muted);padding:16px">暂无数据</div>';return;}
   var byReg={};for(i=0;i<people.length;i++){var p3=people[i];var reg=p3.region;(byReg[reg]=byReg[reg]||[]).push(p3);}
   var cc=function(c){return c>=100?'var(--good-ink)':c>=85?'var(--ink)':'var(--crit)';};
-  var rc=function(r){return r<=5?'var(--good-ink)':r<=8?'var(--warn)':'var(--crit)';};
+  // 差异率高=检测认真(绿)，差异率低=可能漏检(红)
+  var rc=function(r){return r>10?'var(--good-ink)':r>5?'var(--warn)':'var(--crit)';};
 
   // ===== 四区域双列卡片 =====
   function buildRegionCards(reg){
@@ -654,12 +657,16 @@ function renderPersonAnalysis(){
     for(var pi=0;pi<ppl.length;pi++){
       var p5=ppl[pi];
       var bg,badge,action;
-      if(p5.compQty>=100&&p5.rate<=5&&p5.pc.p>=3){bg='color-mix(in srgb,var(--good) 8%,transparent)';badge='<span style="background:var(--good);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">标杆</span>';action='保持节奏';}
-      else if(p5.compQty>=100&&p5.rate>5){bg='color-mix(in srgb,var(--warn) 10%,transparent)';badge='<span style="background:var(--warn);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">质量预警</span>';action='排查差异项，降差异率';}
-      else if(p5.compQty>=85&&p5.rate<=5){bg='color-mix(in srgb,var(--s1) 6%,transparent)';badge='<span style="background:var(--s1);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">接近达标</span>';action='日提'+(DAILY_TARGET-p5.avg)+'台即达标';}
-      else if(p5.compQty>=85&&p5.rate>5){bg='color-mix(in srgb,var(--serious) 10%,transparent)';badge='<span style="background:var(--serious);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">需关注</span>';action='同步提量+降差异';}
-      else if(p5.compQty<85&&p5.rate<=5){bg='color-mix(in srgb,var(--s3) 10%,transparent)';badge='<span style="background:var(--s3);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">量不足</span>';action='需大幅提量，日差'+(DAILY_TARGET-p5.avg)+'台';}
-      else {bg='color-mix(in srgb,var(--crit) 8%,transparent)';badge='<span style="background:var(--crit);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">重点帮扶</span>';action=ld+'跟进，排查技能流程';}
+      // 差异率高=检测认真(绿)，差异率低=可能漏检(红)
+      if(p5.compQty>=100&&p5.rate>10&&p5.pc.p>=3){bg='color-mix(in srgb,var(--good) 8%,transparent)';badge='<span style="background:var(--good);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">标杆</span>';action='保持节奏';}
+      else if(p5.compQty>=100&&p5.rate>10){bg='color-mix(in srgb,var(--good) 8%,transparent)';badge='<span style="background:var(--good);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">检测认真</span>';action='台数达标，检测细致';}
+      else if(p5.compQty>=100&&p5.rate<=5){bg='color-mix(in srgb,var(--crit) 8%,transparent)';badge='<span style="background:var(--crit);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">差异偏低</span>';action='台数达标但差异少，需确认是否漏检';}
+      else if(p5.compQty>=100){bg='color-mix(in srgb,var(--s1) 6%,transparent)';badge='<span style="background:var(--s1);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">正常</span>';action='保持当前节奏';}
+      else if(p5.compQty>=85&&p5.rate>10){bg='color-mix(in srgb,var(--s1) 6%,transparent)';badge='<span style="background:var(--s1);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">检测认真</span>';action='日提'+(DAILY_TARGET-p5.avg)+'台即达标';}
+      else if(p5.compQty>=85&&p5.rate<=5){bg='color-mix(in srgb,var(--serious) 10%,transparent)';badge='<span style="background:var(--serious);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">需关注</span>';action='提量+确认是否漏检';}
+      else if(p5.compQty>=85){bg='color-mix(in srgb,var(--s3) 10%,transparent)';badge='<span style="background:var(--s3);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">接近达标</span>';action='日提'+(DAILY_TARGET-p5.avg)+'台即达标';}
+      else if(p5.compQty<85&&p5.rate<=5){bg='color-mix(in srgb,var(--crit) 8%,transparent)';badge='<span style="background:var(--crit);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">重点帮扶</span>';action=ld+'跟进，量不足+检测少';}
+      else {bg='color-mix(in srgb,var(--warn) 8%,transparent)';badge='<span style="background:var(--warn);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">量不足</span>';action='需大幅提量，日差'+(DAILY_TARGET-p5.avg)+'台';}
       var probTag=p5.pc.p>=3?'<span style="color:var(--good-ink);font-size:11px">✓问题收集完成</span>':'<span style="color:var(--crit);font-size:11px">✗差'+(3-p5.pc.p)+'条问题</span>';
       var trendIcon=p5.trend>0?' ↑':p5.trend<0?' ↓':' →';
       cardsHtml+='<div style="background:'+bg+';border-radius:10px;padding:14px 16px;border-left:3px solid '+(p5.compQty>=100?'var(--good)':p5.compQty>=85?'var(--s1)':'var(--crit)')+'">'+
