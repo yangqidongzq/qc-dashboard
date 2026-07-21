@@ -799,6 +799,38 @@ try{
 }catch(e){
   document.getElementById('kpis').innerHTML='<div style="color:var(--crit);padding:20px;font-size:14px">❌ 错误: '+e.message+'<br><pre style="font-size:11px">'+e.stack+'</pre></div>';
 }
+
+/* ===== 实时自动更新（每3分钟检查版本） ===== */
+(function(){
+  var lastQc='', lastPb='', statusEl=null;
+  function initStatus() {
+    statusEl = document.createElement('span');
+    statusEl.style.cssText = 'margin-left:10px;font-size:11px;color:var(--muted)';
+    var foot = document.querySelector('.foot');
+    if (foot) foot.appendChild(statusEl);
+  }
+  async function check() {
+    try {
+      var r = await fetch('https://raw.githubusercontent.com/yangqidongzq/qc-dashboard/main/version.json?t=' + Date.now());
+      if (!r.ok) return;
+      var v = await r.json();
+      var qcUpd = v.qcData?.updated || '';
+      var pbUpd = v.problemData?.updated || '';
+      if (lastQc && (qcUpd !== lastQc || pbUpd !== lastPb)) {
+        console.log('[auto] Data changed, reloading...');
+        location.reload();
+        return;
+      }
+      lastQc = qcUpd; lastPb = pbUpd;
+      if (statusEl && v.qcData) {
+        statusEl.textContent = '| 📡 ' + (v.qcData.updated||'').slice(5,16) + ' · ' + (v.qcData.count||0).toLocaleString() + '条';
+      }
+    } catch(e) {}
+  }
+  initStatus();
+  check();
+  setInterval(check, 3 * 60 * 1000);
+})();
 </script>
 </body>
 </html>
