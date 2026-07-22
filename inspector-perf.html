@@ -167,7 +167,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
 
     <div class="card">
       <h3>
-        <span>📋 人员问题收集完成度 <span class="hint">目标 华东9/华南18/华西9/华北12 条/月</span></span>
+        <span>📋 人员问题收集完成度 <span class="hint">目标3条/人/月通过(调整=是) 大区:华东9/华南18/华西9/华北12</span></span>
         <span style="display:flex;gap:6px;flex:none">
           <button class="chip" id="problemToggleBtn">📁 一键折叠</button>
         </span>
@@ -515,12 +515,13 @@ function renderProblem(){
   const people = Object.entries(map).map(([name, v]) => ({
     name,
     region: INSPECTOR_REGION[name] || '其他',
+    // 目标=3条通过（调整=是），待验证不计入
     collected: v.collected,
     passed: v.passed,
     failed: v.collected - v.passed - v.pending,
     pending: v.pending,
-    remain: Math.max(0, TARGET - v.passed - v.pending),
-    done: (v.passed + v.pending) >= TARGET,
+    remain: Math.max(0, TARGET - v.passed),
+    done: v.passed >= TARGET,
     recs: v.recs.sort((a,b) => b.date.localeCompare(a.date))
   }));
 
@@ -667,7 +668,7 @@ function renderPersonAnalysis(){
       else if(p5.compQty>=85){bg='color-mix(in srgb,var(--s3) 10%,transparent)';badge='<span style="background:var(--s3);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">接近达标</span>';action='日提'+(DAILY_TARGET-p5.avg)+'台即达标';}
       else if(p5.compQty<85&&p5.rate<=5){bg='color-mix(in srgb,var(--crit) 8%,transparent)';badge='<span style="background:var(--crit);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">重点帮扶</span>';action=ld+'跟进，量不足+检测少';}
       else {bg='color-mix(in srgb,var(--warn) 8%,transparent)';badge='<span style="background:var(--warn);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">量不足</span>';action='需大幅提量，日差'+(DAILY_TARGET-p5.avg)+'台';}
-      var probTag=p5.pc.p>=3?'<span style="color:var(--good-ink);font-size:11px">✓问题收集完成</span>':'<span style="color:var(--crit);font-size:11px">✗差'+(3-p5.pc.p)+'条问题</span>';
+      var probTag=p5.pc.p>=3?'<span style="color:var(--good-ink);font-size:11px">✓问题收集完成</span>':'<span style="color:var(--crit);font-size:11px">✗差'+(3-p5.pc.p)+'条通过</span>';
       var trendIcon=p5.trend>0?' ↑':p5.trend<0?' ↓':' →';
       cardsHtml+='<div style="background:'+bg+';border-radius:10px;padding:14px 16px;border-left:3px solid '+(p5.compQty>=100?'var(--good)':p5.compQty>=85?'var(--s1)':'var(--crit)')+'">'+
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-weight:600;font-size:14px">'+(p5.name===ld?'👑 ':'')+p5.name+'</span>'+badge+'</div>'+
