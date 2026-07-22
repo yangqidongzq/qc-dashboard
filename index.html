@@ -188,6 +188,11 @@ svg{display:block; width:100%; height:auto}
 
   <div class="kpis" id="kpis"></div>
 
+  <div class="card col-12">
+    <h3>📋 本周待办 <span class="hint">基于数据自动生成 · 刷新即更新</span></h3>
+    <div id="actionItems" style="display:flex;flex-direction:column;gap:8px;font-size:13px"></div>
+  </div>
+
   <div class="grid">
 
     
@@ -233,7 +238,7 @@ svg{display:block; width:100%; height:auto}
       <div id="descAnalysis"></div>
     </div>
 
-    <div class="card col-6"><h3>📱 高频差异机型 TOP 10 · 差异合理性分析 <span class="hint">24条全品类通病 · 描述一致性 · 通病匹配</span></h3><div class="csub">机型常见差异 & 已知通病自动匹配</div><div class="scroll" id="anaModel"></div></div>
+    <div class="card col-6"><h3>📱 机型-差异项交叉矩阵 <span class="hint">机型 × 差异类型 · TOP15 · 深浅=集中度</span></h3><div class="csub">横向：差异项 | 纵向：机型 | 颜色越深=该项越集中</div><div class="scroll" style="max-height:420px" id="anaModel"></div></div>
 
     <div class="card col-6"><h3>⚖️ 主观争议排行 <span class="hint">争议度+量化建议</span></h3><div class="csub">主观率>60%的差异项需增加客观判定标准</div><div class="scroll" id="anaSubjDefect"></div></div>
 
@@ -461,11 +466,25 @@ function _catToDiff(cat){if(cat==='屏幕外观'||cat==='外壳外观')return'�
 function renderAnaModel(){
   var f=getFiltered(),dr=f.filter(function(r){return r.qtyDiff>0||(r.diffItems&&r.diffItems.length);});
   var md={};dr.forEach(function(r){var m=r.model||'未知';md[m]=md[m]||{d:0,it:{}};md[m].d++;(r.diffItems||[]).forEach(function(i){md[m].it[i]=(md[m].it[i]||0)+1;});});
-  var rk=Object.entries(md).sort(function(a,b){return b[1].d-a[1].d;}).slice(0,10);
-  var h='<table><thead><tr><th>#</th><th>机型</th><th>差异台</th><th>主要差异</th><th>已知通病</th></tr></thead><tbody>';
-  rk.forEach(function(e,idx){var ti=Object.entries(e[1].it).sort(function(a,b){return b[1]-a[1];}).slice(0,2).map(function(x){return x[0]+'('+x[1]+')';}).join(' · ');var cm=_findCM(e[0]);
-    h+='<tr><td>'+(idx+1)+'</td><td><b>'+e[0]+'</b></td><td class="num">'+e[1].d+'</td><td style="font-size:11px">'+(ti||'—')+'</td><td style="font-size:11px">'+(cm.length?cm.map(function(c){return '<span class="tag warn" title="'+c.dsc+'">'+c.iss+'</span>';}).join(' '):'<span style="color:var(--muted)">未匹配</span>')+'</td></tr>';});
-  h+='</tbody></table>';var el=document.getElementById('anaModel');if(el)el.innerHTML=h;
+  // 收集所有差异项
+  var allItems=[];for(var m in md){for(var i in md[m].it){if(allItems.indexOf(i)<0)allItems.push(i);}}
+  var itemTot={};allItems.forEach(function(i){itemTot[i]=0;for(var m in md){itemTot[i]+=(md[m].it[i]||0);}});
+  allItems.sort(function(a,b){return itemTot[b]-itemTot[a];});
+  // TOP15机型
+  var rk=Object.entries(md).sort(function(a,b){return b[1].d-a[1].d;}).slice(0,15);
+  var maxVal=rk.length>0?rk[0][1].d:1;
+
+  var h='<table style=\"font-size:11px\"><thead><tr><th style=\"min-width:110px\">机型</th><th class=\"num\">合计</th>';
+  allItems.forEach(function(i){h+='<th class=\"num\" style=\"min-width:40px\">'+i+'</th>';});
+  h+='</tr></thead><tbody>';
+  rk.forEach(function(e){
+    h+='<tr><td style=\"font-weight:600;font-size:11px\">'+e[0]+'</td><td class=\"num tnum\" style=\"font-weight:600\">'+e[1].d+'</td>';
+    allItems.forEach(function(i){var v=e[1].it[i]||0,intensity=v>0?Math.max(1,Math.floor(v/maxVal*8)):0,bg=intensity>0?'color-mix(in srgb,var(--s1) '+(intensity*12)+'%,transparent)':'',color=v>Math.floor(maxVal*0.4)?'#fff':'var(--ink-2)';
+      h+='<td class=\"num tnum\" style=\"background:'+bg+';color:'+color+';font-size:10px;font-weight:'+(v>0?'600':'400')+'\">'+(v>0?v:'-')+'</td>';});
+    h+='</tr>';
+  });
+  h+='</tbody></table>';
+  var el=document.getElementById('anaModel');if(el)el.innerHTML=h;
 }
 // ── 共享分析引擎 ──
 function _analyze(){
@@ -611,9 +630,29 @@ function renderAnaWarehouse(){
 function renderAnalysisAll(){try{renderAnaModel();}catch(e){}try{renderAnaSubjDefect();}catch(e){}try{renderAnaWarehouse();}catch(e){}}
 /* ====== 差异分析模块 END ====== */
 
-function renderAll(){ renderKPIs(); renderWeekTrend(); renderRegions();
+function renderAll(){ renderKPIs(); renderActionItems(); renderWeekTrend(); renderRegions();
   renderCenterDiff(); renderMerchantTop(); renderDiffItems(); renderSplits(); renderDescAnalysis(); renderDetail();
   renderAnalysisAll(); }
+
+function renderActionItems(){
+  var f=getFiltered(),maxDay=0;f.forEach(function(r){if(r.day>maxDay)maxDay=r.day;});
+  var weekF=f.filter(function(r){return r.day>maxDay-7&&r.day<=maxDay;});
+  var ccMap={};
+  weekF.forEach(function(r){var m=ccMap[r.center]||(ccMap[r.center]={t:0,d:0,items:{}});m.t++;if(r.qtyDiff){m.d++;(r.diffItems||[]).forEach(function(i){m.items[i]=(m.items[i]||0)+1;});}});
+  var rates=[],diffs=[];for(var c in ccMap){rates.push(pct(ccMap[c].d,ccMap[c].t));diffs.push(ccMap[c].d);}
+  rates.sort(function(a,b){return a-b;});diffs.sort(function(a,b){return a-b;});
+  var medRate=rates[Math.floor(rates.length/2)]||5,medDiff=diffs[Math.floor(diffs.length/2)]||10;
+
+  function suggest(cc,d){var rate=pct(d.d,d.t),ti=Object.entries(d.items).sort(function(a,b){return b[1]-a[1];});var mi=ti[0]?ti[0][0]:'',mp=ti[0]?pct(ti[0][1],d.d):0;
+    if(mi==='拆修'&&mp>30)return'拆修占'+mp.toFixed(0)+'%→入仓前强制预检+拆修判定标准细化';if(mi==='外观'&&mp>30)return'外观占'+mp.toFixed(0)+'%→外观分级标准上墙+双人复核';if(mi==='功能'&&mp>30)return'功能占'+mp.toFixed(0)+'%→功能检测流程标准化';if(mi==='显示'&&mp>30)return'显示占'+mp.toFixed(0)+'%→屏幕检测光源标准化';
+    if(rate>medRate&&d.d>medDiff)return'差异率+量双高→紧急排查'+mi+'判定标准';if(rate>medRate)return'差异率偏高→针对性细化'+mi+'检测项';if(d.d>medDiff)return'差异量偏大→统一检测SOP';return'指标正常→维持观察';}
+
+  var html='<div style=\"display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px\">';
+  Object.keys(ccMap).sort().forEach(function(cc){var d=ccMap[cc],rate=pct(d.d,d.t),ti=Object.entries(d.items).sort(function(a,b){return b[1]-a[1];}),isum=ti.slice(0,3).map(function(x){return x[0]+'('+x[1]+')';}).join(' '),bg=rate>8?'color-mix(in srgb,var(--crit) 5%,transparent)':rate>5?'color-mix(in srgb,var(--warn) 4%,transparent)':'color-mix(in srgb,var(--good) 4%,transparent)',tag=rate>medRate&&d.d>medDiff?'🔴紧急':rate>medRate?'🟡优化':d.d>medDiff?'🔵标准化':'🟢观察';
+    html+='<div style=\"background:'+bg+';border-radius:8px;padding:10px 12px;font-size:12px\"><div style=\"font-weight:600;margin-bottom:3px\">'+cc+' <span style=\"font-size:10px\">'+tag+'</span></div><div style=\"color:var(--ink-2);margin-bottom:3px\">质检'+d.t+'台·差异'+d.d+'台·'+rate.toFixed(1)+'%</div><div style=\"color:var(--ink-2);font-size:11px;margin-bottom:3px\">'+isum+'</div><div style=\"color:var(--s5);font-weight:500\">💡 '+suggest(cc,d)+'</div></div>';});
+  html+='</div>';
+  var el=document.getElementById('actionItems');if(el)el.innerHTML=html||'<div style=\"color:var(--muted);padding:8px;text-align:center\">暂无本周数据</div>';
+}
 
 function renderKPIs(){
   const f=getFiltered();
