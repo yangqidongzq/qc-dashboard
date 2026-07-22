@@ -189,7 +189,7 @@ svg{display:block; width:100%; height:auto}
   <div class="kpis" id="kpis"></div>
 
   <div class="card col-12" id="actionCard">
-    <h3>📋 今日待办 <span class="hint">基于数据自动生成 · 刷新即更新</span></h3>
+    <h3>📋 本周待办 <span class="hint">基于数据自动生成 · 刷新即更新</span></h3>
     <div id="actionItems" style="display:flex;flex-direction:column;gap:8px;font-size:13px"></div>
   </div>
 
@@ -1415,28 +1415,38 @@ document.getElementById('sendWebhook').onclick=async ()=>{
 };
 
 /* =========================================================
-   10. 今日待办
+   10. 本周待办
    ========================================================= */
 function renderActionItems(){
-  var f=getFiltered(),dr=f.filter(function(r){return r.qtyDiff>0;});
+  var f=getFiltered();
+  // 使用最近7天数据
+  var maxDay=0;f.forEach(function(r){if(r.day>maxDay)maxDay=r.day;});
+  var weekF=f.filter(function(r){return r.day>maxDay-7&&r.day<=maxDay;});
+  var prevWeekF=f.filter(function(r){return r.day>maxDay-14&&r.day<=maxDay-7;});
+  var dr=weekF.filter(function(r){return r.qtyDiff>0;});
   var items=[];
 
-  // 1. 紧急：差异率上升最严重的中心仓
-  var ccData=_analyze().ccData||{};
-  var ccRank=[];
-  for(var c in ccData){ccRank.push({name:c,qty:ccData[c].t,diff:ccData[c].d,rate:pct(ccData[c].d,ccData[c].t)});}
-  ccRank.sort(function(a,b){return b.rate-a.rate;});
-  var topCC=ccRank.slice(0,3).filter(function(x){return x.rate>5;});
-  if(topCC.length>0) items.push({level:'🚨 紧急',text:topCC[0].name+'差异率'+topCC[0].rate.toFixed(1)+'%，需立即排查差异项分布',bg:'color-mix(in srgb,var(--crit) 6%,transparent)'});
+  // 1. 紧急：本周差异率上升最严重的中心仓
+  var ccNow={},ccPrev={};
+  weekF.forEach(function(r){ccNow[r.center]=ccNow[r.center]||{t:0,d:0};ccNow[r.center].t++;if(r.qtyDiff)ccNow[r.center].d++;});
+  prevWeekF.forEach(function(r){ccPrev[r.center]=ccPrev[r.center]||{t:0,d:0};ccPrev[r.center].t++;if(r.qtyDiff)ccPrev[r.center].d++;});
+  var ccAlerts=[];
+  for(var cc in ccNow){
+    var nr=ccNow[cc],pr=ccPrev[cc]||{t:1,d:0};
+    var nowRate=pct(nr.d,nr.t),prevRate=pct(pr.d,pr.t),change=nowRate-prevRate;
+    if(nowRate>5&&change>0.5) ccAlerts.push({name:cc,rate:nowRate,change:change});
+  }
+  ccAlerts.sort(function(a,b){return b.change-a.change;});
+  var topCC=ccAlerts.slice(0,2);
+  if(topCC.length>0) items.push({level:'🚨 紧急',text:topCC[0].name+'本周差异率'+topCC[0].rate.toFixed(1)+'%（↑'+topCC[0].change.toFixed(1)+'%），需立即排查差异项分布',bg:'color-mix(in srgb,var(--crit) 6%,transparent)'});
 
-  // 2. 重要：TOP差异原因集中度分析
+  // 2. 重要：本周TOP差异项集中度
   var diffItems={};
   dr.forEach(function(r){(r.diffItems||[]).forEach(function(i){diffItems[i]=(diffItems[i]||0)+1;});});
   var topDiff=Object.entries(diffItems).sort(function(a,b){return b[1]-a[1];}).slice(0,3);
   if(topDiff.length>0){
-    items.push({level:'⚠️ 重要',text:'差异TOP3: '+topDiff.map(function(x){return x[0]+'('+x[1]+'台)';}).join(' · ')+'，需回溯各仓巡检标准',bg:'color-mix(in srgb,var(--warn) 5%,transparent)'});
+    items.push({level:'⚠️ 重要',text:'本周差异TOP3: '+topDiff.map(function(x){return x[0]+'('+x[1]+'台)';}).join(' · ')+'，需回溯各仓巡检标准',bg:'color-mix(in srgb,var(--warn) 5%,transparent)'});
   }
-
   // 渲染
   var el=document.getElementById('actionItems');
   if(!el) return;
