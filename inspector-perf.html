@@ -170,6 +170,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
         <span>📋 人员问题收集完成度 <span class="hint">目标3条/人/月通过(调整=是) 大区:华东9/华南18/华西9/华北12</span></span>
         <span style="display:flex;gap:6px;flex:none">
           <button class="chip" id="problemToggleBtn">📁 一键折叠</button>
+          <button class="chip" id="importProblemBtn" style="background:var(--s1);color:#fff;border-color:var(--s1)" onclick="importProblem()">🔄 导入最新数据</button>
         </span>
       </h3>
       <div class="csub" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -807,6 +808,25 @@ try{
   updateFoot();
 }catch(e){
   document.getElementById('kpis').innerHTML='<div style="color:var(--crit);padding:20px;font-size:14px">❌ 错误: '+e.message+'<br><pre style="font-size:11px">'+e.stack+'</pre></div>';
+}
+
+/* ===== 导入问题收集数据 ===== */
+async function importProblem(){
+  var btn=document.getElementById('importProblemBtn');
+  btn.textContent='⏳ 导入中...'; btn.disabled=true;
+  try{
+    var resp=await fetch('https://raw.githubusercontent.com/yangqidongzq/qc-dashboard/main/problem-data.js?v='+Date.now());
+    var js=await resp.text();
+    eval(js);
+    PROBLEM_RECORDS=window.PROBLEM_DATA||[];
+    renderProblem();
+    renderPersonAnalysis();
+    btn.textContent='✅ 已更新'; btn.style.background='var(--good)';
+  }catch(e){
+    btn.textContent='❌ 失败'; btn.style.background='var(--crit)';
+    console.error('导入失败:',e);
+  }
+  setTimeout(function(){btn.textContent='🔄 导入最新数据';btn.style.background='var(--s1)';btn.disabled=false;},3000);
 }
 
 /* ===== 实时自动更新（每3分钟检查版本） ===== */
