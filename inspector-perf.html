@@ -507,7 +507,7 @@ function renderProblem(){
     m.collected++;
     m.recs.push(r);
     if(r.adjusted === '是') m.passed++;
-    else if(r.reviewResult === '待验证') m.pending++;
+    else if(r.adjusted === '-' || r.reviewResult === '待验证') m.pending++;
   }
 
   QC_INSPECTORS.forEach(n => { if(!map[n]) map[n] = {collected:0, passed:0, pending:0, recs:[]}; });
