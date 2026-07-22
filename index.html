@@ -188,6 +188,10 @@ svg{display:block; width:100%; height:auto}
 
   <div class="kpis" id="kpis"></div>
 
+  <div class="card col-12">
+    <h3>📋 本周待办 <span class="hint">基于数据自动生成 · 刷新即更新</span></h3>
+    <div id="actionItems" style="display:flex;flex-direction:column;gap:8px;font-size:13px"></div>
+  </div>
 
   <div class="grid">
 
@@ -529,10 +533,29 @@ function renderAnaSubjDefect(){
 function renderAnalysisAll(){try{renderAnaModel();}catch(e){}try{renderAnaSubjDefect();}catch(e){}}
 /* ====== 差异分析模块 END ====== */
 
-function renderAll(){ renderKPIs(); renderWeekTrend(); renderRegions();
+function renderAll(){ renderKPIs(); renderActionItems(); renderWeekTrend(); renderRegions();
   renderCenterDiff(); renderMerchantTop(); renderDiffItems(); renderSplits(); renderDescAnalysis(); renderDetail();
   renderAnalysisAll(); }
 
+function renderActionItems(){
+  var f=getFiltered(),maxDay=0;f.forEach(function(r){if(r.day>maxDay)maxDay=r.day;});
+  var weekF=f.filter(function(r){return r.day>maxDay-7&&r.day<=maxDay;});
+  var ccMap={};
+  weekF.forEach(function(r){var m=ccMap[r.center]||(ccMap[r.center]={t:0,d:0,items:{}});m.t++;if(r.qtyDiff){m.d++;(r.diffItems||[]).forEach(function(i){m.items[i]=(m.items[i]||0)+1;});}});
+  var rates=[],diffs=[];for(var c in ccMap){rates.push(pct(ccMap[c].d,ccMap[c].t));diffs.push(ccMap[c].d);}
+  rates.sort(function(a,b){return a-b;});diffs.sort(function(a,b){return a-b;});
+  var medRate=rates[Math.floor(rates.length/2)]||5,medDiff=diffs[Math.floor(diffs.length/2)]||10;
+
+  function suggest(cc,d){var rate=pct(d.d,d.t),ti=Object.entries(d.items).sort(function(a,b){return b[1]-a[1];});var mi=ti[0]?ti[0][0]:'',mp=ti[0]?pct(ti[0][1],d.d):0;
+    if(mi==='拆修'&&mp>30)return'拆修占'+mp.toFixed(0)+'%→入仓前强制预检+拆修判定标准细化';if(mi==='外观'&&mp>30)return'外观占'+mp.toFixed(0)+'%→外观分级标准上墙+双人复核';if(mi==='功能'&&mp>30)return'功能占'+mp.toFixed(0)+'%→功能检测流程标准化';if(mi==='显示'&&mp>30)return'显示占'+mp.toFixed(0)+'%→屏幕检测光源标准化';
+    if(rate>medRate&&d.d>medDiff)return'差异率+量双高→紧急排查'+mi+'判定标准';if(rate>medRate)return'差异率偏高→针对性细化'+mi+'检测项';if(d.d>medDiff)return'差异量偏大→统一检测SOP';return'指标正常→维持观察';}
+
+  var html='<div style=\"display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px\">';
+  Object.keys(ccMap).sort().forEach(function(cc){var d=ccMap[cc],rate=pct(d.d,d.t),ti=Object.entries(d.items).sort(function(a,b){return b[1]-a[1];}),isum=ti.slice(0,3).map(function(x){return x[0]+'('+x[1]+')';}).join(' '),bg=rate>8?'color-mix(in srgb,var(--crit) 5%,transparent)':rate>5?'color-mix(in srgb,var(--warn) 4%,transparent)':'color-mix(in srgb,var(--good) 4%,transparent)',tag=rate>medRate&&d.d>medDiff?'🔴紧急':rate>medRate?'🟡优化':d.d>medDiff?'🔵标准化':'🟢观察';
+    html+='<div style=\"background:'+bg+';border-radius:8px;padding:10px 12px;font-size:12px\"><div style=\"font-weight:600;margin-bottom:3px\">'+cc+' <span style=\"font-size:10px\">'+tag+'</span></div><div style=\"color:var(--ink-2);margin-bottom:3px\">质检'+d.t+'台·差异'+d.d+'台·'+rate.toFixed(1)+'%</div><div style=\"color:var(--ink-2);font-size:11px;margin-bottom:3px\">'+isum+'</div><div style=\"color:var(--s5);font-weight:500\">💡 '+suggest(cc,d)+'</div></div>';});
+  html+='</div>';
+  var el=document.getElementById('actionItems');if(el)el.innerHTML=html||'<div style=\"color:var(--muted);padding:8px;text-align:center\">暂无本周数据</div>';
+}
 
 function renderKPIs(){
   const f=getFiltered();
