@@ -418,7 +418,7 @@ function renderDaily(){
   };
 
   let html='<div class="tablewrap scroll" style="max-height:400px"><table style="font-size:12px"><thead><tr><th>巡检人员</th>';
-  days.forEach(d=>html+='<th class="num">'+d+'日</th>');
+  days.forEach(d=>html+='<th class="num">'+d+'日<div style=\"font-size:10px;color:var(--muted);font-weight:400\">'+dTotals[d]+'台</div></th>');
   html+='<th class="num">合计</th></tr></thead><tbody>';
   inspOrder.forEach(n=>{
     html+='<tr><td style="font-weight:600">'+n+'</td>';
