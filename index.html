@@ -526,14 +526,44 @@ var _pct=function(v){return v.toFixed(1)+'%';};
 
 
 function renderAnaSubjDefect(){
-  var a=_analyze();var html='';
-  if(a.subjRank.length){
-    a.subjRank.slice(0,8).forEach(function(e){
+  var f=getFiltered(),dr=f.filter(function(r){return r.qtyDiff>0;});
+  var html='';
+
+  // 1. 差异项主观率排行
+  var sbi={};dr.forEach(function(r){(r.diffItems||[]).forEach(function(i){sbi[i]=sbi[i]||{t:0,s:0};sbi[i].t++;if(r.subjObj==='主观')sbi[i].s++;});});
+  var subjRank=Object.entries(sbi).filter(function(e){return e[1].t>=3;}).sort(function(a,b){return(b[1].s/b[1].t)-(a[1].s/a[1].t);});
+  if(subjRank.length){
+    html+='<div style=\"font-weight:600;font-size:12px;margin-bottom:4px\">📊 差异项主观率排行</div>';
+    subjRank.slice(0,5).forEach(function(e){
       var r=e[1].s/e[1].t*100,c=r>60?'var(--crit)':r>40?'var(--warn)':'var(--s1)';
-      html+='<div style="margin:5px 0;display:flex;align-items:center;gap:8px;font-size:12px"><span style="width:32px;font-weight:600">'+e[0]+'</span>'+_bar(r,100,100,c)+'<span style="width:40px;text-align:right;font-weight:600;color:'+c+'">'+_pct(r)+'</span><span style="color:var(--muted);font-size:10px">'+e[1].s+'主/'+e[1].t+'总</span></div>';
+      html+='<div style=\"margin:3px 0;display:flex;align-items:center;gap:6px;font-size:11px\"><span style=\"width:28px;font-weight:600\">'+e[0]+'</span>'+_bar(r,100,80,c)+'<span style=\"width:36px;text-align:right;font-weight:600;color:'+c+'\">'+r.toFixed(0)+'%</span><span style=\"color:var(--muted);font-size:10px\">'+e[1].s+'/'+e[1].t+'</span></div>';
     });
-    html+='<div style="font-size:10px;color:var(--muted);margin-top:6px;padding:6px 8px;background:var(--surface-1);border-radius:6px">主观>60%=争议大，需增加客观量化标准<br>主观<30%=客观可靠，可考虑自动化判定</div>';
-  } else { html='<div style="color:var(--muted);padding:12px 0;text-align:center">数据不足</div>'; }
+  }
+
+  // 2. 主观争议人员一致性
+  var insSubj={};dr.forEach(function(r){if(r.subjObj==='主观'){insSubj[r.inspector]=insSubj[r.inspector]||{t:0,s:0};insSubj[r.inspector].s++;insSubj[r.inspector].t++;}else {if(!insSubj[r.inspector])insSubj[r.inspector]={t:0,s:0};insSubj[r.inspector].t++;}});
+  var insRank=Object.entries(insSubj).filter(function(e){return e[1].t>=5;}).sort(function(a,b){return(b[1].s/b[1].t)-(a[1].s/a[1].t);});
+  if(insRank.length>0){
+    html+='<div style=\"font-weight:600;font-size:12px;margin:8px 0 4px\">👤 主观判定人员差异（一致性）</div>';
+    insRank.slice(0,5).forEach(function(e){
+      var r=e[1].s/e[1].t*100;
+      html+='<div style=\"font-size:11px;color:var(--ink-2);margin:2px 0\">'+e[0]+': 主观率 <b style=\"color:'+(r>60?'var(--crit)':'var(--ink)')+'\">'+r.toFixed(0)+'%</b> ('+e[1].s+'/'+e[1].t+')'+(r>60?' ⚠️需标准化培训':'')+'</div>';
+    });
+  }
+
+  // 3. 主观争议商户TOP5
+  var mchSubj={};dr.forEach(function(r){var m=r.merchant||'—';mchSubj[m]=mchSubj[m]||{t:0,s:0};mchSubj[m].t++;if(r.subjObj==='主观')mchSubj[m].s++;});
+  var mchRank=Object.entries(mchSubj).filter(function(e){return e[1].t>=3;}).sort(function(a,b){return(b[1].s/b[1].t)-(a[1].s/a[1].t);});
+  if(mchRank.length>0){
+    html+='<div style=\"font-weight:600;font-size:12px;margin:8px 0 4px\">🏪 主观争议商户 TOP5</div>';
+    mchRank.slice(0,5).forEach(function(e){
+      var r=e[1].s/e[1].t*100;
+      html+='<div style=\"font-size:11px;color:var(--ink-2);margin:2px 0\">'+(e[0].length>14?e[0].slice(0,13)+'…':e[0])+': 主观率 <b style=\"color:'+(r>50?'var(--crit)':'var(--ink)')+'\">'+r.toFixed(0)+'%</b> ('+e[1].s+'/'+e[1].t+')</div>';
+    });
+  }
+
+  if(!html) html='<div style=\"color:var(--muted);padding:12px 0;text-align:center\">数据不足</div>';
+  else html+='<div style=\"font-size:10px;color:var(--muted);margin-top:6px;padding:6px 8px;background:var(--surface-1);border-radius:6px\">💡 主观率>60%=争议大需增加客观标准 · 人员差异大=需标准化培训 · 商户争议多=标准理解偏差</div>';
   var el=document.getElementById('anaSubjDefect');if(el)el.innerHTML=html;
 }
 function renderAnaWarehouse(){
