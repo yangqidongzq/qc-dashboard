@@ -417,23 +417,21 @@ function renderDaily(){
            p>0.2?'color-mix(in srgb,var(--s1) 10%,transparent)':'transparent';
   };
 
-  let html='<div class="tablewrap scroll" style="max-height:500px"><table style="font-size:12px"><thead><tr><th>巡检人员</th>';
-  days.forEach(d=>html+='<th class="num" style="min-width:44px">'+d+'日</th>');
+  let html='<div class="tablewrap scroll" style="max-height:400px"><table style="font-size:12px"><thead><tr><th>巡检人员</th>';
+  days.forEach(d=>html+='<th class="num">'+d+'日</th>');
   html+='<th class="num">合计</th></tr></thead><tbody>';
   inspOrder.forEach(n=>{
     html+='<tr><td style="font-weight:600">'+n+'</td>';
     days.forEach(d=>{
       const v=data[d][n]||0;
       const color=v>=CFG.dailyTarget?'var(--good-ink)':v>0?'var(--crit)':'var(--muted)';
-      html+='<td class="num tnum" style="background:'+heat(v)+';color:'+color+';font-weight:600;padding:4px 6px;line-height:1.3">'+
-        (v>0?'<div style=\"font-size:10px;color:var(--muted);font-weight:400\">'+d+'日</div><div>'+v+'台</div>':'<div style=\"font-size:10px;color:var(--muted);font-weight:400\">'+d+'日</div><div style=\"color:var(--ink-2)\">休</div>')+
-      '</td>';
+      html+='<td class="num tnum" style="background:'+heat(v)+';color:'+color+';font-weight:'+(v>0?'600':'400')+'">'+(v>0?v:'<span style="font-size:13px;font-weight:600;color:var(--ink-2)">休</span>')+'</td>';
     });
-    html+='<td class="num tnum" style="font-weight:600;background:var(--surface-1)"><div>'+iTotals[n]+'台</div></td></tr>';
+    html+='<td class="num tnum" style="font-weight:600;background:var(--surface-1)">'+iTotals[n]+'</td></tr>';
   });
   html+='<tr style="border-top:2px solid var(--ink)"><td style="font-weight:700">合计</td>';
-  days.forEach(d=>html+='<td class="num tnum" style="font-weight:600;color:var(--ink)">'+dTotals[d]+'台</td>');
-  html+='<td class="num tnum" style="font-weight:700;color:var(--s1)">'+f.filter(r=>filteredInsp.includes(r.inspector)).length+'台</td></tr>';
+  days.forEach(d=>html+='<td class="num tnum" style="font-weight:600;color:var(--ink)">'+dTotals[d]+'</td>');
+  html+='<td class="num tnum" style="font-weight:700;color:var(--s1)">'+f.filter(r=>filteredInsp.includes(r.inspector)).length+'</td></tr>';
   html+='</tbody></table></div>';
   document.getElementById('dailyChart').innerHTML=html;
 }
