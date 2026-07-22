@@ -637,12 +637,11 @@ function renderPersonAnalysis(){
   function regionAdvice(ppl){
     var issues=[];
     var lowQty=ppl.filter(function(p){return p.compQty<85;}).length;
-    var lowRate=ppl.filter(function(p){return p.rate<=5;}).length;
     var lowProb=ppl.filter(function(p){return p.pc.p<3;}).length;
-    if(lowQty>0) issues.push(lowQty+'人日均产能<85');
-    if(lowRate>0) issues.push(lowRate+'人差异识别<5%');
-    if(lowProb>0) issues.push(lowProb+'人问题收集未达标');
-    return issues.length>0?'⚠️ '+issues.join(' · '):'✅ 全部指标良好';
+    if(lowQty>0) issues.push(lowQty+'人日产能不足，建议优先补量');
+    if(lowProb>0) issues.push(lowProb+'人问题收集未达标，可集中提报');
+    if(issues.length===0) issues.push('全员产能达标，保持当前节奏');
+    return '💡 '+issues.join(' · ');
   }
   var probMap={};
   if(typeof PROBLEM_RECORDS!=='undefined'){
@@ -661,7 +660,8 @@ function renderPersonAnalysis(){
     var trend=last3Avg>prev3Avg?1:last3Avg<prev3Avg?-1:0;
     var pc=probMap[name]||{c:0,p:0};var probComp=pc.p>=PROBLEM_TARGET?'已完成':'差'+(PROBLEM_TARGET-pc.p)+'条';
     // 差异率高=差异识别充分，差异率低=可能差异发现不足
-    var advice='';if(avg>=DAILY_TARGET&&rate>10&&pc.p>=PROBLEM_TARGET)advice='三项全能·标杆';else if(avg>=DAILY_TARGET&&rate>10)advice='台数达标·差异识别充分';else if(avg>=DAILY_TARGET&&rate<=5)advice='台数达标·差异偏低需关注';else if(avg>=DAILY_TARGET)advice='台数达标·正常范围';else if(avg>=85&&rate>10)advice='提量即可·差异识别充分';else if(avg>=85&&rate<=5)advice='提量+加强检测';else if(avg>=85)advice='提量即可达标';else if(avg<85&&rate<=5)advice='需大幅提量+加强检测';else advice='重点帮扶对象';
+    // 改善建议聚焦产能达成与问题收集
+    var advice='';if(avg>=DAILY_TARGET&&pc.p>=PROBLEM_TARGET)advice='标杆，保持节奏并带动团队';else if(avg>=DAILY_TARGET)advice='产能达标，集中完成问题收集('+(PROBLEM_TARGET-pc.p)+'条)即可冲刺标杆';else if(avg>=85&&pc.p>=PROBLEM_TARGET)advice='问题收集已完成，冲刺日均'+DAILY_TARGET+'台即达标';else if(avg>=85)advice='日提'+(DAILY_TARGET-avg)+'台+补充'+(PROBLEM_TARGET-pc.p)+'条问题收集';else if(avg<85&&pc.p>=PROBLEM_TARGET)advice='专注提量，缺口'+(DAILY_TARGET-avg)+'台/日，建议拆分上下午分段达成';else advice='优先提量至85台+同步完成问题收集，主管跟进';
     if(trend>0)advice+=' [↑]';else if(trend<0)advice+=' [↓]';
     people.push({name:name,region:v.region,days:d2,avg:avg,totalQty:totalQty,compQty:compQty,rate:rate,monthComp:monthComp,trend:trend,pc:pc,probComp:probComp,advice:advice});
   }
@@ -681,16 +681,13 @@ function renderPersonAnalysis(){
     for(var pi=0;pi<ppl.length;pi++){
       var p5=ppl[pi];
       var bg,badge,action;
-      // 差异率高=差异识别充分(绿)，差异率低=可能差异发现不足(红)
-      if(p5.compQty>=100&&p5.rate>10&&p5.pc.p>=3){bg='color-mix(in srgb,var(--good) 8%,transparent)';badge='<span style="background:var(--good);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">标杆</span>';action='保持节奏';}
-      else if(p5.compQty>=100&&p5.rate>10){bg='color-mix(in srgb,var(--good) 8%,transparent)';badge='<span style="background:var(--good);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">差异识别充分</span>';action='台数达标，检测细致';}
-      else if(p5.compQty>=100&&p5.rate<=5){bg='color-mix(in srgb,var(--crit) 8%,transparent)';badge='<span style="background:var(--crit);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">差异偏低</span>';action='台数达标但差异少，需确认是否差异发现不足';}
-      else if(p5.compQty>=100){bg='color-mix(in srgb,var(--s1) 6%,transparent)';badge='<span style="background:var(--s1);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">正常</span>';action='保持当前节奏';}
-      else if(p5.compQty>=85&&p5.rate>10){bg='color-mix(in srgb,var(--s1) 6%,transparent)';badge='<span style="background:var(--s1);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">差异识别充分</span>';action='日提'+(DAILY_TARGET-p5.avg)+'台即达标';}
-      else if(p5.compQty>=85&&p5.rate<=5){bg='color-mix(in srgb,var(--serious) 10%,transparent)';badge='<span style="background:var(--serious);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">需关注</span>';action='提量+确认是否差异发现不足';}
-      else if(p5.compQty>=85){bg='color-mix(in srgb,var(--s3) 10%,transparent)';badge='<span style="background:var(--s3);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">接近达标</span>';action='日提'+(DAILY_TARGET-p5.avg)+'台即达标';}
-      else if(p5.compQty<85&&p5.rate<=5){bg='color-mix(in srgb,var(--crit) 8%,transparent)';badge='<span style="background:var(--crit);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">重点帮扶</span>';action=ld+'跟进，量不足+检测少';}
-      else {bg='color-mix(in srgb,var(--warn) 8%,transparent)';badge='<span style="background:var(--warn);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">量不足</span>';action='需大幅提量，日差'+(DAILY_TARGET-p5.avg)+'台';}
+      // 标签与建议聚焦产能+问题收集
+      if(p5.compQty>=100&&p5.pc.p>=3){bg='color-mix(in srgb,var(--good) 8%,transparent)';badge='<span style="background:var(--good);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">标杆</span>';action='保持节奏，带动团队';}
+      else if(p5.compQty>=100){bg='color-mix(in srgb,var(--good) 8%,transparent)';badge='<span style="background:var(--good);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">产能达标</span>';action='集中完成问题收集('+(3-p5.pc.p)+'条)即可冲标杆';}
+      else if(p5.compQty>=85&&p5.pc.p>=3){bg='color-mix(in srgb,var(--s1) 6%,transparent)';badge='<span style="background:var(--s1);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">接近达标</span>';action='日提'+(DAILY_TARGET-p5.avg)+'台，问题收集已完成';}
+      else if(p5.compQty>=85){bg='color-mix(in srgb,var(--s1) 6%,transparent)';badge='<span style="background:var(--s1);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">接近达标</span>';action='日提'+(DAILY_TARGET-p5.avg)+'台+补充'+(3-p5.pc.p)+'条问题';}
+      else if(p5.pc.p>=3){bg='color-mix(in srgb,var(--warn) 8%,transparent)';badge='<span style="background:var(--warn);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">产能不足</span>';action='缺口'+(DAILY_TARGET-p5.avg)+'台/日，建议拆分上下午分段达成';}
+      else {bg='color-mix(in srgb,var(--crit) 8%,transparent)';badge='<span style="background:var(--crit);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">重点帮扶</span>';action=ld+'跟进：提量至85台+完成问题收集';}
       var probDone=p5.pc.p||0, probTarget=3, probPct=Math.min(100,(probDone/probTarget*100));
       var probBar='<div style=\"display:flex;align-items:center;gap:6px;font-size:11px\"><span style=\"color:var(--muted);white-space:nowrap\">问题</span><div style=\"flex:1;height:8px;background:var(--track);border-radius:4px;overflow:hidden;max-width:60px\"><div style=\"width:'+probPct+'%;height:100%;background:'+(probPct>=100?'var(--good)':probPct>0?'var(--warn)':'var(--crit)')+';border-radius:4px\"></div></div><b style=\"color:'+(probPct>=100?'var(--good-ink)':probPct>0?'var(--ink-2)':'var(--crit)')+';\">'+probDone+'/'+probTarget+'</b></div>';
       var trendIcon=p5.trend>0?' ↑':p5.trend<0?' ↓':' →';
