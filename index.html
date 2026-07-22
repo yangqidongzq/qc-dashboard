@@ -215,7 +215,7 @@ svg{display:block; width:100%; height:auto}
     </div>
 
 <div class="card col-12">
-      <h3>商户风险分层 <span class="hint">A/B/C/D级 · TOP20明细 · 含趋势</span></h3>
+      <h3>商户差异明细 TOP20 <span class="hint">含差异项拆分明细</span></h3>
       <div class="csub">按差异台数排序，点击行下钻明细，点击差异标签联动描述。</div>
       <div id="merchantTop"></div>
     </div>
@@ -838,19 +838,10 @@ function renderMerchantTop(){
     html+='</tbody></table></div>';
   }
   const host=document.getElementById('merchantTop'); host.innerHTML=html;
-  // 商户风险分级 A/B/C/D
-  var mm2={};f.forEach(function(r){mm2[r.merchant]=mm2[r.merchant]||{t:0,d:0,recentD:0,recentT:0};mm2[r.merchant].t++;if(r.qtyDiff)mm2[r.merchant].d++;if(r.day>maxDay-7){mm2[r.merchant].recentT++;if(r.qtyDiff)mm2[r.merchant].recentD++;}});
-  var tiers={A:[],B:[],C:[],D:[]};
-  for(var mn in mm2){var md=mm2[mn];if(md.t<5)continue;var rr=md.d/md.t,recentRate=md.recentT>0?md.recentD/md.recentT:rr;if(rr<0.03)tiers.A.push({m:mn,rate:rr,d:md.d,t:md.t,recentRate:recentRate});else if(rr<0.08)tiers.B.push({m:mn,rate:rr,d:md.d,t:md.t,recentRate:recentRate});else if(rr<0.15)tiers.C.push({m:mn,rate:rr,d:md.d,t:md.t,recentRate:recentRate});else tiers.D.push({m:mn,rate:rr,d:md.d,t:md.t,recentRate:recentRate});}
-  var tierInfo={A:{label:'🟢 A级·优质',color:'var(--good-ink)',bg:'color-mix(in srgb,var(--good) 6%,transparent)',action:'可放宽抽检'},B:{label:'🟡 B级·正常',color:'var(--warn)',bg:'color-mix(in srgb,var(--warn) 4%,transparent)',action:'常规管理'},C:{label:'🟠 C级·预警',color:'var(--serious)',bg:'color-mix(in srgb,var(--serious) 6%,transparent)',action:'增加抽检+月报'},D:{label:'🔴 D级·高风险',color:'var(--crit)',bg:'color-mix(in srgb,var(--crit) 6%,transparent)',action:'暂停合作/强制整改'}};
-  var summary='<div style="margin-top:10px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:11px">';
-  ['A','B','C','D'].forEach(function(t){
-    var ti=tierInfo[t],arr=tiers[t];arr.sort(function(a,b){return b.rate-a.rate;});
-    var info=arr.length?arr.slice(0,3).map(function(x){var trend=x.recentRate>x.rate*1.2?'↑恶化':x.recentRate<x.rate*0.8?'↓改善':'→持平';return x.m.slice(0,8)+' '+trend;}).join(' · '):'无';
-    summary+='<div style="background:'+ti.bg+';border-radius:6px;padding:6px 8px"><b style="color:'+ti.color+'">'+ti.label+'</b> '+ti.action+'<div style="color:var(--ink-2);margin-top:2px">'+arr.length+'家 '+info+'</div></div>';
-  });
-  summary+='</div>';
-  host.insertAdjacentHTML('beforeend',summary);
+  // 高风险商户摘要
+  var mm2={};f.forEach(function(r){mm2[r.merchant]=mm2[r.merchant]||{t:0,d:0};mm2[r.merchant].t++;if(r.qtyDiff)mm2[r.merchant].d++;});
+  var highRisk=Object.entries(mm2).filter(function(e){return e[1].t>=5&&e[1].d/e[1].t>0.15;}).sort(function(a,b){return(b[1].d/b[1].t)-(a[1].d/a[1].t);});
+  if(highRisk.length){var s='<div style="margin-top:10px;padding:8px 12px;background:color-mix(in srgb,var(--crit) 6%,transparent);border-radius:8px;font-size:12px"><b>⚠️ 高风险商户（差异率>15%）：</b> ';s+=highRisk.slice(0,5).map(function(e){return e[0]+' <b style="color:var(--crit)">'+(e[1].d/e[1].t*100).toFixed(1)+'%</b>';}).join(' · ');if(highRisk.length>5)s+=' …等'+highRisk.length+'家';s+='</div>';host.insertAdjacentHTML('beforeend',s);}
   // 点击行 → 筛选明细
   host.querySelectorAll('.mclick').forEach(el=>{
     el.addEventListener('click',()=>{
