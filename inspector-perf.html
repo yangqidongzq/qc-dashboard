@@ -143,20 +143,16 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
   <div class="grid">
 
     <div class="card">
-      <h3>📅 每人单日明细 <span class="hint">100台/人/日 · 达标绿色 · 未达标红色 · 休息灰色</span></h3>
+      <h3>📅 日产能达成明细 <span class="hint">100台/人/日 · 达标绿色 · 未达标红色 · 休息灰色</span></h3>
       <div class="csub" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <span style="color:var(--muted)">巡检人员：</span>
         <select id="fDailyInspector" style="border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:12px;background:var(--surface-1);color:var(--ink);font-family:inherit"></select>
-        <span style="color:var(--muted)">| 日期：</span>
-        <input type="date" id="fDailyFrom" style="border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:12px;background:var(--surface-1);color:var(--ink);font-family:inherit">
-        <span style="color:var(--muted)">至</span>
-        <input type="date" id="fDailyTo" style="border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:12px;background:var(--surface-1);color:var(--ink);font-family:inherit">
       </div>
       <div id="dailyChart"></div>
     </div>
 
     <div class="card">
-      <h3>⚠️ 巡检个人差异率 <span class="hint">差异台 / 质检台</span></h3>
+      <h3>⚠️ 质检差异发现率 <span class="hint">差异台 / 质检台</span></h3>
       <div class="csub">
         <span style="color:var(--good-ink)">>10% 差异发现高·差异识别充分</span> ·
         <span style="color:var(--warn)">5%~10% 正常范围</span> ·
@@ -167,7 +163,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
 
     <div class="card">
       <h3>
-        <span>📋 人员问题收集完成度 <span class="hint">目标3条/人/月通过(调整=是) 大区:华东9/华南18/华西9/华北12</span></span>
+        <span>📋 人员问题收集完成度 <span class="hint">目标3条/人/月通过(调整=是) | 大区目标:华东9/华南18/华西9/华北12</span></span>
         <span style="display:flex;gap:6px;flex:none">
           <button class="chip" id="problemToggleBtn">📁 一键折叠</button>
         </span>
@@ -437,7 +433,7 @@ function renderDaily(){
 }
 
 /* =========================================================
-   6. 渲染：巡检个人差异率
+   6. 渲染：质检差异发现率
    ========================================================= */
 function renderDiffRate(){
   const f=getFiltered();
@@ -546,7 +542,7 @@ function renderProblem(){
       <td colspan="2"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${rc};margin-right:7px;vertical-align:middle"></span><span>${col?'▶':'▼'}</span> ${reg} 小计 · ${ppl.length}人</td>
       <td class="num tnum">${q}</td><td class="num tnum" style="color:var(--good-ink)">${passed}</td>
       <td class="num tnum" style="color:var(--crit)">${sum(ppl,p=>p.failed)}</td>
-      <td class="num tnum" style="color:${passed>=(REGION_TARGET[reg]||TARGET*ppl.length)?'var(--good-ink)':'var(--crit)'};font-weight:600">${passed}/${REGION_TARGET[reg]||TARGET*ppl.length}</td>
+      <td class="num tnum" style="color:${passed>=(REGION_TARGET[reg]||TARGET*ppl.length)?'var(--good-ink)':'var(--crit)'};font-weight:600">${passed}/${REGION_TARGET[reg]||TARGET*ppl.length} (${(passed/(REGION_TARGET[reg]||TARGET*ppl.length)*100).toFixed(0)}%)</td>
     </tr>`;
 
     for(const p of ppl){
@@ -561,7 +557,7 @@ function renderProblem(){
         <td class="num tnum">${p.collected||0}</td>
         <td class="num tnum" style="color:var(--good-ink);font-weight:600">${p.passed||0}</td>
         <td class="num tnum" style="color:${p.failed>0?'var(--crit)':'var(--muted)'}">${p.failed}</td>
-        <td class="num tnum" style="color:${cc(p.passed)};font-weight:600">${p.remain<=0?'✅':'差 '+p.remain}</td>
+        <td class="num tnum" style="color:${cc(p.passed)};font-weight:600">${p.passed}/${TARGET} (${Math.min(100,(p.passed/TARGET*100)).toFixed(0)}%) ${p.remain<=0?'✅':''}</td>
       </tr>`;
 
       if(isExp && p.recs.length > 0){
