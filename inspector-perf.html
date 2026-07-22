@@ -551,8 +551,8 @@ function renderProblem(){
 
     for(const p of ppl){
       const isExp = expanded(p.name);
-      const adjCol = r => r.adjusted==='是'?'var(--good-ink)':r.reviewResult==='待验证'?'var(--s5)':'var(--crit)';
-      const adjTag = r => r.adjusted==='是'?'✅ 通过':r.reviewResult==='待验证'?'⏳ 返回':'❌ 未通过';
+      const adjCol = r => r.adjusted==='是'?'var(--good-ink)':r.adjusted==='否'?'var(--crit)':'var(--muted)';
+      const adjTag = r => r.adjusted==='是'?'✅ 通过':r.adjusted==='否'?'❌ 未通过': r.adjusted==='-'?'—':'—';
       const short = (s,max) => s && s.length>max ? `<span title="${s.replace(/"/g,'&quot;')}">${s.slice(0,max)}…</span>` : (s||'—');
 
       rows += `<tr style="${col?'display:none':''};cursor:pointer" onclick="state.problemExpand=state.problemExpand==='${p.name}'?'':'${p.name}';renderProblem();">
