@@ -238,7 +238,7 @@ svg{display:block; width:100%; height:auto}
       <div id="descAnalysis"></div>
     </div>
 
-    <div class="card col-6"><h3>📱 高频差异机型 TOP 10 · 差异合理性分析 <span class="hint">24条全品类通病 · 描述一致性 · 通病匹配</span></h3><div class="csub">机型常见差异 & 已知通病自动匹配</div><div class="scroll" id="anaModel"></div></div>
+    <div class="card col-6"><h3>📱 机型-差异项交叉矩阵 <span class="hint">机型 × 差异类型 交叉分析 · 聚焦TOP15机型</span></h3><div class="csub">横向：差异项分布 | 纵向：机型 | 数值=差异台数 | 颜色深浅=集中度</div><div class="scroll" style="max-height:420px" id="anaModel"></div></div>
 
     <div class="card col-6"><h3>⚖️ 主观争议排行 <span class="hint">争议度+量化建议</span></h3><div class="csub">主观率>60%的差异项需增加客观判定标准</div><div class="scroll" id="anaSubjDefect"></div></div>
 
@@ -466,11 +466,30 @@ function _catToDiff(cat){if(cat==='屏幕外观'||cat==='外壳外观')return'�
 function renderAnaModel(){
   var f=getFiltered(),dr=f.filter(function(r){return r.qtyDiff>0||(r.diffItems&&r.diffItems.length);});
   var md={};dr.forEach(function(r){var m=r.model||'未知';md[m]=md[m]||{d:0,it:{}};md[m].d++;(r.diffItems||[]).forEach(function(i){md[m].it[i]=(md[m].it[i]||0)+1;});});
-  var rk=Object.entries(md).sort(function(a,b){return b[1].d-a[1].d;}).slice(0,10);
-  var h='<table><thead><tr><th>#</th><th>机型</th><th>差异台</th><th>主要差异</th><th>已知通病</th></tr></thead><tbody>';
-  rk.forEach(function(e,idx){var ti=Object.entries(e[1].it).sort(function(a,b){return b[1]-a[1];}).slice(0,2).map(function(x){return x[0]+'('+x[1]+')';}).join(' · ');var cm=_findCM(e[0]);
-    h+='<tr><td>'+(idx+1)+'</td><td><b>'+e[0]+'</b></td><td class="num">'+e[1].d+'</td><td style="font-size:11px">'+(ti||'—')+'</td><td style="font-size:11px">'+(cm.length?cm.map(function(c){return '<span class="tag warn" title="'+c.dsc+'">'+c.iss+'</span>';}).join(' '):'<span style="color:var(--muted)">未匹配</span>')+'</td></tr>';});
-  h+='</tbody></table>';var el=document.getElementById('anaModel');if(el)el.innerHTML=h;
+  var allItems=[];for(var m in md){for(var i in md[m].it){if(allItems.indexOf(i)<0)allItems.push(i);}}
+  // 取TOP15机型
+  var rk=Object.entries(md).sort(function(a,b){return b[1].d-a[1].d;}).slice(0,15);
+  // 按差异台数排序差异项
+  var itemTot={};allItems.forEach(function(i){itemTot[i]=0;for(var m in md){itemTot[i]+=(md[m].it[i]||0);}});
+  allItems.sort(function(a,b){return itemTot[b]-itemTot[a];});
+
+  var h='<table style=\"font-size:11px\"><thead><tr><th style=\"min-width:120px\">机型</th><th class=\"num\">合计</th>';
+  allItems.forEach(function(i){h+='<th class=\"num\" style=\"min-width:44px\">'+i+'</th>';});
+  h+='</tr></thead><tbody>';
+  var maxVal=0;rk.forEach(function(e){if(e[1].d>maxVal)maxVal=e[1].d;});
+  rk.forEach(function(e){
+    h+='<tr><td style=\"font-weight:600;font-size:11px\">'+e[0]+'</td><td class=\"num tnum\" style=\"font-weight:600\">'+e[1].d+'</td>';
+    allItems.forEach(function(i){
+      var v=e[1].it[i]||0;
+      var intensity=v>8?8:v>0?Math.max(2,Math.floor(v/maxVal*10)):0;
+      var bg=intensity>0?'color-mix(in srgb,var(--s1) '+(intensity*10)+'%,transparent)':'';
+      var color=v>5?'#fff':'var(--ink-2)';
+      h+='<td class=\"num tnum\" style=\"background:'+bg+';color:'+color+';font-size:10px;font-weight:'+(v>0?'600':'400')+'\">'+(v>0?v:'-')+'</td>';
+    });
+    h+='</tr>';
+  });
+  h+='</tbody></table>';
+  var el=document.getElementById('anaModel');if(el)el.innerHTML=h;
 }
 // ── 共享分析引擎 ──
 function _analyze(){
@@ -791,17 +810,30 @@ function renderProgress(){
 function renderRegions(){
   const f=getFiltered({region:true});
   const grand=sum(f,r=>r.qty)||1;
-  let html='';
-  for(const reg of CFG.regions){
-    const rr=f.filter(r=>r.region===reg), checked=sum(rr,r=>r.qty), diff=sum(rr,r=>r.qtyDiff);
-    const share=pct(checked,grand), col=cssv(REGION_COLOR[reg]);
-    const active=state.region===reg||state.region==='全区域';
-    html+=`<div class="rcard" style="opacity:${active?1:.45}; ${state.region===reg?'border-color:'+col:''}">
-      <div class="rt"><span class="dot" style="background:${col}"></span>${reg}</div>
-      <div class="big tnum">${fmt(checked)}<span style="font-size:12px;color:var(--muted)"> 台</span></div>
-      <div class="small">占比 ${share.toFixed(1)}% · 差异率 ${pct1(pct(diff,checked))} · 差异 ${diff} 台</div>
-      <div class="meter" style="margin-top:9px"><span style="width:${Math.min(share,100)}%;background:${col}"></span></div></div>`;
+  // 差异率对比条
+  var regionStats=CFG.regions.map(function(reg){
+    var rr=f.filter(function(r){return r.region===reg;});
+    return {reg:reg,checked:sum(rr,function(r){return r.qty;}),diff:sum(rr,function(r){return r.qtyDiff;}),
+      share:0,diffRate:0};
+  });
+  regionStats.forEach(function(rs){rs.share=pct(rs.checked,grand);rs.diffRate=pct(rs.diff,rs.checked);});
+  var maxDiffRate=Math.max.apply(null,regionStats.map(function(rs){return rs.diffRate;}))||1;
+
+  var html='<div style=\"display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:8px\">';
+  for(var i=0;i<regionStats.length;i++){
+    var rs=regionStats[i],col=cssv(REGION_COLOR[rs.reg]);
+    var active=state.region===rs.reg||state.region==='全区域';
+    html+='<div class=\"rcard\" style=\"opacity:'+(active?'1':'.45')+';'+(state.region===rs.reg?'border-color:'+col+';':'')+'\">'+
+      '<div class=\"rt\"><span class=\"dot\" style=\"background:'+col+'\"></span>'+rs.reg+'</div>'+
+      '<div class=\"big tnum\">'+fmt(rs.checked)+'<span style=\"font-size:12px;color:var(--muted)\"> 台</span></div>'+
+      '<div class=\"small\">占比 '+rs.share.toFixed(1)+'% · 差异率 <b style=\"color:'+(rs.diffRate>5?'var(--crit)':'var(--good-ink)')+'\">'+rs.diffRate.toFixed(1)+'%</b> · 差异 '+rs.diff+' 台</div>'+
+      '<div style=\"margin-top:6px;display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)\">'+
+      '<span style=\"width:18px\">差异</span>'+
+      '<div style=\"flex:1;height:10px;background:var(--track);border-radius:5px;overflow:hidden\">'+
+      '<div style=\"width:'+(rs.diffRate/maxDiffRate*100).toFixed(0)+'%;height:100%;background:'+col+';border-radius:5px\"></div></div>'+
+      '<span style=\"font-weight:600;color:var(--ink)\">'+rs.diffRate.toFixed(1)+'%</span></div></div>';
   }
+  html+='</div>';
   document.getElementById('regionGrid').innerHTML=html;
 }
 
