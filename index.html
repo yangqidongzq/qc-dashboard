@@ -188,6 +188,11 @@ svg{display:block; width:100%; height:auto}
 
   <div class="kpis" id="kpis"></div>
 
+  <div class="card col-12" id="actionCard">
+    <h3>📋 今日待办 <span class="hint">基于数据自动生成 · 刷新即更新</span></h3>
+    <div id="actionItems" style="display:flex;flex-direction:column;gap:8px;font-size:13px"></div>
+  </div>
+
   <div class="grid">
 
     
@@ -613,7 +618,7 @@ function renderAnalysisAll(){try{renderAnaModel();}catch(e){}try{renderAnaSubjDe
 
 function renderAll(){ renderKPIs(); renderWeekTrend(); renderRegions();
   renderCenterDiff(); renderMerchantTop(); renderDiffItems(); renderSplits(); renderDescAnalysis(); renderDetail();
-  renderAnalysisAll(); }
+  renderAnalysisAll(); renderActionItems(); }
 
 function renderKPIs(){
   const f=getFiltered();
@@ -1410,7 +1415,62 @@ document.getElementById('sendWebhook').onclick=async ()=>{
 };
 
 /* =========================================================
-   10. 启动
+   10. 今日待办
+   ========================================================= */
+function renderActionItems(){
+  var f=getFiltered(),dr=f.filter(function(r){return r.qtyDiff>0;});
+  var items=[];
+
+  // 1. 紧急：差异率上升最严重的中心仓
+  var ccData=_analyze().ccData||{};
+  var ccRank=[];
+  for(var c in ccData){ccRank.push({name:c,qty:ccData[c].t,diff:ccData[c].d,rate:pct(ccData[c].d,ccData[c].t)});}
+  ccRank.sort(function(a,b){return b.rate-a.rate;});
+  var topCC=ccRank.slice(0,3).filter(function(x){return x.rate>5;});
+  if(topCC.length>0) items.push({level:'🚨 紧急',text:topCC[0].name+'差异率'+topCC[0].rate.toFixed(1)+'%，需立即排查差异项分布',bg:'color-mix(in srgb,var(--crit) 6%,transparent)'});
+
+  // 2. 重要：TOP差异原因集中度分析
+  var diffItems={};
+  dr.forEach(function(r){(r.diffItems||[]).forEach(function(i){diffItems[i]=(diffItems[i]||0)+1;});});
+  var topDiff=Object.entries(diffItems).sort(function(a,b){return b[1]-a[1];}).slice(0,3);
+  if(topDiff.length>0){
+    items.push({level:'⚠️ 重要',text:'差异TOP3: '+topDiff.map(function(x){return x[0]+'('+x[1]+'台)';}).join(' · ')+'，需回溯各仓巡检标准',bg:'color-mix(in srgb,var(--warn) 5%,transparent)'});
+  }
+
+  // 3. 常规：产能未达标人员
+  var insData={};
+  f.forEach(function(r){var m=insData[r.inspector]||(insData[r.inspector]={qty:0,days:new Set()});m.qty+=r.qty;m.days.add(r.day);});
+  var lowPerf=[];
+  for(var name in insData){
+    var d=insData[name],avg=d.qty/d.days.size;
+    if(avg<85) lowPerf.push({name:name,avg:Math.round(avg),gap:85-Math.round(avg)});
+  }
+  lowPerf.sort(function(a,b){return b.gap-a.gap;});
+  if(lowPerf.length>0){
+    var names=lowPerf.slice(0,5).map(function(x){return x.name+'差'+x.gap+'台';}).join(' ');
+    items.push({level:'📋 常规',text:'产能未达标('+lowPerf.length+'人): '+names+'，建议分段目标达成',bg:'color-mix(in srgb,var(--s1) 4%,transparent)'});
+  }
+
+  // 4. 问题收集未达标
+  var probUnfinished=[];
+  for(var name in insData){
+    var pc2=0;if(typeof PROBLEM_RECORDS!=='undefined'){PROBLEM_RECORDS.forEach(function(pr){if(pr.inspector===name&&pr.adjusted==='是')pc2++;});}
+    var region='';try{region=INSPECTOR_REGION[name]||'';}catch(e){}
+    if(pc2<3) probUnfinished.push({name:name,region:region,left:3-pc2});
+  }
+  if(probUnfinished.length>3){
+    items.push({level:'📋 常规',text:'问题收集未达标('+probUnfinished.length+'人)，建议批量提醒: '+probUnfinished.slice(0,5).map(function(x){return x.name+'差'+x.left+'条';}).join(' '),bg:'color-mix(in srgb,var(--s3) 4%,transparent)'});
+  }
+
+  // 渲染
+  var el=document.getElementById('actionItems');
+  if(!el) return;
+  var h=items.length?items.map(function(item){return '<div style=\"padding:8px 12px;border-radius:8px;background:'+item.bg+';display:flex;align-items:center;gap:8px\"><span style=\"font-size:14px\">'+item.level+'</span><span>'+item.text+'</span></div>';}).join(''):'<div style=\"color:var(--muted);padding:8px;text-align:center\">✅ 当前无紧急待办事项</div>';
+  el.innerHTML=h;
+}
+
+/* =========================================================
+   11. 启动
    ========================================================= */
 function updateFoot(){
   const foot=document.querySelector('.foot'); if(!foot) return;
