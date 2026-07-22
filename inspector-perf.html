@@ -691,7 +691,8 @@ function renderPersonAnalysis(){
       else if(p5.compQty>=85){bg='color-mix(in srgb,var(--s3) 10%,transparent)';badge='<span style="background:var(--s3);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">接近达标</span>';action='日提'+(DAILY_TARGET-p5.avg)+'台即达标';}
       else if(p5.compQty<85&&p5.rate<=5){bg='color-mix(in srgb,var(--crit) 8%,transparent)';badge='<span style="background:var(--crit);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">重点帮扶</span>';action=ld+'跟进，量不足+检测少';}
       else {bg='color-mix(in srgb,var(--warn) 8%,transparent)';badge='<span style="background:var(--warn);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">量不足</span>';action='需大幅提量，日差'+(DAILY_TARGET-p5.avg)+'台';}
-      var probTag=p5.pc.p>=3?'<span style="color:var(--good-ink);font-size:11px">✓问题收集完成</span>':'<span style="color:var(--crit);font-size:11px">✗差'+(3-p5.pc.p)+'条通过</span>';
+      var probDone=p5.pc.p||0, probTarget=3, probPct=Math.min(100,(probDone/probTarget*100));
+      var probBar='<div style=\"display:flex;align-items:center;gap:6px;font-size:11px\"><span style=\"color:var(--muted);white-space:nowrap\">问题</span><div style=\"flex:1;height:8px;background:var(--track);border-radius:4px;overflow:hidden;max-width:60px\"><div style=\"width:'+probPct+'%;height:100%;background:'+(probPct>=100?'var(--good)':probPct>0?'var(--warn)':'var(--crit)')+';border-radius:4px\"></div></div><b style=\"color:'+(probPct>=100?'var(--good-ink)':probPct>0?'var(--ink-2)':'var(--crit)')+';\">'+probDone+'/'+probTarget+'</b></div>';
       var trendIcon=p5.trend>0?' ↑':p5.trend<0?' ↓':' →';
       cardsHtml+='<div style="background:'+bg+';border-radius:10px;padding:14px 16px;border-left:3px solid '+(p5.compQty>=100?'var(--good)':p5.compQty>=85?'var(--s1)':'var(--crit)')+'">'+
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-weight:600;font-size:14px">'+(p5.name===ld?'👑 ':'')+p5.name+'</span>'+badge+'</div>'+
@@ -700,7 +701,7 @@ function renderPersonAnalysis(){
         '<div><span style="color:var(--muted)">差异率</span> <b style="color:'+rc(p5.rate)+'">'+p5.rate.toFixed(1)+'%</b></div>'+
         '<div><span style="color:var(--muted)">月达成</span> <b style="color:'+cc(p5.monthComp)+'">'+p5.monthComp.toFixed(0)+'%</b></div>'+
         '<div><span style="color:var(--muted)">趋势</span>'+sparkline(v.daily,DAILY_TARGET,60,22,p5.compQty>=85?'var(--s1)':'var(--crit)')+'</div></div>'+
-        '<div style="display:flex;align-items:center;gap:12px;font-size:12px;margin-bottom:4px">'+probTag+'<span style="color:var(--muted);font-size:11px">出勤'+p5.days+'天 · 合计'+p5.totalQty+'台</span></div>'+
+        '<div style="display:flex;align-items:center;gap:10px;font-size:12px;margin-bottom:4px">'+probBar+'<span style="color:var(--muted);font-size:11px">出勤'+p5.days+'天 · 合计'+p5.totalQty+'台</span></div>'+
         '<div style="font-size:11px;background:var(--card);padding:5px 10px;border-radius:6px"><b>建议：</b>'+action+'</div></div>';
     }
     return '<div style="margin-bottom:16px">'+
