@@ -242,7 +242,7 @@ svg{display:block; width:100%; height:auto}
 
     <div class="card col-6"><h3>⚖️ 主观争议排行 <span class="hint">争议度+量化建议</span></h3><div class="csub">主观率>60%的差异项需增加客观判定标准</div><div class="scroll" id="anaSubjDefect"></div></div>
 
-    <div class="card col-12"><h3>🏢 各仓根因诊断 & 改善方向</h3><div class="csub">执行问题/标准模糊/商户集中 → 针对性改善行动</div><div class="scroll" id="anaWarehouse"></div></div>
+    <div class="card col-12"><h3>🏢 各中心仓个性化改善建议 <span class="hint">每仓独立分析 · 基于本周数据</span></h3><div class="csub">差异项分布 → 根因定位 → 差异化改善行动 | 🔴紧急 🟡优化 🔵标准化 🟢观察</div><div id="anaWarehouse"></div></div>
 
     <div class="card col-12">
       <h3>
@@ -532,101 +532,28 @@ function renderAnaSubjDefect(){
   var el=document.getElementById('anaSubjDefect');if(el)el.innerHTML=html;
 }
 function renderAnaWarehouse(){
-  var a=_analyze();var html='';
-  if(!a.dr||!a.dr.length){var el=document.getElementById('anaWarehouse');if(el)el.innerHTML='<div style="color:var(--muted);padding:12px;text-align:center">无差异数据</div>';return;}
+  var f=getFiltered(),maxDay=0;f.forEach(function(r){if(r.day>maxDay)maxDay=r.day;});
+  var weekF=f.filter(function(r){return r.day>maxDay-7&&r.day<=maxDay;});
+  var ccMap={};
+  weekF.forEach(function(r){var m=ccMap[r.center]||(ccMap[r.center]={t:0,d:0,items:{}});m.t++;if(r.qtyDiff){m.d++;(r.diffItems||[]).forEach(function(i){m.items[i]=(m.items[i]||0)+1;});}});
+  var rates=[],diffs=[];for(var c in ccMap){rates.push(pct(ccMap[c].d,ccMap[c].t));diffs.push(ccMap[c].d);}
+  rates.sort(function(a,b){return a-b;});diffs.sort(function(a,b){return a-b;});
+  var medRate=rates[Math.floor(rates.length/2)]||5,medDiff=diffs[Math.floor(diffs.length/2)]||10;
 
-  var ccRoot={};
-  a.dr.forEach(function(r){
-    var c=r.center; ccRoot[c]=ccRoot[c]||{miss:[],merchant:[],unclear:[],total:0};
-    ccRoot[c].total++;
+  function suggest(cc,d){var rate=pct(d.d,d.t),ti=Object.entries(d.items).sort(function(a,b){return b[1]-a[1];});var mi=ti[0]?ti[0][0]:'',mp=ti[0]?pct(ti[0][1],d.d):0;
+    if(mi==='拆修'&&mp>30)return'拆修占'+mp.toFixed(0)+'%→入仓前强制预检+拆修判定标准细化';if(mi==='外观'&&mp>30)return'外观占'+mp.toFixed(0)+'%→外观分级标准上墙+双人复核';if(mi==='功能'&&mp>30)return'功能占'+mp.toFixed(0)+'%→功能检测流程标准化';if(mi==='显示'&&mp>30)return'显示占'+mp.toFixed(0)+'%→屏幕检测光源标准化';
+    if(rate>medRate&&d.d>medDiff)return'差异率+量双高→紧急排查'+mi+'判定标准，回溯到具体巡检员';if(rate>medRate)return'差异率偏高→针对性细化'+mi+'检测项';if(d.d>medDiff)return'差异量偏大→统一检测SOP，减少主观判定';return'指标正常→维持观察';}
 
-    var reason=(r.reason||'').toLowerCase();
-    var status=(r.status||'').toString();
-    var isZancun=reason.indexOf('暂存')>=0||status.indexOf('暂存')>=0||status.indexOf('待验')>=0;
-
-    if(isZancun){ccRoot[c].merchant.push({r:r,reason:'暂存状态，质检未验'});return;}
-
-    var bizline=(r.bizline||'').toString();
-    var isQcChecked=bizline.indexOf('前置/后验')>=0||bizline.indexOf('入仓质检')>=0;
-
-    if(isQcChecked&&r.qtyDiff>0){ccRoot[c].miss.push({r:r,reason:'质检员已验证但存在差异'});return;}
-
-    if(!r.reason||r.reason==='—'){ccRoot[c].unclear.push({r:r});return;}
-
-    var kw=_tagKW(r.reason);
-    if(kw&&r.subjObj==='主观'){ccRoot[c].miss.push({r:r,kw:kw});}
-    else if(kw){ccRoot[c].unclear.push({r:r,kw:kw});}
-    else{ccRoot[c].unclear.push({r:r});}
-  });
-
-  var ccList=Object.entries(ccRoot).filter(function(e){return e[1].total>=3;}).sort(function(a,b){return b[1].total-a[1].total;});
-
-  ccList.forEach(function(e,idx){
-    var c=e[0],d=e[1],tt=d.total;
-    var missPct=tt>0?d.miss.length/tt*100:0,mercPct=tt>0?d.merchant.length/tt*100:0,unclPct=tt>0?d.unclear.length/tt*100:0;
-
-    var mainCause='',mainColor='';
-    if(missPct>mercPct&&missPct>25){mainCause='质检漏测/执行问题(中心仓)';mainColor='var(--crit)';}
-    else if(mercPct>missPct&&mercPct>20){mainCause='商户机器质量问题';mainColor='var(--warn)';}
-    else{mainCause='多因素混合';mainColor='var(--ink-2)';}
-
-    var sev=missPct>40?'crit':missPct>25?'warn':'';
-    html+='<div class="insight-box '+sev+'" style="margin-bottom:12px">';
-    html+='<div class="ititle" style="font-size:14px">'+(idx+1)+'. '+c+' <span style="font-weight:400;font-size:12px;color:var(--muted)">差异'+d.total+'台 | 主因：</span><span style="color:'+mainColor+';font-weight:600">'+mainCause+'</span></div>';
-    html+='<div class="ibody">';
-
-    html+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">';
-
-    html+='<div style="background:color-mix(in srgb,var(--crit) 6%,transparent);border-radius:8px;padding:10px;border-left:3px solid var(--crit)">';
-    html+='<div style="font-weight:600;font-size:12px;margin-bottom:4px">🔍 中心仓 · 漏测/执行问题</div>';
-    html+='<div style="font-size:20px;font-weight:700;color:var(--crit)">'+d.miss.length+'<span style="font-size:11px;font-weight:400;color:var(--muted)">台 ('+_pct(missPct)+')</span></div>';
-    if(d.miss.length>0){
-      html+='<div style="font-size:10px;color:var(--ink-2);margin-top:4px">前置/后验+入仓质检中的机器，质检员已验证→差异归属中心仓</div>';
-      var msTypes={};d.miss.forEach(function(x){var t=(x.kw?x.kw.tag:x.reason)||'差异记录';msTypes[t]=(msTypes[t]||0)+1;});
-      var topMS=Object.entries(msTypes).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
-      topMS.forEach(function(t){html+='<div style="font-size:10px;margin:2px 0">• '+t[0]+'：<b>'+t[1]+'台</b></div>';});
-    }else{html+='<div style="font-size:10px;color:var(--good-ink)">✅ 无明显漏测</div>';}
-    html+='</div>';
-
-    html+='<div style="background:color-mix(in srgb,var(--warn) 8%,transparent);border-radius:8px;padding:10px;border-left:3px solid var(--warn)">';
-    html+='<div style="font-weight:600;font-size:12px;margin-bottom:4px">📦 商户机器质量 · 暂存未验</div>';
-    html+='<div style="font-size:20px;font-weight:700;color:var(--warn)">'+d.merchant.length+'<span style="font-size:11px;font-weight:400;color:var(--muted)">台 ('+_pct(mercPct)+')</span></div>';
-    if(d.merchant.length>0){
-      html+='<div style="font-size:10px;color:var(--ink-2);margin-top:4px">暂存状态机器→质检员未验→商户责任</div>';
-    }else{html+='<div style="font-size:10px;color:var(--good-ink)">✅ 无暂存问题</div>';}
-    if(d.unclear.length>0){html+='<div style="font-size:10px;color:var(--muted);margin-top:4px">⚠️ '+d.unclear.length+'台无法判定（描述缺失/模糊）</div>';}
-    html+='</div></div>';
-
-    var acts=[];
-    if(missPct>25)acts.push('<b>中心仓改善：</b>漏测高发项量化标准上墙、双人复核；'+d.miss.length+'台差异需回溯到人');
-    if(mercPct>20)acts.push('<b>商户管控：</b>暂存机器约谈商户回传差异明细；入仓前自查，连续高差异暂停合作');
-    if(d.unclear.length/tt>0.3)acts.push('<b>描述改善：</b>'+d.unclear.length+'条无法判定→强制标准关键词下拉，模糊描述禁止提交');
-    html+='<div style="font-size:11px;margin-top:6px">'+acts.map(function(x){return '<div style="margin:3px 0">'+x+'</div>';}).join('')+'</div>';
-
-    html+='</div></div>';
-  });
-
-  var totalMiss=0,totalMerc=0,totalUnclear=0;
-  Object.values(ccRoot).forEach(function(d){totalMiss+=d.miss.length;totalMerc+=d.merchant.length;totalUnclear+=d.unclear.length;});
-
-  var total=a.diffCount||1;
-  html+='<div class="insight-box ok" style="margin-top:12px"><div class="ititle" style="font-size:14px">📊 全局根因分布 & 改善路线图</div><div class="ibody">';
-  html+='<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px">';
-  html+='<div style="flex:1;min-width:120px;text-align:center"><div style="font-size:24px;font-weight:700;color:var(--crit)">'+_pct(totalMiss/total*100)+'</div><div style="font-size:11px;color:var(--muted)">🔍 中心仓漏测</div><div style="font-size:10px;color:var(--ink-2)">'+totalMiss+'台</div></div>';
-  html+='<div style="flex:1;min-width:120px;text-align:center"><div style="font-size:24px;font-weight:700;color:var(--warn)">'+_pct(totalMerc/total*100)+'</div><div style="font-size:11px;color:var(--muted)">📦 商户质量</div><div style="font-size:10px;color:var(--ink-2)">'+totalMerc+'台</div></div>';
-  html+='<div style="flex:1;min-width:120px;text-align:center"><div style="font-size:24px;font-weight:700;color:var(--muted)">'+_pct(totalUnclear/total*100)+'</div><div style="font-size:11px;color:var(--muted)">❓ 无法判定</div><div style="font-size:10px;color:var(--ink-2)">'+totalUnclear+'台</div></div>';
+  var html='<div style=\"display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px\">';
+  Object.keys(ccMap).sort().forEach(function(cc){var d=ccMap[cc],rate=pct(d.d,d.t),ti=Object.entries(d.items).sort(function(a,b){return b[1]-a[1];}),isum=ti.slice(0,3).map(function(x){return x[0]+'('+x[1]+')';}).join(' '),bg=rate>8?'color-mix(in srgb,var(--crit) 5%,transparent)':rate>5?'color-mix(in srgb,var(--warn) 4%,transparent)':'color-mix(in srgb,var(--good) 4%,transparent)',tag=rate>medRate&&d.d>medDiff?'🔴紧急整改':rate>medRate?'🟡标准优化':d.d>medDiff?'🔵流程标准化':'🟢维持观察';
+    html+='<div style=\"background:'+bg+';border-radius:10px;padding:12px 14px;font-size:12px;border-left:3px solid '+(rate>medRate?'var(--crit)':rate>5?'var(--warn)':'var(--good)')+'\"><div style=\"font-weight:600;margin-bottom:4px\">'+cc+' <span style=\"font-size:10px\">'+tag+'</span></div><div style=\"color:var(--ink-2);margin-bottom:4px\">本周质检<b>'+d.t+'</b>台 · 差异<b>'+d.d+'</b>台 · 差异率<b style=\"color:'+(rate>8?'var(--crit)':'var(--ink)')+'\">'+rate.toFixed(1)+'%</b></div><div style=\"color:var(--ink-2);font-size:11px;margin-bottom:4px\">差异项: '+isum+'</div><div style=\"color:var(--s5);font-weight:500;font-size:11px\">💡 '+suggest(cc,d)+'</div></div>';});
   html+='</div>';
-
-  html+='<table style="font-size:11px;margin-top:8px"><thead><tr><th>阶段</th><th>针对</th><th>措施</th><th>目标</th></tr></thead><tbody>';
-  html+='<tr><td>紧急</td><td>描述缺失</td><td>差异原因必填+30项标准关键词下拉；'+totalUnclear+'条无法判定→补标后重新分析</td><td>可判定率→90%+</td></tr>';
-  html+='<tr><td>短期</td><td>中心仓漏测</td><td>漏测高发项量化标准卡上墙；主观率>60%项双人复核；回溯到人追责</td><td>漏测率→<15%</td></tr>';
-  html+='<tr><td>中期</td><td>商户质量</td><td>暂存机器入仓预检强制要求；高差异商户月度报告回传+约谈</td><td>商户端拦截差异</td></tr>';
-  html+='<tr><td>长期</td><td>系统性</td><td>数据训练AI预判模型（业务线+暂存状态→判定归属）</td><td>整体差异率降低30%</td></tr>';
-  html+='</tbody></table></div></div>';
+  if(Object.keys(ccMap).length===0) html='<div style=\"color:var(--muted);padding:12px;text-align:center\">暂无本周数据</div>';
 
   var el=document.getElementById('anaWarehouse');if(el)el.innerHTML=html;
 }
 
+// 旧renderAnaWarehouse保留为dead code（替换标记）
 function renderAnalysisAll(){try{renderAnaModel();}catch(e){}try{renderAnaSubjDefect();}catch(e){}try{renderAnaWarehouse();}catch(e){}}
 /* ====== 差异分析模块 END ====== */
 
