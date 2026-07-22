@@ -1437,17 +1437,6 @@ function renderActionItems(){
     items.push({level:'⚠️ 重要',text:'差异TOP3: '+topDiff.map(function(x){return x[0]+'('+x[1]+'台)';}).join(' · ')+'，需回溯各仓巡检标准',bg:'color-mix(in srgb,var(--warn) 5%,transparent)'});
   }
 
-  // 3. 常规：问题收集未达标
-  var probUnfinished=[];
-  for(var name in insData){
-    var pc2=0;if(typeof PROBLEM_RECORDS!=='undefined'){PROBLEM_RECORDS.forEach(function(pr){if(pr.inspector===name&&pr.adjusted==='是')pc2++;});}
-    var region='';try{region=INSPECTOR_REGION[name]||'';}catch(e){}
-    if(pc2<3) probUnfinished.push({name:name,region:region,left:3-pc2});
-  }
-  if(probUnfinished.length>3){
-    items.push({level:'📋 常规',text:'问题收集未达标('+probUnfinished.length+'人)，建议批量提醒: '+probUnfinished.slice(0,5).map(function(x){return x.name+'差'+x.left+'条';}).join(' '),bg:'color-mix(in srgb,var(--s3) 4%,transparent)'});
-  }
-
   // 渲染
   var el=document.getElementById('actionItems');
   if(!el) return;
