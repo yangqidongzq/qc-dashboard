@@ -242,6 +242,7 @@ svg{display:block; width:100%; height:auto}
 
     <div class="card col-6"><h3>⚖️ 主观争议排行 <span class="hint">争议度+量化建议</span></h3><div class="csub">主观率>60%的差异项需增加客观判定标准</div><div class="scroll" id="anaSubjDefect"></div></div>
 
+    <div class="card col-12"><h3>🏢 各中心仓个性化改善建议 <span class="hint">每仓独立分析 · 基于本周数据</span></h3><div class="csub">差异项分布 → 根因定位 → 差异化改善行动 | 🔴紧急 🟡优化 🔵标准化 🟢观察</div><div id="anaWarehouse"></div></div>
 
     <div class="card col-12">
       <h3>
@@ -530,7 +531,30 @@ function renderAnaSubjDefect(){
   } else { html='<div style="color:var(--muted);padding:12px 0;text-align:center">数据不足</div>'; }
   var el=document.getElementById('anaSubjDefect');if(el)el.innerHTML=html;
 }
-function renderAnalysisAll(){try{renderAnaModel();}catch(e){}try{renderAnaSubjDefect();}catch(e){}}
+function renderAnaWarehouse(){
+  var f=getFiltered(),maxDay=0;f.forEach(function(r){if(r.day>maxDay)maxDay=r.day;});
+  var weekF=f.filter(function(r){return r.day>maxDay-7&&r.day<=maxDay;});
+  var ccMap={};
+  weekF.forEach(function(r){var m=ccMap[r.center]||(ccMap[r.center]={t:0,d:0,items:{}});m.t++;if(r.qtyDiff){m.d++;(r.diffItems||[]).forEach(function(i){m.items[i]=(m.items[i]||0)+1;});}});
+  var rates=[],diffs=[];for(var c in ccMap){rates.push(pct(ccMap[c].d,ccMap[c].t));diffs.push(ccMap[c].d);}
+  rates.sort(function(a,b){return a-b;});diffs.sort(function(a,b){return a-b;});
+  var medRate=rates[Math.floor(rates.length/2)]||5,medDiff=diffs[Math.floor(diffs.length/2)]||10;
+
+  function suggest(cc,d){var rate=pct(d.d,d.t),ti=Object.entries(d.items).sort(function(a,b){return b[1]-a[1];});var mi=ti[0]?ti[0][0]:'',mp=ti[0]?pct(ti[0][1],d.d):0;
+    if(mi==='拆修'&&mp>30)return'拆修占'+mp.toFixed(0)+'%→入仓前强制预检+拆修判定标准细化';if(mi==='外观'&&mp>30)return'外观占'+mp.toFixed(0)+'%→外观分级标准上墙+双人复核';if(mi==='功能'&&mp>30)return'功能占'+mp.toFixed(0)+'%→功能检测流程标准化';if(mi==='显示'&&mp>30)return'显示占'+mp.toFixed(0)+'%→屏幕检测光源标准化';
+    if(rate>medRate&&d.d>medDiff)return'差异率+量双高→紧急排查'+mi+'判定标准，回溯到具体巡检员';if(rate>medRate)return'差异率偏高→针对性细化'+mi+'检测项';if(d.d>medDiff)return'差异量偏大→统一检测SOP，减少主观判定';return'指标正常→维持观察';}
+
+  var html='<div style=\"display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:8px\">';
+  Object.keys(ccMap).sort().forEach(function(cc){var d=ccMap[cc],rate=pct(d.d,d.t),ti=Object.entries(d.items).sort(function(a,b){return b[1]-a[1];}),isum=ti.slice(0,3).map(function(x){return x[0]+'('+x[1]+')';}).join(' '),bg=rate>8?'color-mix(in srgb,var(--crit) 5%,transparent)':rate>5?'color-mix(in srgb,var(--warn) 4%,transparent)':'color-mix(in srgb,var(--good) 4%,transparent)',tag=rate>medRate&&d.d>medDiff?'🔴紧急整改':rate>medRate?'🟡标准优化':d.d>medDiff?'🔵流程标准化':'🟢维持观察';
+    html+='<div style=\"background:'+bg+';border-radius:10px;padding:12px 14px;font-size:12px;border-left:3px solid '+(rate>medRate?'var(--crit)':rate>5?'var(--warn)':'var(--good)')+'\"><div style=\"font-weight:600;margin-bottom:4px\">'+cc+' <span style=\"font-size:10px\">'+tag+'</span></div><div style=\"color:var(--ink-2);margin-bottom:4px\">本周质检<b>'+d.t+'</b>台 · 差异<b>'+d.d+'</b>台 · 差异率<b style=\"color:'+(rate>8?'var(--crit)':'var(--ink)')+'\">'+rate.toFixed(1)+'%</b></div><div style=\"color:var(--ink-2);font-size:11px;margin-bottom:4px\">差异项: '+isum+'</div><div style=\"color:var(--s5);font-weight:500;font-size:11px\">💡 '+suggest(cc,d)+'</div></div>';});
+  html+='</div>';
+  if(Object.keys(ccMap).length===0) html='<div style=\"color:var(--muted);padding:12px;text-align:center\">暂无本周数据</div>';
+
+  var el=document.getElementById('anaWarehouse');if(el)el.innerHTML=html;
+}
+
+// 旧renderAnaWarehouse保留为dead code（替换标记）
+function renderAnalysisAll(){try{renderAnaModel();}catch(e){}try{renderAnaSubjDefect();}catch(e){}try{renderAnaWarehouse();}catch(e){}}
 /* ====== 差异分析模块 END ====== */
 
 function renderAll(){ renderKPIs(); renderActionItems(); renderWeekTrend(); renderRegions();
