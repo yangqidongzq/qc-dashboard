@@ -170,8 +170,6 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
         <span>📋 人员问题收集完成度 <span class="hint">目标3条/人/月通过(调整=是) 大区:华东9/华南18/华西9/华北12</span></span>
         <span style="display:flex;gap:6px;flex:none">
           <button class="chip" id="problemToggleBtn">📁 一键折叠</button>
-          <button class="chip" id="importProblemBtn" style="background:var(--s1);color:#fff;border-color:var(--s1)" onclick="document.getElementById('problemFileInput').click()">📥 导入文档</button>
-          <input type="file" id="problemFileInput" accept=".js,.json,.csv,.xlsx" style="display:none" onchange="importProblemFile(event)">
         </span>
       </h3>
       <div class="csub" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -809,70 +807,6 @@ try{
   updateFoot();
 }catch(e){
   document.getElementById('kpis').innerHTML='<div style="color:var(--crit);padding:20px;font-size:14px">❌ 错误: '+e.message+'<br><pre style="font-size:11px">'+e.stack+'</pre></div>';
-}
-
-/* ===== 导入问题收集数据（支持 .js / .json / .csv 文档） ===== */
-function importProblemFile(event){
-  var file=event.target.files[0];
-  if(!file) return;
-  var btn=document.getElementById('importProblemBtn');
-  btn.textContent='⏳ 导入中...'; btn.disabled=true;
-  var reader=new FileReader();
-  reader.onload=function(e){
-    try{
-      var text=e.target.result;
-      var ext=file.name.split('.').pop().toLowerCase();
-      var records=[];
-
-      if(ext==='js'){
-        // JS格式: window.PROBLEM_DATA = [...]
-        eval(text);
-        records=window.PROBLEM_DATA||[];
-      }else if(ext==='json'){
-        records=JSON.parse(text);
-        if(!Array.isArray(records)) records=records.data||records.items||[];
-      }else if(ext==='csv'){
-        var lines=text.split('\n').filter(function(l){return l.trim();});
-        if(lines.length<2){btn.textContent='❌ 空文件';return;}
-        var headers=lines[0].split(',');
-        for(var i=1;i<lines.length;i++){
-          var cols=lines[i].split(',');
-          var rec={};
-          headers.forEach(function(h,idx){rec[h.trim()]=cols[idx]?cols[idx].trim():'';});
-          // 映射字段
-          records.push({
-            inspector: rec['收集人']||rec['inspector']||'',
-            date: (rec['收集日期']||rec['date']||'').slice(0,10),
-            description: rec['问题描述']||rec['description']||'',
-            adjusted: rec['是否调整']||rec['adjusted']||'-',
-            reviewResult: rec['内部审核结论']||rec['reviewResult']||'',
-            category: rec['品类']||rec['category']||'',
-            station: rec['收集站点']||rec['station']||'',
-            problemType: rec['问题分类']||rec['problemType']||'',
-            phenomenon: rec['现象归类']||rec['phenomenon']||'',
-            status: rec['状态']||rec['status']||'',
-            suggestion: rec['改善建议']||rec['suggestion']||'',
-          });
-        }
-      }
-
-      // 过滤有效记录
-      records=records.filter(function(r){return r.inspector;});
-      if(records.length===0){btn.textContent='❌ 无有效数据';return;}
-
-      PROBLEM_RECORDS=records;
-      renderProblem();
-      renderPersonAnalysis();
-      btn.textContent='✅ 已导入'+records.length+'条'; btn.style.background='var(--good)';
-      toast('已导入 '+records.length+' 条问题收集记录');
-    }catch(err){
-      btn.textContent='❌ 解析失败'; btn.style.background='var(--crit)';
-      console.error(err);
-    }
-    setTimeout(function(){btn.textContent='📥 导入文档';btn.style.background='var(--s1)';btn.disabled=false;},3000);
-  };
-  reader.readAsText(file);
-  event.target.value='';
 }
 
 /* ===== 实时自动更新（每3分钟检查版本） ===== */
