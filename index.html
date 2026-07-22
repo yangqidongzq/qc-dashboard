@@ -188,6 +188,10 @@ svg{display:block; width:100%; height:auto}
 
   <div class="kpis" id="kpis"></div>
 
+  <div class="card col-12" style="border-left:3px solid var(--s1)">
+    <h3>📋 今日TOP3行动建议 <span class="hint">基于数据自动生成 · 刷新更新</span></h3>
+    <div id="top3Actions" style="display:flex;flex-direction:column;gap:6px;font-size:13px"></div>
+  </div>
 
   <div class="grid">
 
@@ -533,7 +537,7 @@ function renderAnaSubjDefect(){
 function renderAnalysisAll(){try{renderAnaModel();}catch(e){}try{renderAnaSubjDefect();}catch(e){}}
 /* ====== 差异分析模块 END ====== */
 
-function renderAll(){ renderKPIs(); renderActionItems(); renderWeekTrend(); renderRegions();
+function renderAll(){ renderKPIs(); renderTop3Actions(); renderWeekTrend(); renderRegions();
   renderCenterDiff(); renderMerchantTop(); renderDiffItems(); renderSplits(); renderDescAnalysis(); renderDetail();
   renderAnalysisAll(); }
 
@@ -555,6 +559,43 @@ function renderActionItems(){
     html+='<div style=\"background:'+bg+';border-radius:8px;padding:10px 12px;font-size:12px\"><div style=\"font-weight:600;margin-bottom:3px\">'+cc+' <span style=\"font-size:10px\">'+tag+'</span></div><div style=\"color:var(--ink-2);margin-bottom:3px\">质检'+d.t+'台·差异'+d.d+'台·'+rate.toFixed(1)+'%</div><div style=\"color:var(--ink-2);font-size:11px;margin-bottom:3px\">'+isum+'</div><div style=\"color:var(--s5);font-weight:500\">💡 '+suggest(cc,d)+'</div></div>';});
   html+='</div>';
   var el=document.getElementById('actionItems');if(el)el.innerHTML=html||'<div style=\"color:var(--muted);padding:8px;text-align:center\">暂无本周数据</div>';
+}
+
+function renderTop3Actions(){
+  var f=getFiltered(),maxDay=0;f.forEach(function(r){if(r.day>maxDay)maxDay=r.day;});
+  var weekF=f.filter(function(r){return r.day>maxDay-7&&r.day<=maxDay;});
+  var prevF=f.filter(function(r){return r.day>maxDay-14&&r.day<=maxDay-7;});
+  var dr=weekF.filter(function(r){return r.qtyDiff>0;});
+  var items=[];
+
+  // 1. 紧急：差异率上升最多的中心仓
+  var ccNow={},ccPrev={};
+  weekF.forEach(function(r){ccNow[r.center]=ccNow[r.center]||{t:0,d:0};ccNow[r.center].t++;if(r.qtyDiff)ccNow[r.center].d++;});
+  prevF.forEach(function(r){ccPrev[r.center]=ccPrev[r.center]||{t:0,d:0};ccPrev[r.center].t++;if(r.qtyDiff)ccPrev[r.center].d++;});
+  var worst=null,worstChange=0;
+  for(var cc in ccNow){var nr=ccNow[cc],pr=ccPrev[cc]||{t:1,d:0},nowR=pct(nr.d,nr.t),prevR=pct(pr.d,pr.t),ch=nowR-prevR;if(nowR>4&&ch>worstChange){worst=cc;worstChange=ch;}}
+  if(worst&&worstChange>0.5){
+    var topItems=Object.entries(ccNow[worst].items||{}).sort(function(a,b){return b[1]-a[1];}).slice(0,2).map(function(x){return x[0];}).join('/');
+    items.push({icon:'🚨',label:'紧急',text:worst+'本周差异率上升'+worstChange.toFixed(1)+'%，需立即排查'+topItems+'判定标准',bg:'color-mix(in srgb,var(--crit) 5%,transparent)'});
+  }
+
+  // 2. 重要：差异项集中爆发
+  var diffItems={},diffCenters={};
+  dr.forEach(function(r){(r.diffItems||[]).forEach(function(i){diffItems[i]=diffItems[i]||{c:0,centers:{}};diffItems[i].c++;diffItems[i].centers[r.center]=(diffItems[i].centers[r.center]||0)+1;});});
+  var topDiff=Object.entries(diffItems).sort(function(a,b){return b[1].c-a[1].c;});
+  if(topDiff.length>0){
+    var td=topDiff[0];var topCenter=Object.entries(td[1].centers).sort(function(a,b){return b[1]-a[1];})[0];
+    items.push({icon:'⚠️',label:'重要',text:td[0]+'('+td[1].c+'台)集中爆发，'+topCenter[0]+'占'+topCenter[1]+'台，需回溯具体巡检员',bg:'color-mix(in srgb,var(--warn) 4%,transparent)'});
+  }
+
+  // 3. 常规：全局差异率概况
+  var totalWeek=sum(weekF,function(r){return r.qty;}),totalDiff=sum(weekF,function(r){return r.qtyDiff;}),weekRate=pct(totalDiff,totalWeek);
+  items.push({icon:'📋',label:'概况',text:'本周质检'+totalWeek+'台，差异率'+weekRate.toFixed(1)+'%（'+totalDiff+'台），'+(weekRate>5?'高于':'低于')+'全月均值，建议持续关注差异项趋势',bg:'color-mix(in srgb,var(--s1) 4%,transparent)'});
+
+  var el=document.getElementById('top3Actions');
+  if(!el)return;
+  var h=items.map(function(item){return '<div style=\"padding:8px 12px;border-radius:8px;background:'+item.bg+';display:flex;align-items:center;gap:8px\"><span style=\"font-size:16px\">'+item.icon+'</span><b style=\"white-space:nowrap;font-size:11px;color:var(--ink-2)\">'+item.label+'</b><span>'+item.text+'</span></div>';}).join('');
+  el.innerHTML=h;
 }
 
 function renderKPIs(){
