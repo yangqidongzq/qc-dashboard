@@ -193,11 +193,6 @@ svg{display:block; width:100%; height:auto}
     <div id="top3Actions" style="display:flex;flex-direction:column;gap:6px;font-size:13px"></div>
   </div>
 
-  <div class="card col-12" style="border-left:3px solid var(--crit)" id="alertCard" hidden>
-    <h3>🚨 异常预警 <span class="hint">商户异常 · 中心仓异常 · 新机型异常</span></h3>
-    <div id="alertItems" style="display:flex;flex-direction:column;gap:6px;font-size:13px"></div>
-  </div>
-
   <div class="grid">
 
     
@@ -542,7 +537,7 @@ function renderAnaSubjDefect(){
 function renderAnalysisAll(){try{renderAnaModel();}catch(e){}try{renderAnaSubjDefect();}catch(e){}}
 /* ====== 差异分析模块 END ====== */
 
-function renderAll(){ renderKPIs(); renderTop3Actions(); renderAlerts(); renderActionItems(); renderWeekTrend(); renderRegions();
+function renderAll(){ renderKPIs(); renderTop3Actions();  renderActionItems(); renderWeekTrend(); renderRegions();
   renderCenterDiff(); renderMerchantTop(); renderDiffItems(); renderSplits(); renderDescAnalysis(); renderDetail();
   renderAnalysisAll(); }
 
@@ -564,42 +559,6 @@ function renderActionItems(){
     html+='<div style=\"background:'+bg+';border-radius:8px;padding:10px 12px;font-size:12px\"><div style=\"font-weight:600;margin-bottom:3px\">'+cc+' <span style=\"font-size:10px\">'+tag+'</span></div><div style=\"color:var(--ink-2);margin-bottom:3px\">质检'+d.t+'台·差异'+d.d+'台·'+rate.toFixed(1)+'%</div><div style=\"color:var(--ink-2);font-size:11px;margin-bottom:3px\">'+isum+'</div><div style=\"color:var(--s5);font-weight:500\">💡 '+suggest(cc,d)+'</div></div>';});
   html+='</div>';
   var el=document.getElementById('actionItems');if(el)el.innerHTML=html||'<div style=\"color:var(--muted);padding:8px;text-align:center\">暂无本周数据</div>';
-}
-
-function renderAlerts(){
-  var f=getFiltered();
-  var alerts=[];
-  var maxDay=0;f.forEach(function(r){if(r.day>maxDay)maxDay=r.day;});
-
-  // 1. 商户异常：单日差异率突增(最近3天vs前7天)
-  var mchDay={};f.forEach(function(r){var m=r.merchant||'—',d=r.day,k=m+'|'+d;mchDay[k]=mchDay[k]||{t:0,d:0};mchDay[k].t++;if(r.qtyDiff)mchDay[k].d++;});
-  var mchRecent={},mchPrev={};
-  for(var k in mchDay){var parts=k.split('|'),m=parts[0],d=parseInt(parts[1]),v=mchDay[k],rate=pct(v.d,v.t);
-    if(d>maxDay-3){var rm=mchRecent[m]||(mchRecent[m]={t:0,d:0});rm.t+=v.t;rm.d+=v.d;}
-    else if(d>maxDay-10){var pm=mchPrev[m]||(mchPrev[m]={t:0,d:0});pm.t+=v.t;pm.d+=v.d;}
-  }
-  for(var m in mchRecent){var nr=mchRecent[m],pr=mchPrev[m]||{t:1,d:0},nrR=pct(nr.d,nr.t),prR=pct(pr.d,pr.t);
-    if(nr.t>=5&&nrR>prR*2&&nrR>10)alerts.push({type:'商户异常',text:m+'近3天差异率'+nrR.toFixed(1)+'%，较前期'+prR.toFixed(1)+'%突增，建议推送给对应中心仓负责人'});}
-
-  // 2. 中心仓异常：连续3天差异率高于均值20%
-  var ccDay={};f.forEach(function(r){var c=r.center,d=r.day,k=c+'|'+d;ccDay[k]=ccDay[k]||{t:0,d:0};ccDay[k].t++;if(r.qtyDiff)ccDay[k].d++;});
-  var ccAvg={};for(var k in ccDay){var c=k.split('|')[0],v=ccDay[k];ccAvg[c]=ccAvg[c]||{t:0,d:0};ccAvg[c].t+=v.t;ccAvg[c].d+=v.d;}
-  for(var c in ccAvg){var allR=pct(ccAvg[c].d,ccAvg[c].t),highDays=0;
-    for(var d2=maxDay-2;d2<=maxDay;d2++){var dv=ccDay[c+'|'+d2];if(dv&&pct(dv.d,dv.t)>allR*1.2)highDays++;}
-    if(highDays>=3)alerts.push({type:'中心仓异常',text:c+'连续'+highDays+'天差异率高于均值20%（均值'+allR.toFixed(1)+'%），建议自动推送预警'});}
-
-  // 3. 新机型异常(模拟：最近新增的机型首月差异率>10%)
-  var modelFirst={};f.forEach(function(r){var m=r.model||'',d=r.day;if(!modelFirst[m])modelFirst[m]=d;else if(d<modelFirst[m])modelFirst[m]=d;});
-  var modelNew={};f.forEach(function(r){var m=r.model||'';if(r.day<=modelFirst[m]+30)modelNew[m]=true;});
-  var modelStats={};f.forEach(function(r){if(!modelNew[r.model])return;var m=r.model||'';modelStats[m]=modelStats[m]||{t:0,d:0};modelStats[m].t++;if(r.qtyDiff)modelStats[m].d++;});
-  for(var m in modelStats){var ms=modelStats[m],mr=pct(ms.d,ms.t);if(ms.t>=10&&mr>10)alerts.push({type:'新机型异常',text:m+'为新上线机型，首月差异率'+mr.toFixed(1)+'%，建议推送至品控负责人'});}
-
-  var el=document.getElementById('alertItems'),card=document.getElementById('alertCard');
-  if(!el||!card)return;
-  if(alerts.length===0){card.hidden=true;return;}
-  card.hidden=false;
-  var h=alerts.map(function(a){var bg=a.type==='商户异常'?'color-mix(in srgb,var(--warn) 5%,transparent)':a.type==='中心仓异常'?'color-mix(in srgb,var(--crit) 5%,transparent)':'color-mix(in srgb,var(--s5) 5%,transparent)',icon=a.type==='商户异常'?'🏪':a.type==='中心仓异常'?'🏢':'📱';return '<div style=\"padding:8px 12px;border-radius:8px;background:'+bg+';display:flex;align-items:center;gap:8px\"><span style=\"font-size:14px\">'+icon+'</span><b style=\"font-size:11px;color:var(--ink-2);white-space:nowrap\">'+a.type+'</b><span>'+a.text+'</span></div>';}).join('');
-  el.innerHTML=h;
 }
 
 function renderTop3Actions(){
