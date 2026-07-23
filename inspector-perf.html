@@ -315,7 +315,7 @@ const targetOf = recs => {
 function computeDims(){
   const D=RECORDS, U=f=>[...new Set(D.map(f).filter(v=>v&&v!=='—'))];
   if(!D.length) return;
-  CFG.categories=U(r=>r.category);
+  CFG.categories=U(r=>r.category).filter(function(c){return c!=='手表'&&c!=='耳机';});
   CFG.bizlines=U(r=>r.bizline);
   CFG.diffTypes=[...new Set(D.flatMap(r=>r.diffItems))].filter(Boolean);
   CFG.sources=U(r=>r.source);
