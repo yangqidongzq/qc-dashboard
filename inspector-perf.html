@@ -152,6 +152,11 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
     </div>
 
     <div class="card">
+      <h3>📬 来源差异对比 <span class="hint">邮件推送 vs 中心仓拦截</span></h3>
+      <div id="sourceCompare" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px"></div>
+    </div>
+
+    <div class="card">
       <h3>⚠️ 质检差异发现率 <span class="hint">差异台 / 质检台</span></h3>
       <div class="csub">
         <span style="color:var(--good-ink)">>10% 差异发现高·差异识别充分</span> ·
@@ -435,6 +440,21 @@ function renderDaily(){
 /* =========================================================
    6. 渲染：质检差异发现率
    ========================================================= */
+function renderSourceCompare(){
+  var f=getFiltered(),dr=f.filter(function(r){return r.qtyDiff>0;});
+  var sources=['邮件推送','中心仓拦截'];
+  var html='';
+  sources.forEach(function(src){
+    var sf=f.filter(function(r){return r.source===src;}),sd=dr.filter(function(r){return r.source===src;});
+    var total=sum(sf,function(r){return r.qty;}),diff=sum(sd,function(r){return r.qtyDiff;}),rate=pct(diff,total);
+    var items={};sd.forEach(function(r){(r.diffItems||[]).forEach(function(i){items[i]=(items[i]||0)+1;});});
+    var top=Object.entries(items).sort(function(a,b){return b[1]-a[1];}).slice(0,5);
+    var bg=src==='邮件推送'?'color-mix(in srgb,var(--s3) 5%,transparent)':'color-mix(in srgb,var(--s1) 5%,transparent)';
+    html+='<div style=\"background:'+bg+';border-radius:8px;padding:12px\"><b>'+src+'</b><div style=\"margin:6px 0\">质检<b>'+total+'</b>台 · 差异<b>'+diff+'</b>台 · 差异率<b style=\"color:'+(rate>5?'var(--crit)':'var(--good-ink)')+'\">'+rate.toFixed(1)+'%</b></div><div style=\"color:var(--ink-2);font-size:11px\">TOP差异: '+top.map(function(x){return x[0]+'('+x[1]+')';}).join(' · ')+'</div></div>';
+  });
+  var el=document.getElementById('sourceCompare');if(el)el.innerHTML=html||'<div style=\"color:var(--muted)\">暂无数据</div>';
+}
+
 function renderDiffRate(){
   const f=getFiltered();
   const map={};
@@ -806,7 +826,7 @@ function downloadFile(name,content){
 function renderAll(){
   renderKPIs();
   renderDaily();
-  renderDiffRate();
+  renderSourceCompare(); renderDiffRate();
   renderProblem();
   renderPersonAnalysis();
 }
