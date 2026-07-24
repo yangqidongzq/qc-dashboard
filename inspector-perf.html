@@ -861,7 +861,7 @@ try{
   }
   async function check() {
     try {
-      var r = await fetch('version.json?t=' + Date.now());
+      var r = await fetch('https://raw.githubusercontent.com/yangqidongzq/qc-dashboard/main/version.json?t=' + Date.now());
       if (!r.ok) return;
       var v = await r.json();
       var qcUpd = v.qcData?.updated || '';
