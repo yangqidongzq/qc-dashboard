@@ -927,7 +927,7 @@ function renderDiffItems(){
     html+='</div>';
   }
   const host=document.getElementById('diffItems');host.innerHTML=html;
-  host.querySelectorAll('.diffmclick').forEach(el=>{el.addEventListener('click',()=>{const m=el.dataset.m;linkToDesc(m);});});
+  host.querySelectorAll('.diffmclick').forEach(el=>{el.addEventListener('click',()=>{const m=el.dataset.m;state.selMerchant=m;renderDiffItems();renderDescAnalysis();renderMerchantTop();});});
 }
 
 function renderSplits(){
