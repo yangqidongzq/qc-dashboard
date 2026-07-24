@@ -209,6 +209,11 @@ svg{display:block; width:100%; height:auto}
       <div id="weekTrend"></div>
     </div>
     <div class="card col-12">
+      <h3>📊 月度差异率趋势 <span class="hint">近6个月 · 整体+按中心仓</span></h3>
+      <div class="csub">总质检台数、差异率月度变化，识别持续改善 vs 反复波动</div>
+      <div id="monthTrend"></div>
+    </div>
+    <div class="card col-12">
       <h3>🏢 各中心仓差异汇总 <span class="hint">按差异率排序 · 点击展开明细 · 支持导出</span></h3>
       <div class="csub">各仓质检总数、差异台数、差异率，点击中心仓行展开具体问题明细。</div>
       <div id="centerDiff"></div>
@@ -537,7 +542,7 @@ function renderAnaSubjDefect(){
 function renderAnalysisAll(){try{renderAnaModel();}catch(e){}try{renderAnaSubjDefect();}catch(e){}}
 /* ====== 差异分析模块 END ====== */
 
-function renderAll(){ renderKPIs(); renderTop3Actions();  renderActionItems(); renderWeekTrend(); renderRegions();
+function renderAll(){ renderKPIs(); renderTop3Actions();  renderActionItems(); renderWeekTrend(); renderMonthTrend(); renderRegions();
   renderCenterDiff(); renderMerchantTop(); renderDiffItems(); renderSplits(); renderDescAnalysis(); renderDetail();
   renderAnalysisAll(); }
 
@@ -709,6 +714,56 @@ function renderWeekTrend(){
   });
   html+='</tbody></table></div>';
   document.getElementById('weekTrend').innerHTML=html;
+}
+
+function renderMonthTrend(){
+  var f=getFiltered(),dr=f.filter(function(r){return r.qtyDiff>0;});
+  // 按月聚合
+  var months={};f.forEach(function(r){var m=r.date.slice(0,7);months[m]=months[m]||{t:0,d:0,centers:{}};months[m].t++;if(r.qtyDiff){months[m].d++;months[m].centers[r.center]=(months[m].centers[r.center]||0)+1;}});
+  var ml=Object.keys(months).sort();
+  if(ml.length<2){document.getElementById('monthTrend').innerHTML='<div style=\"color:var(--muted);padding:12px\">数据不足（需至少2个月）</div>';return;}
+
+  // SVG area
+  var pad=40, w=700,h=180,gw=w-pad*2,gh=h-pad*2;
+  var maxTotal=0,maxRate=0;ml.forEach(function(m){var v=months[m];if(v.t>maxTotal)maxTotal=v.t;var r=pct(v.d,v.t);if(r>maxRate)maxRate=r;});
+  maxTotal=Math.ceil(maxTotal/100)*100+100; maxRate=Math.ceil(maxRate)+2;
+
+  var html='<div style=\"font-size:12px;margin-bottom:4px\">📊 整体差异率月度趋势</div>';
+  html+='<svg width=\"100%\" height=\"'+(h+10)+'\" viewBox=\"0 0 '+w+' '+h+'\">';
+  // Grid
+  for(var i=0;i<=4;i++){var y=pad+i*(gh/4);html+='<line x1=\"'+pad+'\" y1=\"'+y+'\" x2=\"'+(w-pad)+'\" y2=\"'+y+'\" stroke=\"var(--grid)\" stroke-width=\"1\"/>';html+='<text x=\"'+(pad-5)+'\" y=\"'+(y+3)+'\" text-anchor=\"end\" font-size=\"9\" fill=\"var(--muted)\">'+(maxRate-maxRate*i/4).toFixed(1)+'%</text>';}
+  // Bars (total) + Line (rate)
+  var bw=(gw/ml.length-10);
+  ml.forEach(function(m,i){
+    var v=months[m],x=pad+10+i*(bw+10),barH=(v.t/maxTotal)*gh,rate=pct(v.d,v.t),ry=pad+gh-(rate/maxRate)*gh;
+    // Bar
+    html+='<rect x=\"'+x+'\" y=\"'+(pad+gh-barH)+'\" width=\"'+bw+'\" height=\"'+barH+'\" fill=\"color-mix(in srgb,var(--s1) 30%,transparent)\" rx=\"3\"/>';
+    html+='<text x=\"'+(x+bw/2)+'\" y=\"'+(pad+gh-barH-4)+'\" text-anchor=\"middle\" font-size=\"8\" fill=\"var(--ink-2)\">'+v.t+'台</text>';
+    // Line points
+    if(i>0){var prev=months[ml[i-1]],pr=pct(prev.d,prev.t),px=pad+10+(i-1)*(bw+10)+bw/2,py=pad+gh-(pr/maxRate)*gh;html+='<line x1=\"'+px+'\" y1=\"'+py+'\" x2=\"'+(x+bw/2)+'\" y2=\"'+ry+'\" stroke=\"var(--crit)\" stroke-width=\"2\"/>';}
+    html+='<circle cx=\"'+(x+bw/2)+'\" cy=\"'+ry+'\" r=\"3\" fill=\"var(--crit)\"/>';
+    html+='<text x=\"'+(x+bw/2)+'\" y=\"'+(pad+gh+14)+'\" text-anchor=\"middle\" font-size=\"9\" fill=\"var(--ink)\">'+m.slice(5)+'</text>';
+    html+='<text x=\"'+(x+bw/2)+'\" y=\"'+(ry-7)+'\" text-anchor=\"middle\" font-size=\"8\" fill=\"var(--crit)\" font-weight=\"600\">'+rate.toFixed(1)+'%</text>';
+  });
+  // Legend
+  html+='<text x=\"'+(w-pad)+'\" y=\"16\" text-anchor=\"end\" font-size=\"9\" fill=\"var(--ink-2)\">柱=质检台数 线=差异率</text>';
+  html+='</svg>';
+
+  // Center comparison table
+  html+='<div style=\"margin-top:8px;font-size:11px;display:grid;grid-template-columns:repeat(4,1fr);gap:4px\" class=\"tablewrap\">';
+  var centers={};f.forEach(function(r){var c=r.center;centers[c]=centers[c]||{};var m=r.date.slice(0,7);centers[c][m]=centers[c][m]||{t:0,d:0};centers[c][m].t++;if(r.qtyDiff)centers[c][m].d++;});
+  var cl=Object.keys(centers).sort();var trendText={};
+  cl.forEach(function(c){
+    var rates=ml.map(function(m){var v=(centers[c]||{})[m];return v?pct(v.d,v.t):null;}).filter(function(x){return x!==null;});
+    if(rates.length>=2){var first=rates[0],last=rates[rates.length-1],delta=last-first;trendText[c]=(delta>1?'↑恶化':delta<-1?'↓改善':'→持平')+' '+Math.abs(delta).toFixed(1)+'%';}
+  });
+  html+='<div style=\"font-weight:600;font-size:11px;margin-bottom:2px\">各中心仓趋势：</div>';
+  cl.forEach(function(c){
+    var col=trendText[c]?trendText[c].includes('↓')?'var(--good-ink)':trendText[c].includes('↑')?'var(--crit)':'var(--ink-2)':'var(--muted)';
+    html+='<div style=\"color:'+col+'\">'+c.slice(0,2)+'… '+trendText[c]+'</div>';
+  });
+  html+='</div>';
+  document.getElementById('monthTrend').innerHTML=html;
 }
 
 function renderDaily(){
