@@ -441,7 +441,7 @@ function niceMax(v){ v=Math.max(v,1); const p=Math.pow(10,Math.floor(Math.log10(
 function computeDims(){
   const D=RECORDS, U=f=>[...new Set(D.map(f).filter(v=>v&&v!=='—'))];
   if(!D.length) return;
-  CFG.categories=U(r=>r.category);
+  CFG.categories=U(r=>r.category).filter(function(c){return c!=='手表'&&c!=='耳机';});
   CFG.bizlines=U(r=>r.bizline);
   CFG.diffTypes=[...new Set(D.flatMap(r=>r.diffItems))].filter(Boolean);
   CFG.sources=U(r=>r.source);
@@ -1418,7 +1418,7 @@ updateFoot();
   }
   async function check() {
     try {
-      var r = await fetch('https://raw.githubusercontent.com/yangqidongzq/qc-dashboard/main/version.json?t=' + Date.now());
+      var r = await fetch('version.json?t=' + Date.now());
       if (!r.ok) return;
       var v = await r.json();
       var qcUpd = v.qcData?.updated || '';
