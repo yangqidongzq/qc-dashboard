@@ -556,7 +556,7 @@ function renderActionItems(){
   var medRate=rates[Math.floor(rates.length/2)]||5,medDiff=diffs[Math.floor(diffs.length/2)]||10;
 
   function suggest(cc,d){var rate=pct(d.d,d.t),ti=Object.entries(d.items).sort(function(a,b){return b[1]-a[1];});var mi=ti[0]?ti[0][0]:'',mp=ti[0]?pct(ti[0][1],d.d):0,mi2=ti[1]?ti[1][0]:'';
-    if(mi==='拆修'&&mp>30)return'重点→入仓前强制预检+拆修标准细化';if(mi==='外观'&&mp>30)return'重点→外观分级标准上墙+双人复核';if(mi==='功能'&&mp>30)return'重点→功能检测流程标准化';if(mi==='显示'&&mp>30)return'重点→屏幕检测光源标准化';
+    if(mi==='拆修'&&mp>30)return'重点→入仓前强制预检+拆修标准细化';if(mi==='外观'&&mp>30)return'重点→外观分级标准上墙+重点抽检';if(mi==='功能'&&mp>30)return'重点→功能检测流程标准化';if(mi==='显示'&&mp>30)return'重点→屏幕检测光源标准化';
     if(rate>medRate&&d.d>medDiff)return'双高预警→排查'+mi+'项并回溯巡检员';if(rate>medRate)return'率偏高→细化'+mi+(mi2?'和'+mi2:'')+'检测项';if(d.d>medDiff)return'量偏大→减少'+mi+'主观判定';return'✅ 指标正常';}
 
   var html='<div style=\"display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px\">';
