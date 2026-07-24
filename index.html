@@ -221,6 +221,11 @@ svg{display:block; width:100%; height:auto}
     </div>
 
     <div class="card col-12">
+      <h3>📬 来源差异对比 <span class="hint">邮件推送 vs 中心仓拦截 · 差异率/差异项分布</span></h3>
+      <div id="sourceCompare" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:12px"></div>
+    </div>
+
+    <div class="card col-12">
       <h3>差异项分析 · 商户拆分 <span class="hint">各差异项下TOP5商户 · 来源 · 主客观</span></h3>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
         <span style="font-size:12px;color:var(--muted)">拆修/功能/外观/显示/浸液/其他 → TOP商户</span>
@@ -537,7 +542,8 @@ function renderAnaSubjDefect(){
 function renderAnalysisAll(){try{renderAnaModel();}catch(e){}try{renderAnaSubjDefect();}catch(e){}}
 /* ====== 差异分析模块 END ====== */
 
-function renderAll(){ renderKPIs(); renderTop3Actions();  renderActionItems(); renderWeekTrend(); renderRegions();
+function renderAll(){ renderKPIs(); renderTop3Actions(); renderActionItems(); renderWeekTrend(); renderRegions();
+  renderSourceCompare();
   renderCenterDiff(); renderMerchantTop(); renderDiffItems(); renderSplits(); renderDescAnalysis(); renderDetail();
   renderAnalysisAll(); }
 
@@ -596,6 +602,21 @@ function renderTop3Actions(){
   if(!el)return;
   var h=items.map(function(item){return '<div style=\"padding:8px 12px;border-radius:8px;background:'+item.bg+';display:flex;align-items:center;gap:8px\"><span style=\"font-size:16px\">'+item.icon+'</span><b style=\"white-space:nowrap;font-size:11px;color:var(--ink-2)\">'+item.label+'</b><span>'+item.text+'</span></div>';}).join('');
   el.innerHTML=h;
+}
+
+function renderSourceCompare(){
+  var f=getFiltered(),dr=f.filter(function(r){return r.qtyDiff>0;});
+  var sources=['邮件推送','中心仓拦截'];
+  var html='';
+  sources.forEach(function(src){
+    var sf=f.filter(function(r){return r.source===src;}),sd=dr.filter(function(r){return r.source===src;});
+    var total=sum(sf,function(r){return r.qty;}),diff=sum(sd,function(r){return r.qtyDiff;}),rate=pct(diff,total);
+    var items={};sd.forEach(function(r){(r.diffItems||[]).forEach(function(i){items[i]=(items[i]||0)+1;});});
+    var top=Object.entries(items).sort(function(a,b){return b[1]-a[1];}).slice(0,5);
+    var bg=src==='邮件推送'?'color-mix(in srgb,var(--s3) 5%,transparent)':'color-mix(in srgb,var(--s1) 5%,transparent)';
+    html+='<div style=\"background:'+bg+';border-radius:8px;padding:12px\"><b>'+src+'</b><div style=\"margin:6px 0\">质检<b>'+total+'</b>台 · 差异<b>'+diff+'</b>台 · 差异率<b style=\"color:'+(rate>5?'var(--crit)':'var(--good-ink)')+'\">'+rate.toFixed(1)+'%</b></div><div style=\"color:var(--ink-2);font-size:11px\">TOP差异: '+top.map(function(x){return x[0]+'('+x[1]+')';}).join(' · ')+'</div></div>';
+  });
+  var el=document.getElementById('sourceCompare');if(el)el.innerHTML=html||'<div style=\"color:var(--muted)\">暂无数据</div>';
 }
 
 function renderKPIs(){
