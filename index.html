@@ -898,36 +898,45 @@ function renderDonut(){
 function renderDiffItems(){
   let f=getFiltered().filter(r=>r.qtyDiff>0);
   if(state.selMerchant) f=f.filter(r=>r.merchant===state.selMerchant);
-  const map={};
+  var maxDay=0;f.forEach(function(r){if(r.day>maxDay)maxDay=r.day;});
+  var thisMonth=f.filter(function(r){return r.day>maxDay-30;}),prevMonth=f.filter(function(r){return r.day>maxDay-60&&r.day<=maxDay-30;});
+
+  const map={},tmMap={},pmMap={};
   for(const r of f){if(!r.diffItems.length) continue;for(const it of r.diffItems){const m=map[it]||(map[it]={total:0,merchants:{}});m.total++;m.merchants[r.merchant]=(m.merchants[r.merchant]||0)+1;}}
-  const arr=CFG.diffTypes.map(k=>({k,...(map[k]||{total:0,merchants:{}})})).filter(a=>a.total>0).sort((a,b)=>b.total-a.total);
+  for(const r of thisMonth){if(!r.diffItems.length) continue;for(const it of r.diffItems){tmMap[it]=(tmMap[it]||0)+1;}}
+  for(const r of prevMonth){if(!r.diffItems.length) continue;for(const it of r.diffItems){pmMap[it]=(pmMap[it]||0)+1;}}
+  const arr=CFG.diffTypes.map(k=>({k,...(map[k]||{total:0,merchants:{}}),tm:tmMap[k]||0,pm:pmMap[k]||0})).filter(a=>a.total>0).sort((a,b)=>b.total-a.total);
   const cols=[cssv('--s6'),cssv('--s1'),cssv('--s8'),cssv('--s2'),cssv('--s5'),cssv('--s3')];
+  const total=arr.reduce(function(s,a){return s+a.total;},0)||1;
   let html='';
   if(!arr.length){html='<div style="color:var(--muted);padding:16px 0">当前筛选无差异记录</div>';}
   else{
     if(state.selMerchant) html+='<div style="margin-bottom:8px;font-size:12px;color:var(--s1);cursor:pointer" onclick="state.selMerchant=\'\';renderDiffItems();renderDescAnalysis();">🏪 商户: '+state.selMerchant+' ✕</div>';
-    html+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">';
-    arr.forEach((a,i)=>{
-      const topM=Object.entries(a.merchants).sort((x,y)=>y[1]-x[1]).slice(0,6);
-      const maxM=Math.max(1,topM.length?topM[0][1]:0);
-      html+='<div style="background:'+cssv('--surface-1')+';border-radius:10px;padding:12px 14px;border-top:3px solid '+cols[i%cols.length]+'">';
-      html+='<div style="font-weight:600;font-size:15px;margin-bottom:2px">'+a.k+'</div>';
-      html+='<div style="font-size:24px;font-weight:700;color:'+cols[i%cols.length]+';margin-bottom:8px">'+a.total+'<span style="font-size:12px;color:'+cssv('--ink-2')+';font-weight:400"> 台</span></div>';
-      if(!topM.length) html+='<div style="font-size:12px;color:'+cssv('--muted')+'">（无商户明细）</div>';
-      topM.forEach(([mer,ct])=>{
-        const short=mer.length>16?mer.slice(0,14)+'…':mer;
-        const bars='█'.repeat(Math.round(ct/maxM*8))+'░'.repeat(Math.max(0,8-Math.round(ct/maxM*8)));
-        html+='<div style="font-size:12px;margin:4px 0;cursor:pointer;display:flex;align-items:center;gap:6px" class="diffmclick" data-m="'+mer.replace(/"/g,'&quot;')+'" title="'+mer+': '+ct+'台">'+
-          '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:'+cssv('--ink-2')+'">'+short+'</span>'+
-          '<span style="color:'+cssv('--ink-2')+';font-size:10px;font-family:monospace">'+bars+'</span>'+
-          '<b style="color:'+cssv('--ink')+';min-width:22px;text-align:right">'+ct+'</b></div>';
+
+    // 堆叠条形图
+    html+='<div style="display:flex;height:28px;border-radius:6px;overflow:hidden;margin-bottom:10px">';
+    arr.forEach(function(a,i){html+='<div style="width:'+(a.total/total*100)+'%;background:'+cols[i%cols.length]+';display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff;min-width:'+(a.total/total*100>8?'auto':'0')+'" title="'+a.k+':'+a.total+'台 ('+(a.total/total*100).toFixed(0)+'%)">'+(a.total/total*100>8?a.k+' '+(a.total/total*100).toFixed(0)+'%':'')+'</div>';});
+    html+='</div>';
+
+    html+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">';
+    arr.forEach(function(a,i){
+      var change=a.pm>0?((a.tm-a.pm)/a.pm*100):0,trend=change>10?'↑'+Math.round(change)+'%':change<-10?'↓'+Math.abs(Math.round(change))+'%':'→持平';
+      var tColor=change>10?'var(--crit)':change<-10?'var(--good-ink)':'var(--ink-2)';
+      var topM=Object.entries(a.merchants).sort(function(x,y){return y[1]-x[1];}).slice(0,5);
+      html+='<div style="background:'+cssv('--surface-1')+';border-radius:10px;padding:10px 12px;border-top:3px solid '+cols[i%cols.length]+'">';
+      html+='<div style="font-weight:600;font-size:14px;margin-bottom:2px">'+a.k+' <span style="font-size:11px;color:'+tColor+'">'+trend+'</span></div>';
+      html+='<div style="font-size:22px;font-weight:700;color:'+cols[i%cols.length]+';margin-bottom:6px">'+a.total+'<span style="font-size:11px;color:'+cssv('--ink-2')+';font-weight:400">台 ('+(a.total/total*100).toFixed(0)+'%)</span></div>';
+      if(!topM.length) html+='<div style="font-size:11px;color:'+cssv('--muted')+'">（无商户明细）</div>';
+      var maxM=Math.max(1,topM.length?topM[0][1]:0);
+      topM.forEach(function(e){var mer=e[0],ct=e[1],short=mer.length>14?mer.slice(0,12)+'…':mer;
+        html+='<div style="font-size:11px;margin:2px 0;cursor:pointer;display:flex;align-items:center;gap:4px" class="diffmclick" data-m="'+mer.replace(/\"/g,'&quot;')+'" title="'+mer+':'+ct+'台"><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:'+cssv('--ink-2')+'">'+short+'</span><span style="font-size:9px;color:'+cssv('--ink-2')+'">'+'▇'.repeat(Math.round(ct/maxM*6))+'</span><b style="color:'+cssv('--ink')+';min-width:16px;text-align:right">'+ct+'</b></div>';
       });
       html+='</div>';
     });
     html+='</div>';
   }
   const host=document.getElementById('diffItems');host.innerHTML=html;
-  host.querySelectorAll('.diffmclick').forEach(el=>{el.addEventListener('click',()=>{const m=el.dataset.m;state.selMerchant=m;renderDiffItems();renderDescAnalysis();});});
+  host.querySelectorAll('.diffmclick').forEach(function(el){el.addEventListener('click',function(){var m=el.dataset.m;state.selMerchant=m;renderDiffItems();renderDescAnalysis();});});
 }
 
 function renderSplits(){
