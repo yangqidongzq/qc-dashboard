@@ -143,11 +143,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
   <div class="grid">
 
     <div class="card">
-      <h3>📅 日产能达成明细 <span class="hint">100台/人/日 · 达标绿色 · 未达标红色 · 休息灰色</span></h3>
-      <div class="csub" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-        <span style="color:var(--muted)">巡检人员：</span>
-        <select id="fDailyInspector" style="border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:12px;background:var(--surface-1);color:var(--ink);font-family:inherit"></select>
-      </div>
+      <h3>📅 日产能达成明细 <span class="hint">个人模式 · 达标绿色 · 未达标红色 · 无数据灰色</span></h3>
       <div id="dailyChart"></div>
     </div>
 
@@ -378,64 +374,90 @@ function renderDaily(){
   let f=getFiltered();
   const allInspGlobal=[...new Set(RECORDS.map(r=>r.inspector))].sort();
   const allDates=[...new Set(RECORDS.map(r=>r.date))].sort();
+  if(!state._dailyMode) state._dailyMode='person';
 
   const selInsp=document.getElementById('fDailyInspector');
-  if(selInsp){
-    selInsp.innerHTML=['全部',...allInspGlobal].map(n=>`<option ${n===state.dailyInspector?'selected':''}>${n}</option>`).join('');
-    selInsp.onchange=()=>{ state.dailyInspector=selInsp.value; renderDaily(); };
-  }
-  if(state.dailyInspector && state.dailyInspector!=='全部'){
-    f=f.filter(r=>r.inspector===state.dailyInspector);
-  }
+  // Toggle between 汇总/个人
+  var toggleHtml='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">';
+  toggleHtml+='<span style="color:var(--muted);font-size:12px">巡检人员：</span>';
+  toggleHtml+='<select id="fDailyInspector" style="border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:12px;background:var(--surface-1);color:var(--ink)">';
+  toggleHtml+=['全部',...allInspGlobal].map(n=>'<option '+(state.dailyInspector===n?'selected':'')+'>'+n+'</option>').join('');
+  toggleHtml+='</select>';
+  toggleHtml+='<label style="font-size:12px;color:var(--ink-2);cursor:pointer;margin-left:8px"><input type="radio" name="dailyMode" value="person" '+(state._dailyMode==='person'?'checked':'')+' onchange="state._dailyMode=\'person\';renderDaily()"> 个人</label>';
+  toggleHtml+='<label style="font-size:12px;color:var(--ink-2);cursor:pointer"><input type="radio" name="dailyMode" value="total" '+(state._dailyMode==='total'?'checked':'')+' onchange="state._dailyMode=\'total\';renderDaily()"> 汇总</label>';
+  toggleHtml+='</div>';
+
+  if(state.dailyInspector && state.dailyInspector!=='全部') f=f.filter(r=>r.inspector===state.dailyInspector);
 
   const df=document.getElementById('fDailyFrom'), dt=document.getElementById('fDailyTo');
   if(df && dt){
-    if(!state.dailyFrom) state.dailyFrom=allDates[0]||'';
-    if(!state.dailyTo) state.dailyTo=allDates[allDates.length-1]||'';
-    df.value=state.dailyFrom; dt.value=state.dailyTo;
-    df.onchange=()=>{ state.dailyFrom=df.value; renderDaily(); };
-    dt.onchange=()=>{ state.dailyTo=dt.value; renderDaily(); };
+    if(!state.dailyFrom) state.dailyFrom=allDates[0]||''; if(!state.dailyTo) state.dailyTo=allDates[allDates.length-1]||'';
     f=f.filter(r=>r.date>=state.dailyFrom&&r.date<=state.dailyTo);
   }
 
-  // Build per-day totals across all inspectors
-  const dayMap={};
-  f.forEach(r=>{ const d=r.day; dayMap[d]=dayMap[d]||{day:d,total:0,count:0}; dayMap[d].total+=r.qty; dayMap[d].count++; });
-  const days=Object.keys(dayMap).map(Number).sort((a,b)=>a-b);
-  if(days.length===0){ document.getElementById('dailyChart').innerHTML='<div style=\"color:var(--muted);padding:20px;text-align:center\">暂无数据</div>'; return; }
+  const days=[...new Set(f.map(r=>r.day))].sort((a,b)=>a-b);
+  if(days.length===0){ document.getElementById('dailyChart').innerHTML=toggleHtml+'<div style="color:var(--muted);padding:20px;text-align:center">暂无数据</div>'; return; }
 
-  // Determine month: use state.dailyFrom to figure year/month
   const refDate=state.dailyFrom?new Date(state.dailyFrom+'-01'):new Date();
   const year=refDate.getFullYear(), month=refDate.getMonth()+1;
-  const firstDay=new Date(year,month-1,1).getDay(); // 0=Sun
+  const firstDay=new Date(year,month-1,1).getDay();
   const daysInMonth=new Date(year,month,0).getDate();
-  const maxVal=Math.max(1,...Object.values(dayMap).map(d=>d.total));
-  const label=state.dailyInspector&&state.dailyInspector!=='全部'?state.dailyInspector:'全部巡检员';
+  const W=['日','一','二','三','四','五','六'];
 
-  function cellStyle(v){
-    const p=v/maxVal;
-    if(v>=CFG.dailyTarget) return 'background:color-mix(in srgb,var(--good-ink) 25%,transparent);color:var(--good-ink);font-weight:700';
-    if(v>0) return 'background:color-mix(in srgb,var(--crit) '+(15+p*10)+'%,transparent);color:var(--crit);font-weight:600';
-    return 'background:var(--surface-1);color:var(--ink-3)';
+  function cellStyle(v,maxV){
+    if(v>=CFG.dailyTarget) return 'background:color-mix(in srgb,var(--good-ink) 30%,#fff);color:var(--good-ink);font-weight:700;border:1px solid color-mix(in srgb,var(--good-ink) 20%,transparent)';
+    if(v>0){ var p=v/maxV; return 'background:color-mix(in srgb,var(--crit) '+(8+p*15)+'%,transparent);color:var(--crit);font-weight:600;border:1px solid color-mix(in srgb,var(--crit) 15%,transparent)'; }
+    return 'background:var(--surface-1);color:var(--ink-3);border:1px solid var(--border)';
   }
 
-  var html='<div style="text-align:center;margin-bottom:10px"><b style="font-size:14px">'+year+'年'+month+'月</b> · '+label+' · 目标 '+CFG.dailyTarget+'台/日</div>';
-  html+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:12px">';
-  html+='<div style="font-weight:600;color:var(--ink-2);padding:4px">日</div><div style="font-weight:600;color:var(--ink-2);padding:4px">一</div><div style="font-weight:600;color:var(--ink-2);padding:4px">二</div><div style="font-weight:600;color:var(--ink-2);padding:4px">三</div><div style="font-weight:600;color:var(--ink-2);padding:4px">四</div><div style="font-weight:600;color:var(--ink-2);padding:4px">五</div><div style="font-weight:600;color:var(--ink-2);padding:4px">六</div>';
-  for(let i=0;i<firstDay;i++) html+='<div></div>';
-  for(let d=1;d<=daysInMonth;d++){
-    const data=dayMap[d];
-    const v=data?data.total:0;
-    const sty=cellStyle(v);
-    const dn=d<10?'0'+d:''+d;
-    html+='<div style="border-radius:6px;padding:6px 4px;min-height:42px;display:flex;flex-direction:column;justify-content:center;'+sty+'"><div style="font-size:11px;opacity:.6">'+dn+'</div><div style="font-size:13px">'+(v>0?v:'-')+'</div></div>';
+  if(state._dailyMode==='total'){
+    // ── 汇总视图 ──
+    const dayMap={}; f.forEach(r=>{ const d=r.day; dayMap[d]=dayMap[d]||{total:0}; dayMap[d].total+=r.qty; });
+    const maxV=Math.max(1,...Object.values(dayMap).map(d=>d.total));
+    var html=toggleHtml+'<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center;font-size:11px">';
+    W.forEach(w=>html+='<div style="font-weight:600;color:var(--ink-2);padding:4px 2px">'+w+'</div>');
+    for(let i=0;i<firstDay;i++) html+='<div></div>';
+    for(let d=1;d<=daysInMonth;d++){ const v=(dayMap[d]||{}).total||0; html+='<div style="border-radius:4px;padding:3px 2px;min-height:38px;display:flex;flex-direction:column;justify-content:center;'+cellStyle(v,maxV)+'"><div style="font-size:10px;opacity:.5">'+(d<10?'0'+d:d)+'</div><div style="font-size:14px">'+(v||'-')+'</div></div>'; }
+    html+='</div>';
+    document.getElementById('dailyChart').innerHTML=html;
+  } else {
+    // ── 个人视图：每人一个完整月历，纵向排列 ──
+    var weeks=[];
+    var cur=[];
+    for(var i=0;i<firstDay;i++) cur.push(-1);
+    for(var d=1;d<=daysInMonth;d++){ cur.push(d); if(cur.length===7){ weeks.push(cur); cur=[]; } }
+    if(cur.length>0){ while(cur.length<7) cur.push(-1); weeks.push(cur); }
+
+    var inspNames=allInspGlobal.filter(function(n){return f.some(function(r){return r.inspector===n;});});
+    var maxV=Math.max(1,...inspNames.map(function(n){return f.filter(function(r){return r.inspector===n&&r.day;}).reduce(function(s,r){return s+r.qty;},0);}));
+
+    var html=toggleHtml;
+    inspNames.forEach(function(name){
+      var nameLabel=name.length>6?name.slice(0,5)+'…':name;
+      html+='<div style="margin-bottom:8px;border:1px solid var(--border);border-radius:8px;padding:6px 8px;background:var(--surface-1)">';
+      html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><b style="font-size:12px">'+nameLabel+'</b>';
+      var monthTotal=f.filter(function(r){return r.inspector===name;}).reduce(function(s,r){return s+r.qty;},0);
+      html+='<span style="font-size:10px;color:var(--ink-2)">月合计 '+monthTotal+'台</span></div>';
+      // Weekday headers
+      html+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;text-align:center;font-size:9px;color:var(--ink-2);margin-bottom:2px">';
+      W.forEach(function(w){html+='<div>'+w+'</div>';});
+      html+='</div>';
+      // Calendar rows
+      weeks.forEach(function(wk){
+        html+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;text-align:center">';
+        wk.forEach(function(d){
+          if(d<0){ html+='<div style="padding:1px"></div>'; return; }
+          var total=0;
+          f.filter(function(r){return r.inspector===name&&r.day===d;}).forEach(function(r){total+=r.qty;});
+          var sty=(function(){var v=total;var mv=maxV;if(v>=CFG.dailyTarget)return'background:color-mix(in srgb,var(--good-ink) 28%,#fff);color:var(--good-ink);font-weight:700;border-radius:3px';if(v>0){var p=v/mv;return'background:color-mix(in srgb,var(--crit) '+(6+p*12)+'%,transparent);color:var(--crit);font-weight:600;border-radius:3px';}return'background:var(--surface-2);color:var(--ink-3);border-radius:3px';})();
+          html+='<div style="padding:2px 1px;'+sty+'" title="'+name+' '+d+'日: '+(total||0)+'台"><span style="font-size:8px;opacity:.5">'+(d<10?'0'+d:d)+'</span><br><span style="font-size:11px">'+(total||'·')+'</span></div>';
+        });
+        html+='</div>';
+      });
+      html+='</div>';
+    });
+    document.getElementById('dailyChart').innerHTML=html;
   }
-  html+='</div>';
-  // Summary
-  const totalQty=days.reduce((s,d)=>s+(dayMap[d]?dayMap[d].total:0),0);
-  const activeDays=days.filter(d=>(dayMap[d]||{}).total>0).length;
-  html+='<div style="margin-top:8px;display:flex;gap:16px;font-size:12px;color:var(--ink-2);justify-content:center"><span>月总台数: <b style="color:var(--ink)">'+totalQty+'</b></span><span>工作日: <b style="color:var(--ink)">'+activeDays+'</b>天</span><span>日均: <b style="color:var(--ink)">'+(activeDays>0?Math.round(totalQty/activeDays):0)+'</b>台</span></div>';
-  document.getElementById('dailyChart').innerHTML=html;
 }
 
 /* =========================================================
