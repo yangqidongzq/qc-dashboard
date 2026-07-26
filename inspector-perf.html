@@ -398,42 +398,43 @@ function renderDaily(){
     f=f.filter(r=>r.date>=state.dailyFrom&&r.date<=state.dailyTo);
   }
 
-  const days=[...new Set(f.map(r=>r.day))].sort((a,b)=>a-b);
-  const allInsp=[...new Set(f.map(r=>r.inspector))].sort();
-  const filteredInsp = allInsp;
+  // Build per-day totals across all inspectors
+  const dayMap={};
+  f.forEach(r=>{ const d=r.day; dayMap[d]=dayMap[d]||{day:d,total:0,count:0}; dayMap[d].total+=r.qty; dayMap[d].count++; });
+  const days=Object.keys(dayMap).map(Number).sort((a,b)=>a-b);
+  if(days.length===0){ document.getElementById('dailyChart').innerHTML='<div style=\"color:var(--muted);padding:20px;text-align:center\">暂无数据</div>'; return; }
 
-  const data={};
-  days.forEach(d=>{ data[d]={}; filteredInsp.forEach(n=>data[d][n]=0); });
-  f.forEach(r=>{ if(data[r.day] && data[r.day][r.inspector]!==undefined) data[r.day][r.inspector]=(data[r.day][r.inspector]||0)+r.qty; });
-  const dTotals={};
-  days.forEach(d=>{ dTotals[d]=filteredInsp.reduce((s,n)=>s+(data[d][n]||0),0); });
-  const iTotals={};
-  filteredInsp.forEach(n=>{ iTotals[n]=days.reduce((s,d)=>s+(data[d][n]||0),0); });
-  const inspOrder=filteredInsp.sort((a,b)=>iTotals[b]-iTotals[a]);
-  const maxVal=Math.max(1,...Object.values(iTotals),...Object.values(dTotals));
-  const heat=v=>{
+  // Determine month: use state.dailyFrom to figure year/month
+  const refDate=state.dailyFrom?new Date(state.dailyFrom+'-01'):new Date();
+  const year=refDate.getFullYear(), month=refDate.getMonth()+1;
+  const firstDay=new Date(year,month-1,1).getDay(); // 0=Sun
+  const daysInMonth=new Date(year,month,0).getDate();
+  const maxVal=Math.max(1,...Object.values(dayMap).map(d=>d.total));
+  const label=state.dailyInspector&&state.dailyInspector!=='全部'?state.dailyInspector:'全部巡检员';
+
+  function cellStyle(v){
     const p=v/maxVal;
-    return p>0.8?'color-mix(in srgb,var(--s1) 40%,transparent)':
-           p>0.5?'color-mix(in srgb,var(--s1) 22%,transparent)':
-           p>0.2?'color-mix(in srgb,var(--s1) 10%,transparent)':'transparent';
-  };
+    if(v>=CFG.dailyTarget) return 'background:color-mix(in srgb,var(--good-ink) 25%,transparent);color:var(--good-ink);font-weight:700';
+    if(v>0) return 'background:color-mix(in srgb,var(--crit) '+(15+p*10)+'%,transparent);color:var(--crit);font-weight:600';
+    return 'background:var(--surface-1);color:var(--ink-3)';
+  }
 
-  let html='<div class="tablewrap scroll" style="max-height:400px"><table style="font-size:12px"><thead><tr><th>巡检人员</th>';
-  days.forEach(d=>html+='<th class="num">'+d+'日</th>');
-  html+='<th class="num">合计</th></tr></thead><tbody>';
-  inspOrder.forEach(n=>{
-    html+='<tr><td style="font-weight:600">'+n+'</td>';
-    days.forEach(d=>{
-      const v=data[d][n]||0;
-      const color=v>=CFG.dailyTarget?'var(--good-ink)':v>0?'var(--crit)':'var(--muted)';
-      html+='<td class="num tnum" style="background:'+heat(v)+';color:'+color+';font-weight:'+(v>0?'600':'400')+'">'+(v>0?v:'<span style="font-size:13px;font-weight:600;color:var(--ink-2)">休</span>')+'</td>';
-    });
-    html+='<td class="num tnum" style="font-weight:600;background:var(--surface-1)">'+iTotals[n]+'</td></tr>';
-  });
-  html+='<tr style="border-top:2px solid var(--ink)"><td style="font-weight:700">合计</td>';
-  days.forEach(d=>html+='<td class="num tnum" style="font-weight:600;color:var(--ink)">'+dTotals[d]+'</td>');
-  html+='<td class="num tnum" style="font-weight:700;color:var(--s1)">'+f.filter(r=>filteredInsp.includes(r.inspector)).length+'</td></tr>';
-  html+='</tbody></table></div>';
+  var html='<div style="text-align:center;margin-bottom:10px"><b style="font-size:14px">'+year+'年'+month+'月</b> · '+label+' · 目标 '+CFG.dailyTarget+'台/日</div>';
+  html+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:12px">';
+  html+='<div style="font-weight:600;color:var(--ink-2);padding:4px">日</div><div style="font-weight:600;color:var(--ink-2);padding:4px">一</div><div style="font-weight:600;color:var(--ink-2);padding:4px">二</div><div style="font-weight:600;color:var(--ink-2);padding:4px">三</div><div style="font-weight:600;color:var(--ink-2);padding:4px">四</div><div style="font-weight:600;color:var(--ink-2);padding:4px">五</div><div style="font-weight:600;color:var(--ink-2);padding:4px">六</div>';
+  for(let i=0;i<firstDay;i++) html+='<div></div>';
+  for(let d=1;d<=daysInMonth;d++){
+    const data=dayMap[d];
+    const v=data?data.total:0;
+    const sty=cellStyle(v);
+    const dn=d<10?'0'+d:''+d;
+    html+='<div style="border-radius:6px;padding:6px 4px;min-height:42px;display:flex;flex-direction:column;justify-content:center;'+sty+'"><div style="font-size:11px;opacity:.6">'+dn+'</div><div style="font-size:13px">'+(v>0?v:'-')+'</div></div>';
+  }
+  html+='</div>';
+  // Summary
+  const totalQty=days.reduce((s,d)=>s+(dayMap[d]?dayMap[d].total:0),0);
+  const activeDays=days.filter(d=>(dayMap[d]||{}).total>0).length;
+  html+='<div style="margin-top:8px;display:flex;gap:16px;font-size:12px;color:var(--ink-2);justify-content:center"><span>月总台数: <b style="color:var(--ink)">'+totalQty+'</b></span><span>工作日: <b style="color:var(--ink)">'+activeDays+'</b>天</span><span>日均: <b style="color:var(--ink)">'+(activeDays>0?Math.round(totalQty/activeDays):0)+'</b>台</span></div>';
   document.getElementById('dailyChart').innerHTML=html;
 }
 
