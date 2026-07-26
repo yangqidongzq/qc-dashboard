@@ -376,15 +376,13 @@ function renderDaily(){
   const allDates=[...new Set(RECORDS.map(r=>r.date))].sort();
   if(!state._dailyMode) state._dailyMode='person';
 
-  const selInsp=document.getElementById('fDailyInspector');
-  // Toggle between 汇总/个人
   var toggleHtml='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">';
   toggleHtml+='<span style="color:var(--muted);font-size:12px">巡检人员：</span>';
   toggleHtml+='<select id="fDailyInspector" style="border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:12px;background:var(--surface-1);color:var(--ink)">';
   toggleHtml+=['全部',...allInspGlobal].map(n=>'<option '+(state.dailyInspector===n?'selected':'')+'>'+n+'</option>').join('');
   toggleHtml+='</select>';
-  toggleHtml+='<label style="font-size:12px;color:var(--ink-2);cursor:pointer;margin-left:8px"><input type="radio" name="dailyMode" value="person" '+(state._dailyMode==='person'?'checked':'')+' onchange="state._dailyMode=\'person\';renderDaily()"> 个人</label>';
-  toggleHtml+='<label style="font-size:12px;color:var(--ink-2);cursor:pointer"><input type="radio" name="dailyMode" value="total" '+(state._dailyMode==='total'?'checked':'')+' onchange="state._dailyMode=\'total\';renderDaily()"> 汇总</label>';
+  toggleHtml+='<label style="font-size:12px;color:var(--ink-2);cursor:pointer;margin-left:8px"><input type="radio" name="dailyMode" value="person" '+(state._dailyMode==='person'?'checked':'')+' onchange="state._dailyMode='person';renderDaily()"> 个人</label>';
+  toggleHtml+='<label style="font-size:12px;color:var(--ink-2);cursor:pointer"><input type="radio" name="dailyMode" value="total" '+(state._dailyMode==='total'?'checked':'')+' onchange="state._dailyMode='total';renderDaily()"> 汇总</label>';
   toggleHtml+='</div>';
 
   if(state.dailyInspector && state.dailyInspector!=='全部') f=f.filter(r=>r.inspector===state.dailyInspector);
@@ -404,63 +402,57 @@ function renderDaily(){
   const daysInMonth=new Date(year,month,0).getDate();
   const W=['日','一','二','三','四','五','六'];
 
+  var weeks=[], cur=[];
+  for(var i=0;i<firstDay;i++) cur.push(-1);
+  for(var d=1;d<=daysInMonth;d++){ cur.push(d); if(cur.length===7){ weeks.push(cur); cur=[]; } }
+  if(cur.length>0){ while(cur.length<7) cur.push(-1); weeks.push(cur); }
+
   function cellStyle(v,maxV){
-    if(v>=CFG.dailyTarget) return 'background:color-mix(in srgb,var(--good-ink) 30%,#fff);color:var(--good-ink);font-weight:700;border:1px solid color-mix(in srgb,var(--good-ink) 20%,transparent)';
-    if(v>0){ var p=v/maxV; return 'background:color-mix(in srgb,var(--crit) '+(8+p*15)+'%,transparent);color:var(--crit);font-weight:600;border:1px solid color-mix(in srgb,var(--crit) 15%,transparent)'; }
-    return 'background:var(--surface-1);color:var(--ink-3);border:1px solid var(--border)';
+    if(v>=CFG.dailyTarget) return 'background:#d4edda;color:#155724;font-weight:700';
+    if(v>0){ var p=Math.min(v/maxV,1); return 'background:rgba(220,53,69,'+(0.06+p*0.18)+');color:#721c24;font-weight:600'; }
+    return 'background:#f0f0f0;color:#aaa';
   }
 
   if(state._dailyMode==='total'){
-    // ── 汇总视图 ──
-    const dayMap={}; f.forEach(r=>{ const d=r.day; dayMap[d]=dayMap[d]||{total:0}; dayMap[d].total+=r.qty; });
-    const maxV=Math.max(1,...Object.values(dayMap).map(d=>d.total));
+    var dayMap={}; f.forEach(r=>{ const d=r.day; dayMap[d]=dayMap[d]||{total:0}; dayMap[d].total+=r.qty; });
+    var maxV=Math.max(1,...Object.values(dayMap).map(d=>d.total));
     var html=toggleHtml+'<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center;font-size:11px">';
-    W.forEach(w=>html+='<div style="font-weight:600;color:var(--ink-2);padding:4px 2px">'+w+'</div>');
-    for(let i=0;i<firstDay;i++) html+='<div></div>';
-    for(let d=1;d<=daysInMonth;d++){ const v=(dayMap[d]||{}).total||0; html+='<div style="border-radius:4px;padding:3px 2px;min-height:38px;display:flex;flex-direction:column;justify-content:center;'+cellStyle(v,maxV)+'"><div style="font-size:10px;opacity:.5">'+(d<10?'0'+d:d)+'</div><div style="font-size:14px">'+(v||'-')+'</div></div>'; }
+    W.forEach(w=>html+='<div style="font-weight:600;color:var(--ink-2);padding:2px">'+w+'</div>');
+    for(var i=0;i<firstDay;i++) html+='<div></div>';
+    for(var d=1;d<=daysInMonth;d++){ var v=(dayMap[d]||{}).total||0; html+='<div style="border-radius:4px;padding:3px 2px;min-height:34px;display:flex;flex-direction:column;justify-content:center;'+cellStyle(v,maxV)+'"><span style="font-size:10px;opacity:.4">'+(d<10?'0'+d:d)+'</span><span style="font-size:15px">'+(v||'-')+'</span></div>'; }
     html+='</div>';
     document.getElementById('dailyChart').innerHTML=html;
   } else {
-    // ── 个人视图：每人一个完整月历，纵向排列 ──
-    var weeks=[];
-    var cur=[];
-    for(var i=0;i<firstDay;i++) cur.push(-1);
-    for(var d=1;d<=daysInMonth;d++){ cur.push(d); if(cur.length===7){ weeks.push(cur); cur=[]; } }
-    if(cur.length>0){ while(cur.length<7) cur.push(-1); weeks.push(cur); }
-
-    var inspNames=allInspGlobal.filter(function(n){return f.some(function(r){return r.inspector===n;});});
-    var maxV=Math.max(1,...inspNames.map(function(n){return f.filter(function(r){return r.inspector===n&&r.day;}).reduce(function(s,r){return s+r.qty;},0);}));
+    // Compact table: one row per inspector
+    var inspNames=allInspGlobal.filter(n=>f.some(r=>r.inspector===n));
+    var countMap={}; inspNames.forEach(n=>{countMap[n]={};});
+    f.forEach(r=>{if(countMap[r.inspector]) countMap[r.inspector][r.day]=(countMap[r.inspector][r.day]||0)+r.qty;});
+    var maxV=Math.max(1,...inspNames.map(n=>Object.values(countMap[n]).reduce((s,v)=>s+v,0)));
 
     var html=toggleHtml;
-    inspNames.forEach(function(name){
-      var nameLabel=name.length>6?name.slice(0,5)+'…':name;
-      html+='<div style="margin-bottom:8px;border:1px solid var(--border);border-radius:8px;padding:6px 8px;background:var(--surface-1)">';
-      html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><b style="font-size:12px">'+nameLabel+'</b>';
-      var monthTotal=f.filter(function(r){return r.inspector===name;}).reduce(function(s,r){return s+r.qty;},0);
-      html+='<span style="font-size:10px;color:var(--ink-2)">月合计 '+monthTotal+'台</span></div>';
-      // Weekday headers
-      html+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;text-align:center;font-size:9px;color:var(--ink-2);margin-bottom:2px">';
-      W.forEach(function(w){html+='<div>'+w+'</div>';});
-      html+='</div>';
-      // Calendar rows
-      weeks.forEach(function(wk){
-        html+='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:1px;text-align:center">';
-        wk.forEach(function(d){
-          if(d<0){ html+='<div style="padding:1px"></div>'; return; }
-          var total=0;
-          f.filter(function(r){return r.inspector===name&&r.day===d;}).forEach(function(r){total+=r.qty;});
-          var sty=(function(){var v=total;var mv=maxV;if(v>=CFG.dailyTarget)return'background:color-mix(in srgb,var(--good-ink) 28%,#fff);color:var(--good-ink);font-weight:700;border-radius:3px';if(v>0){var p=v/mv;return'background:color-mix(in srgb,var(--crit) '+(6+p*12)+'%,transparent);color:var(--crit);font-weight:600;border-radius:3px';}return'background:var(--surface-2);color:var(--ink-3);border-radius:3px';})();
-          html+='<div style="padding:2px 1px;'+sty+'" title="'+name+' '+d+'日: '+(total||0)+'台"><span style="font-size:8px;opacity:.5">'+(d<10?'0'+d:d)+'</span><br><span style="font-size:11px">'+(total||'·')+'</span></div>';
-        });
-        html+='</div>';
-      });
+    html+='<div style="display:grid;grid-template-columns:45px repeat(7,1fr);gap:1px;text-align:center;font-size:9px;color:var(--ink-2);margin-bottom:2px"><span></span>'+W.map(w=>'<span>'+w+'</span>').join('')+'</div>';
+
+    inspNames.forEach(name=>{
+      var cm=countMap[name], mt=Object.values(cm).reduce((s,v)=>s+v,0);
+      var label=name.length>4?name.slice(0,3)+'.':name;
+      html+='<div style="display:grid;grid-template-columns:45px repeat(7,1fr);gap:1px;text-align:center;font-size:10px;line-height:1.4;margin-bottom:1px">';
+      html+='<span style="font-size:9px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+name+' '+mt+'台">'+label+'</span>';
+      weeks.forEach(wk=>wk.forEach(d=>{
+        if(d<0){html+='<span></span>';return;}
+        var v=cm[d]||0, sty=cellStyle(v,maxV);
+        html+='<span style="border-radius:2px;'+sty+'" title="'+name+' '+d+'日">'+(v||'·')+'</span>';
+      }));
       html+='</div>';
     });
+
+    // Total row
+    html+='<div style="display:grid;grid-template-columns:45px repeat(7,1fr);gap:1px;text-align:center;font-size:10px;line-height:1.4;border-top:1px solid var(--border);padding-top:2px;margin-top:2px">';
+    html+='<span style="font-weight:700;font-size:9px">合计</span>';
+    weeks.forEach(wk=>wk.forEach(d=>{if(d<0){html+='<span></span>';return;}var t=0;inspNames.forEach(n=>t+=(countMap[n][d]||0));html+='<span style="font-weight:700">'+(t||'·')+'</span>';}));
+    html+='</div>';
     document.getElementById('dailyChart').innerHTML=html;
   }
-}
-
-/* =========================================================
+}/* =========================================================
    6. 渲染：质检差异发现率
    ========================================================= */
 function renderSourceCompare(){
