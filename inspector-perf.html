@@ -143,7 +143,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
   <div class="grid">
 
     <div class="card">
-      <h3>📅 日产能达成明细 <span class="hint">个人模式 · 达标绿色 · 未达标红色 · 无数据灰色</span></h3>
+      <h3>📅 人员产能明细 <span class="hint">按区域排序 · 目标100台/人/日 · 问题收集 目标3条/人/月</span></h3>
       <div id="dailyChart"></div>
     </div>
 
@@ -186,7 +186,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
 
   </div>
 
-  <div class="foot">巡检人员效能看板 · 数据源同质检主看板（qc-data.js）· 聚焦 KPI / 单日明细 / 个人差异率</div>
+  <div class="foot">巡检人员效能看板 · 数据源同巡检质控看板 · 聚焦 KPI / 人员产能 / 问题收集</div>
 </div>
 
 <script src="qc-data.js?v=20260727"></script>
@@ -631,112 +631,7 @@ function renderProblem(){
 
 /* =========================================================
    8. 渲染：人员达成分析（四区域双列卡片）
-   ========================================================= */
-function renderPersonAnalysis(){
-  var MONTH_DAYS=26, DAILY_TARGET=100, PROBLEM_TARGET=3;
-  var REGION_LEAD={华东:'旷小波',华南:'杨启栋',华西:'苏凯',华北:'赵子龙'};
-  var f=getFiltered();
-  var dayList=[],i;for(i=0;i<f.length;i++){var d=f[i].day;if(dayList.indexOf(d)<0)dayList.push(d);}
-  dayList.sort(function(a,b){return a-b;});
-  var maxDay=dayList[dayList.length-1]||0;
-  var map={};for(i=0;i<f.length;i++){var r=f[i];var m=map[r.inspector]||(map[r.inspector]={region:r.region,qty:0,diff:0,daysE:{},daily:[],dailyDiff:[]});m.qty+=r.qty;m.diff+=r.qtyDiff;m.daysE[r.day]=1;m.daily[r.day]=(m.daily[r.day]||0)+r.qty;m.dailyDiff[r.day]=(m.dailyDiff[r.day]||0)+r.qtyDiff;}
-  // 生成sparkline趋势图（最近14天的日均达成率折线）
-  function sparkline(dailyArr,maxVal,width,height,color){
-    var w=width||80,h=height||24,c=color||'var(--s1)';
-    var last14=[];for(var d2=1;d2<=maxDay;d2++)last14.push(dailyArr[d2]||0);
-    if(last14.length<2) return '<span style=\"font-size:12px;color:var(--muted)\">数据不足</span>';
-    var max=Math.max.apply(null,last14)||1, min=Math.min.apply(null,last14.filter(function(v){return v>0;}))||0;
-    if(min===max) max=min+10;
-    var points='', stepX=w/(last14.length-1);
-    for(var pi=0;pi<last14.length;pi++){
-      var x=pi*stepX, y=h-((last14[pi]-min)/(max-min)*(h-4)+2);
-      if(last14[pi]===0) y=h-2;
-      points+=(pi===0?'M':'L')+x.toFixed(0)+','+y.toFixed(0)+' ';
-    }
-    return '<svg width=\"'+w+'\" height=\"'+h+'\" style=\"display:block;margin-top:2px\"><rect width=\"'+w+'\" height=\"'+h+'\" fill=\"none\" stroke=\"var(--grid)\" stroke-width=\"0.5\"/><line x1=\"0\" y1=\"'+(h-2)+'\" x2=\"'+w+'\" y2=\"'+(h-2)+'\" stroke=\"var(--muted)\" stroke-width=\"0.5\" stroke-dasharray=\"2,2\"/><path d=\"'+points+'\" fill=\"none\" stroke=\"'+c+'\" stroke-width=\"1.5\"/></svg>';
-  }
-  // 区域改善建议汇总
-  function regionAdvice(ppl){
-    var issues=[];
-    var lowQty=ppl.filter(function(p){return p.compQty<85;}).length;
-    var lowProb=ppl.filter(function(p){return p.pc.p<3;}).length;
-    if(lowQty>0) issues.push(lowQty+'人日产能不足，建议优先补量');
-    if(lowProb>0) issues.push(lowProb+'人问题收集未达标，可集中提报');
-    if(issues.length===0) issues.push('全员产能达标，保持当前节奏');
-    return '💡 '+issues.join(' · ');
-  }
-  var probMap={};
-  if(typeof PROBLEM_RECORDS!=='undefined'){
-    var pm=state.problemMonth||'2026-07';
-    for(i=0;i<PROBLEM_RECORDS.length;i++){var pr=PROBLEM_RECORDS[i];if(pr.date.slice(0,7)===pm){var pm2=probMap[pr.inspector]||(probMap[pr.inspector]={c:0,p:0});pm2.c++;if(pr.adjusted==='是')pm2.p++;}}
-  }
-  var people=[];
-  for(var name in map){
-    var v=map[name];var d2=Object.keys(v.daysE).length;var totalQty=v.qty;
-    var avg=d2>0?Math.round(totalQty/d2):0;var compQty=pct(avg,DAILY_TARGET);
-    var rate=pct(v.diff,totalQty);var monthTarget=MONTH_DAYS*DAILY_TARGET;var monthComp=pct(totalQty,monthTarget);
-    var last3=[],prev3=[];for(i=0;i<f.length;i++){var r2=f[i];if(r2.inspector===name){if(r2.day>maxDay-3)last3.push(r2);if(r2.day>maxDay-6&&r2.day<=maxDay-3)prev3.push(r2);}}
-    var l3d=uniq(last3,function(x){return x.day;});var p3d=uniq(prev3,function(x){return x.day;});
-    var last3Avg=l3d>0?Math.round(sum(last3,function(x){return x.qty;})/l3d):0;
-    var prev3Avg=p3d>0?Math.round(sum(prev3,function(x){return x.qty;})/p3d):0;
-    var trend=last3Avg>prev3Avg?1:last3Avg<prev3Avg?-1:0;
-    var pc=probMap[name]||{c:0,p:0};var probComp=pc.p>=PROBLEM_TARGET?'已完成':'差'+(PROBLEM_TARGET-pc.p)+'条';
-    // 差异率高=差异识别充分，差异率低=可能差异发现不足
-    // 改善建议聚焦产能达成与问题收集
-    var advice='';if(avg>=DAILY_TARGET&&pc.p>=PROBLEM_TARGET)advice='标杆，保持节奏并带动团队';else if(avg>=DAILY_TARGET)advice='产能达标，集中完成问题收集('+(PROBLEM_TARGET-pc.p)+'条)即可冲刺标杆';else if(avg>=85&&pc.p>=PROBLEM_TARGET)advice='问题收集已完成，冲刺日均'+DAILY_TARGET+'台即达标';else if(avg>=85)advice='日提'+(DAILY_TARGET-avg)+'台+补充'+(PROBLEM_TARGET-pc.p)+'条问题收集';else if(avg<85&&pc.p>=PROBLEM_TARGET)advice='专注提量，缺口'+(DAILY_TARGET-avg)+'台/日，建议拆分上下午分段达成';else advice='优先提量至85台+同步完成问题收集，主管跟进';
-    if(trend>0)advice+=' [↑]';else if(trend<0)advice+=' [↓]';
-    people.push({name:name,region:v.region,days:d2,avg:avg,totalQty:totalQty,compQty:compQty,rate:rate,monthComp:monthComp,trend:trend,pc:pc,probComp:probComp,advice:advice});
-  }
-  people.sort(function(a,b){return a.compQty-b.compQty;});
-  if(!people.length){document.getElementById('personAnalysis').innerHTML='<div style="color:var(--muted);padding:16px">暂无数据</div>';return;}
-  var byReg={};for(i=0;i<people.length;i++){var p3=people[i];var reg=p3.region;(byReg[reg]=byReg[reg]||[]).push(p3);}
-  var cc=function(c){return c>=100?'var(--good-ink)':c>=85?'var(--ink)':'var(--crit)';};
-  // 差异率高=差异识别充分(绿)，差异率低=可能差异发现不足(红)
-  var rc=function(r){return r>10?'var(--good-ink)':r>5?'var(--warn)':'var(--crit)';};
-
-  // ===== 四区域双列卡片 =====
-  function buildRegionCards(reg){
-    var ppl=byReg[reg]; if(!ppl||!ppl.length) return '';
-    var ld=REGION_LEAD[reg];
-    var rc2=cssv(REGION_COLOR[reg]||'--muted');
-    var cardsHtml='';
-    for(var pi=0;pi<ppl.length;pi++){
-      var p5=ppl[pi];
-      var bg,badge,action;
-      // 标签与建议聚焦产能+问题收集
-      if(p5.compQty>=100&&p5.pc.p>=3){bg='color-mix(in srgb,var(--good) 8%,transparent)';badge='<span style="background:var(--good);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">标杆</span>';action='保持节奏，带动团队';}
-      else if(p5.compQty>=100){bg='color-mix(in srgb,var(--good) 8%,transparent)';badge='<span style="background:var(--good);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">产能达标</span>';action='集中完成问题收集('+(3-p5.pc.p)+'条)即可冲标杆';}
-      else if(p5.compQty>=85&&p5.pc.p>=3){bg='color-mix(in srgb,var(--s1) 6%,transparent)';badge='<span style="background:var(--s1);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">接近达标</span>';action='日提'+(DAILY_TARGET-p5.avg)+'台，问题收集已完成';}
-      else if(p5.compQty>=85){bg='color-mix(in srgb,var(--s1) 6%,transparent)';badge='<span style="background:var(--s1);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">接近达标</span>';action='日提'+(DAILY_TARGET-p5.avg)+'台+补充'+(3-p5.pc.p)+'条问题';}
-      else if(p5.pc.p>=3){bg='color-mix(in srgb,var(--warn) 8%,transparent)';badge='<span style="background:var(--warn);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">产能不足</span>';action='缺口'+(DAILY_TARGET-p5.avg)+'台/日，建议拆分上下午分段达成';}
-      else {bg='color-mix(in srgb,var(--crit) 8%,transparent)';badge='<span style="background:var(--crit);color:#fff;padding:1px 8px;border-radius:4px;font-size:11px">重点帮扶</span>';action=ld+'跟进：提量至85台+完成问题收集';}
-      var probDone=p5.pc.p||0, probTarget=3, probPct=Math.min(100,(probDone/probTarget*100));
-      var probBar='<div style=\"display:flex;align-items:center;gap:6px;font-size:11px\"><span style=\"color:var(--muted);white-space:nowrap\">问题</span><div style=\"flex:1;height:8px;background:var(--track);border-radius:4px;overflow:hidden;max-width:60px\"><div style=\"width:'+probPct+'%;height:100%;background:'+(probPct>=100?'var(--good)':probPct>0?'var(--warn)':'var(--crit)')+';border-radius:4px\"></div></div><b style=\"color:'+(probPct>=100?'var(--good-ink)':probPct>0?'var(--ink-2)':'var(--crit)')+';\">'+probDone+'/'+probTarget+'</b></div>';
-      var trendIcon=p5.trend>0?' ↑':p5.trend<0?' ↓':' →';
-      cardsHtml+='<div style="background:'+bg+';border-radius:10px;padding:14px 16px;border-left:3px solid '+(p5.compQty>=100?'var(--good)':p5.compQty>=85?'var(--s1)':'var(--crit)')+'">'+
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-weight:600;font-size:14px">'+(p5.name===ld?'👑 ':'')+p5.name+'</span>'+badge+'</div>'+
-        '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:12px;margin-bottom:6px">'+
-        '<div><span style="color:var(--muted)">日均</span> <b style="color:'+cc(p5.compQty)+'">'+p5.avg+'台</b></div>'+
-        '<div><span style="color:var(--muted)">差异率</span> <b style="color:'+rc(p5.rate)+'">'+p5.rate.toFixed(1)+'%</b></div>'+
-        '<div><span style="color:var(--muted)">月达成</span> <b style="color:'+cc(p5.monthComp)+'">'+p5.monthComp.toFixed(0)+'%</b></div>'+
-        '<div><span style="color:var(--muted)">趋势</span>'+sparkline(v.daily,DAILY_TARGET,60,22,p5.compQty>=85?'var(--s1)':'var(--crit)')+'</div></div>'+
-        '<div style="display:flex;align-items:center;gap:10px;font-size:12px;margin-bottom:4px">'+probBar+'<span style="color:var(--muted);font-size:11px">出勤'+p5.days+'天 · 合计'+p5.totalQty+'台</span></div>'+
-        '<div style="font-size:11px;background:var(--card);padding:5px 10px;border-radius:6px"><b>建议：</b>'+action+'</div></div>';
-    }
-    return '<div style="margin-bottom:16px">'+
-      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-weight:700;font-size:14px;color:var(--s5)">'+
-      '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+rc2+'"></span>'+reg+'区域 · 负责人：'+ld+' · '+ppl.length+'人</div>'+
-      '<div style="font-size:11px;color:var(--ink-2);margin-bottom:8px;padding:4px 8px;background:var(--surface-1);border-radius:6px">📊 '+regionAdvice(ppl)+'</div>'+
-      '<div style="display:flex;flex-direction:column;gap:10px">'+cardsHtml+'</div></div>';
-  }
-
-  var leftCol=buildRegionCards('华东')+buildRegionCards('华南');
-  var rightCol=buildRegionCards('华西')+buildRegionCards('华北');
-  var cards='<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px"><div>'+leftCol+'</div><div>'+rightCol+'</div></div>';
-  document.getElementById('personAnalysis').innerHTML=cards;
-}
-
-/* =========================================================
+   ========================================================= *//* =========================================================
    9. 筛选控件
    ========================================================= */
 function buildControls(){
