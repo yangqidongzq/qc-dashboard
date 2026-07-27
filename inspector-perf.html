@@ -376,10 +376,12 @@ function renderDaily(){
 
   var allInsp=[...new Set(RECORDS.map(r=>r.inspector))].sort();
   var names=allInsp.filter(n=>f.some(r=>r.inspector===n));
+  // 只统计当月问题收集（与renderProblem一致）
+  var problemMonth = state.problemMonth || '2026-07';
   var problemMap={};
   if(typeof PROBLEM_RECORDS!=='undefined' && PROBLEM_RECORDS.length){
     PROBLEM_RECORDS.forEach(function(r){
-      if(r.adjusted==='是'){
+      if(r.date.slice(0,7)===problemMonth && r.adjusted==='是'){
         problemMap[r.inspector]=(problemMap[r.inspector]||0)+1;
       }
     });
@@ -425,7 +427,7 @@ function renderDaily(){
     '<th style="text-align:right;padding:6px 10px">出勤天</th>'+
     '<th style="text-align:right;padding:6px 10px">日均</th>'+
     '<th style="text-align:right;padding:6px 10px">达成率</th>'+
-    '<th style="text-align:right;padding:6px 10px">问题收集</th>'+
+    '<th style="text-align:right;padding:6px 10px">问题收集('+problemMonth+')</th>'+
     '</tr></thead><tbody>'+rows.join('')+
     '<tr style="border-top:2px solid var(--axis);font-weight:700;background:var(--track)">'+
     '<td style="padding:6px 10px">合计 · '+stats.length+'人</td><td></td>'+
