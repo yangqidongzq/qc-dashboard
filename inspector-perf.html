@@ -376,18 +376,25 @@ function renderDaily(){
 
   var allInsp=[...new Set(RECORDS.map(r=>r.inspector))].sort();
   var names=allInsp.filter(n=>f.some(r=>r.inspector===n));
+  var problemMap={};
+  if(typeof PROBLEM_RECORDS!=='undefined' && PROBLEM_RECORDS.length){
+    PROBLEM_RECORDS.forEach(function(r){
+      if(r.adjusted==='是'){
+        problemMap[r.inspector]=(problemMap[r.inspector]||0)+1;
+      }
+    });
+  }
   var stats=names.map(function(name){
     var rf=f.filter(r=>r.inspector===name);
     var total=rf.reduce((s,r)=>s+r.qty,0);
     var days={}; rf.forEach(r=>{days[r.day]=1;});
     var daysCount=Object.keys(days).length;
     var avg=daysCount>0?Math.round(total/daysCount):0;
-    var diff=rf.reduce((s,r)=>s+r.qtyDiff,0);
-    return {name:name,total:total,days:daysCount,avg:avg,comp:avg/CFG.dailyTarget*100,diff:diff,diffRate:total>0?(diff/total*100):0,region:rf[0].region};
+    return {name:name,total:total,days:daysCount,avg:avg,comp:avg/CFG.dailyTarget*100,region:rf[0].region,problems:problemMap[name]||0};
   }).sort((a,b)=>b.total-a.total);
 
   var cc=function(c){return c>=100?"var(--good-ink)":c>=85?"var(--ink)":"var(--crit)";};
-  var dr=function(r){return r>10?"var(--good-ink)":r>5?"var(--warn)":"var(--crit)";};
+  var pc=function(p){return p>=3?"var(--good-ink)":p>0?"var(--warn)":"var(--crit)";};
   var bar=function(p){var w=Math.min(100,p);var bg=p>=100?"var(--good)":p>=85?"var(--s1)":"var(--crit)";return '<span style="display:inline-block;width:50px;height:6px;background:var(--track);border-radius:3px;vertical-align:middle;margin-right:4px"><span style="display:block;width:'+w+'%;height:100%;background:'+bg+';border-radius:3px"></span></span>';};
   var tdR='style="text-align:right;padding:5px 10px"';
 
@@ -400,7 +407,7 @@ function renderDaily(){
       '<td style="text-align:right;padding:5px 10px;color:var(--ink-2)">'+s.days+'</td>'+
       '<td '+tdR+';font-weight:600">'+s.avg+'</td>'+
       '<td '+tdR+';font-weight:600;color:'+cc(s.comp)+'">'+bar(s.comp)+s.comp.toFixed(0)+'%</td>'+
-      '<td '+tdR+';font-weight:600;color:'+dr(s.diffRate)+'">'+s.diffRate.toFixed(1)+'% <span style="font-size:10px;color:var(--muted)">('+s.diff+')</span></td>'+
+      '<td '+tdR+';font-weight:600;color:'+pc(s.problems)+'">'+s.problems+'<span style="font-size:10px;color:var(--muted)">/3</span></td>'+
       '</tr>';
   });
 
@@ -408,8 +415,7 @@ function renderDaily(){
   var uniqDays=[...new Set(f.map(r=>r.inspector+"|"+r.day))].length;
   var tAvg=uniqDays>0?Math.round(tQty/uniqDays):0;
   var tComp=tAvg/CFG.dailyTarget*100;
-  var tDiff=stats.reduce((s,x)=>s+x.diff,0);
-  var tDr=tQty>0?(tDiff/tQty*100):0;
+  var tProblems=stats.reduce((s,x)=>s+x.problems,0);
 
   var h='<table style="width:100%;border-collapse:collapse;font-size:13px">'+
     '<thead><tr style="background:var(--track)">'+
@@ -419,7 +425,7 @@ function renderDaily(){
     '<th style="text-align:right;padding:6px 10px">出勤天</th>'+
     '<th style="text-align:right;padding:6px 10px">日均</th>'+
     '<th style="text-align:right;padding:6px 10px">达成率</th>'+
-    '<th style="text-align:right;padding:6px 10px">差异率</th>'+
+    '<th style="text-align:right;padding:6px 10px">问题收集</th>'+
     '</tr></thead><tbody>'+rows.join('')+
     '<tr style="border-top:2px solid var(--axis);font-weight:700;background:var(--track)">'+
     '<td style="padding:6px 10px">合计 · '+stats.length+'人</td><td></td>'+
@@ -427,12 +433,11 @@ function renderDaily(){
     '<td style="text-align:right;padding:6px 10px">'+uniqDays+'</td>'+
     '<td style="text-align:right;padding:6px 10px">'+tAvg+'</td>'+
     '<td style="text-align:right;padding:6px 10px;color:'+cc(tComp)+'">'+tComp.toFixed(0)+'%</td>'+
-    '<td style="text-align:right;padding:6px 10px;color:'+dr(tDr)+'">'+tDr.toFixed(1)+'%</td>'+
+    '<td style="text-align:right;padding:6px 10px;color:'+pc(tProblems)+'">'+tProblems+'<span style="font-size:10px;color:var(--muted)">/3人</span></td>'+
     '</tr></tbody></table>';
 
   document.getElementById("dailyChart").innerHTML=h;
-}
-/* =========================================================
+}/* =========================================================
    6. 渲染：质检差异发现率
    ========================================================= */
 function renderSourceCompare(){
