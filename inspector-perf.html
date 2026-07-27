@@ -371,90 +371,68 @@ function tile(l,v,u,d,good,bad){
    5. 渲染：每人单日明细
    ========================================================= */
 function renderDaily(){
-  let f=getFiltered();
-  const allInspGlobal=[...new Set(RECORDS.map(r=>r.inspector))].sort();
-  const allDates=[...new Set(RECORDS.map(r=>r.date))].sort();
-  if(!state._dailyMode) state._dailyMode='person';
+  var f=getFiltered();
+  if(!f.length){ document.getElementById("dailyChart").innerHTML='<div style="color:var(--muted);padding:16px;text-align:center">暂无数据</div>'; return; }
 
-  var toggleHtml='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">';
-  toggleHtml+='<span style="color:var(--muted);font-size:12px">巡检人员：</span>';
-  toggleHtml+='<select id="fDailyInspector" style="border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:12px;background:var(--surface-1);color:var(--ink)">';
-  toggleHtml+=['全部',...allInspGlobal].map(n=>'<option '+(state.dailyInspector===n?'selected':'')+'>'+n+'</option>').join('');
-  toggleHtml+='</select>';
-  var personChecked = state._dailyMode === 'person' ? 'checked' : '';
-  var totalChecked = state._dailyMode === 'total' ? 'checked' : '';
-  toggleHtml += '<label style="font-size:12px;color:var(--ink-2);cursor:pointer;margin-left:8px"><input type="radio" name="dailyMode" value="person" ' + personChecked + ' onchange="state._dailyMode=' + "'person'" + ';renderDaily()"> 个人</label>';
-  toggleHtml += '<label style="font-size:12px;color:var(--ink-2);cursor:pointer"><input type="radio" name="dailyMode" value="total" ' + totalChecked + ' onchange="state._dailyMode=' + "'total'" + ';renderDaily()"> 汇总</label>';
-  toggleHtml+='</div>';
+  var allInsp=[...new Set(RECORDS.map(r=>r.inspector))].sort();
+  var names=allInsp.filter(n=>f.some(r=>r.inspector===n));
+  var stats=names.map(function(name){
+    var rf=f.filter(r=>r.inspector===name);
+    var total=rf.reduce((s,r)=>s+r.qty,0);
+    var days={}; rf.forEach(r=>{days[r.day]=1;});
+    var daysCount=Object.keys(days).length;
+    var avg=daysCount>0?Math.round(total/daysCount):0;
+    var diff=rf.reduce((s,r)=>s+r.qtyDiff,0);
+    return {name:name,total:total,days:daysCount,avg:avg,comp:avg/CFG.dailyTarget*100,diff:diff,diffRate:total>0?(diff/total*100):0,region:rf[0].region};
+  }).sort((a,b)=>b.total-a.total);
 
-  if(state.dailyInspector && state.dailyInspector!=='全部') f=f.filter(r=>r.inspector===state.dailyInspector);
+  var cc=function(c){return c>=100?"var(--good-ink)":c>=85?"var(--ink)":"var(--crit)";};
+  var dr=function(r){return r>10?"var(--good-ink)":r>5?"var(--warn)":"var(--crit)";};
+  var bar=function(p){var w=Math.min(100,p);var bg=p>=100?"var(--good)":p>=85?"var(--s1)":"var(--crit)";return '<span style="display:inline-block;width:50px;height:6px;background:var(--track);border-radius:3px;vertical-align:middle;margin-right:4px"><span style="display:block;width:'+w+'%;height:100%;background:'+bg+';border-radius:3px"></span></span>';};
+  var tdR='style="text-align:right;padding:5px 10px"';
 
-  const df=document.getElementById('fDailyFrom'), dt=document.getElementById('fDailyTo');
-  if(df && dt){
-    if(!state.dailyFrom) state.dailyFrom=allDates[0]||''; if(!state.dailyTo) state.dailyTo=allDates[allDates.length-1]||'';
-    f=f.filter(r=>r.date>=state.dailyFrom&&r.date<=state.dailyTo);
-  }
+  var rows=stats.map(function(s,i){
+    var bg=i%2===0?"":"background:color-mix(in srgb,var(--surface-1) 50%,transparent);";
+    return '<tr style="'+bg+'">'+
+      '<td style="padding:5px 10px;font-weight:600">'+s.name+'</td>'+
+      '<td style="padding:5px 10px;color:var(--ink-2);font-size:12px">'+s.region+'</td>'+
+      '<td '+tdR+'>'+s.total+'</td>'+
+      '<td style="text-align:right;padding:5px 10px;color:var(--ink-2)">'+s.days+'</td>'+
+      '<td '+tdR+';font-weight:600">'+s.avg+'</td>'+
+      '<td '+tdR+';font-weight:600;color:'+cc(s.comp)+'">'+bar(s.comp)+s.comp.toFixed(0)+'%</td>'+
+      '<td '+tdR+';font-weight:600;color:'+dr(s.diffRate)+'">'+s.diffRate.toFixed(1)+'% <span style="font-size:10px;color:var(--muted)">('+s.diff+')</span></td>'+
+      '</tr>';
+  });
 
-  const days=[...new Set(f.map(r=>r.day))].sort((a,b)=>a-b);
-  if(days.length===0){ document.getElementById('dailyChart').innerHTML=toggleHtml+'<div style="color:var(--muted);padding:20px;text-align:center">暂无数据</div>'; return; }
+  var tQty=stats.reduce((s,x)=>s+x.total,0);
+  var uniqDays=[...new Set(f.map(r=>r.inspector+"|"+r.day))].length;
+  var tAvg=uniqDays>0?Math.round(tQty/uniqDays):0;
+  var tComp=tAvg/CFG.dailyTarget*100;
+  var tDiff=stats.reduce((s,x)=>s+x.diff,0);
+  var tDr=tQty>0?(tDiff/tQty*100):0;
 
-  const refDate=state.dailyFrom?new Date(state.dailyFrom+'-01'):new Date();
-  const year=refDate.getFullYear(), month=refDate.getMonth()+1;
-  const firstDay=new Date(year,month-1,1).getDay();
-  const daysInMonth=new Date(year,month,0).getDate();
-  const W=['日','一','二','三','四','五','六'];
+  var h='<table style="width:100%;border-collapse:collapse;font-size:13px">'+
+    '<thead><tr style="background:var(--track)">'+
+    '<th style="text-align:left;padding:6px 10px">巡检人员</th>'+
+    '<th style="text-align:left;padding:6px 10px">大区</th>'+
+    '<th style="text-align:right;padding:6px 10px">总台数</th>'+
+    '<th style="text-align:right;padding:6px 10px">出勤天</th>'+
+    '<th style="text-align:right;padding:6px 10px">日均</th>'+
+    '<th style="text-align:right;padding:6px 10px">达成率</th>'+
+    '<th style="text-align:right;padding:6px 10px">差异率</th>'+
+    '</tr></thead><tbody>'+rows.join('')+
+    '<tr style="border-top:2px solid var(--axis);font-weight:700;background:var(--track)">'+
+    '<td style="padding:6px 10px">合计 · '+stats.length+'人</td><td></td>'+
+    '<td style="text-align:right;padding:6px 10px">'+tQty+'</td>'+
+    '<td style="text-align:right;padding:6px 10px">'+uniqDays+'</td>'+
+    '<td style="text-align:right;padding:6px 10px">'+tAvg+'</td>'+
+    '<td style="text-align:right;padding:6px 10px;color:'+cc(tComp)+'">'+tComp.toFixed(0)+'%</td>'+
+    '<td style="text-align:right;padding:6px 10px;color:'+dr(tDr)+'">'+tDr.toFixed(1)+'%</td>'+
+    '</tr></tbody></table>';
 
-  var weeks=[], cur=[];
-  for(var i=0;i<firstDay;i++) cur.push(-1);
-  for(var d=1;d<=daysInMonth;d++){ cur.push(d); if(cur.length===7){ weeks.push(cur); cur=[]; } }
-  if(cur.length>0){ while(cur.length<7) cur.push(-1); weeks.push(cur); }
-
-  function cellStyle(v,maxV){
-    if(v>=CFG.dailyTarget) return 'background:#d4edda;color:#155724;font-weight:700';
-    if(v>0){ var p=Math.min(v/maxV,1); return 'background:rgba(220,53,69,'+(0.06+p*0.18)+');color:#721c24;font-weight:600'; }
-    return 'background:#f0f0f0;color:#aaa';
-  }
-
-  if(state._dailyMode==='total'){
-    var dayMap={}; f.forEach(r=>{ const d=r.day; dayMap[d]=dayMap[d]||{total:0}; dayMap[d].total+=r.qty; });
-    var maxV=Math.max(1,...Object.values(dayMap).map(d=>d.total));
-    var html=toggleHtml+'<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center;font-size:11px">';
-    W.forEach(w=>html+='<div style="font-weight:600;color:var(--ink-2);padding:2px">'+w+'</div>');
-    for(var i=0;i<firstDay;i++) html+='<div></div>';
-    for(var d=1;d<=daysInMonth;d++){ var v=(dayMap[d]||{}).total||0; html+='<div style="border-radius:4px;padding:3px 2px;min-height:34px;display:flex;flex-direction:column;justify-content:center;'+cellStyle(v,maxV)+'"><span style="font-size:10px;opacity:.4">'+(d<10?'0'+d:d)+'</span><span style="font-size:15px">'+(v||'-')+'</span></div>'; }
-    html+='</div>';
-    document.getElementById('dailyChart').innerHTML=html;
-  } else {
-    // Compact table: one row per inspector
-    var inspNames=allInspGlobal.filter(n=>f.some(r=>r.inspector===n));
-    var countMap={}; inspNames.forEach(n=>{countMap[n]={};});
-    f.forEach(r=>{if(countMap[r.inspector]) countMap[r.inspector][r.day]=(countMap[r.inspector][r.day]||0)+r.qty;});
-    var maxV=Math.max(1,...inspNames.map(n=>Object.values(countMap[n]).reduce((s,v)=>s+v,0)));
-
-    var html=toggleHtml;
-    html+='<div style="display:grid;grid-template-columns:45px repeat(7,1fr);gap:1px;text-align:center;font-size:9px;color:var(--ink-2);margin-bottom:2px"><span></span>'+W.map(w=>'<span>'+w+'</span>').join('')+'</div>';
-
-    inspNames.forEach(name=>{
-      var cm=countMap[name], mt=Object.values(cm).reduce((s,v)=>s+v,0);
-      var label=name.length>4?name.slice(0,3)+'.':name;
-      html+='<div style="display:grid;grid-template-columns:45px repeat(7,1fr);gap:1px;text-align:center;font-size:10px;line-height:1.4;margin-bottom:1px">';
-      html+='<span style="font-size:9px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+name+' '+mt+'台">'+label+'</span>';
-      weeks.forEach(wk=>wk.forEach(d=>{
-        if(d<0){html+='<span></span>';return;}
-        var v=cm[d]||0, sty=cellStyle(v,maxV);
-        html+='<span style="border-radius:2px;'+sty+'" title="'+name+' '+d+'日">'+(v||'·')+'</span>';
-      }));
-      html+='</div>';
-    });
-
-    // Total row
-    html+='<div style="display:grid;grid-template-columns:45px repeat(7,1fr);gap:1px;text-align:center;font-size:10px;line-height:1.4;border-top:1px solid var(--border);padding-top:2px;margin-top:2px">';
-    html+='<span style="font-weight:700;font-size:9px">合计</span>';
-    weeks.forEach(wk=>wk.forEach(d=>{if(d<0){html+='<span></span>';return;}var t=0;inspNames.forEach(n=>t+=(countMap[n][d]||0));html+='<span style="font-weight:700">'+(t||'·')+'</span>';}));
-    html+='</div>';
-    document.getElementById('dailyChart').innerHTML=html;
-  }
-}/* =========================================================
+  document.getElementById("dailyChart").innerHTML=h;
+}
+/* =========================================================
    6. 渲染：质检差异发现率
    ========================================================= */
 function renderSourceCompare(){
