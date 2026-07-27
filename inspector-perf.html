@@ -178,12 +178,6 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
       <div class="tablewrap"><table id="problemTable"></table></div>
     </div>
 
-    <div class="card">
-      <h3>📊 人员达成分析 & 改善建议 <span class="hint">四区域双列 · 个性化改善方向</span></h3>
-      <div class="csub">100台/人/日 · 左列华东+华南 · 右列华西+华北</div>
-      <div class="tablewrap"><table id="personAnalysis"></table></div>
-    </div>
-
   </div>
 
   <div class="foot">巡检人员效能看板 · 数据源同巡检质控看板 · 聚焦 KPI / 人员产能 / 问题收集</div>
@@ -725,7 +719,6 @@ function renderAll(){
   renderDaily();
   renderSourceCompare(); renderDiffRate();
   renderProblem();
-  renderPersonAnalysis();
 }
 
 function updateFoot(){
