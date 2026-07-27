@@ -393,7 +393,7 @@ function renderDaily(){
     var daysCount=Object.keys(days).length;
     var avg=daysCount>0?Math.round(total/daysCount):0;
     return {name:name,total:total,days:daysCount,avg:avg,comp:avg/CFG.dailyTarget*100,region:rf[0].region,problems:problemMap[name]||0};
-  }).sort((a,b)=>b.total-a.total);
+  }).sort(function(a,b){var ra=CFG.regions.indexOf(a.region),rb=CFG.regions.indexOf(b.region);if(ra!==rb)return ra-rb;return b.total-a.total;});
 
   var cc=function(c){return c>=100?"var(--good-ink)":c>=85?"var(--ink)":"var(--crit)";};
   var pc=function(p){return p>=3?"var(--good-ink)":p>0?"var(--warn)":"var(--crit)";};
