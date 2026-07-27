@@ -409,7 +409,7 @@ function renderDaily(){
       '<td style="text-align:right;padding:5px 10px;color:var(--ink-2)">'+s.days+'</td>'+
       '<td '+tdR+';font-weight:600">'+s.avg+'</td>'+
       '<td '+tdR+';font-weight:600;color:'+cc(s.comp)+'">'+bar(s.comp)+s.comp.toFixed(0)+'%</td>'+
-      '<td '+tdR+';font-weight:600;color:'+pc(s.problems)+'">'+s.problems+'<span style="font-size:10px;color:var(--muted)">/3</span></td>'+
+      '<td '+tdR+';font-weight:600;color:'+pc(s.problems)+'">'+s.problems+'<span style="font-size:12px;color:var(--muted)">/3</span></td>'+
       '</tr>';
   });
 
@@ -419,7 +419,7 @@ function renderDaily(){
   var tComp=tAvg/CFG.dailyTarget*100;
   var tProblems=stats.reduce((s,x)=>s+x.problems,0);
 
-  var h='<table style="width:100%;border-collapse:collapse;font-size:13px">'+
+  var h='<table style="width:100%;border-collapse:collapse;font-size:15px">'+
     '<thead><tr style="background:var(--track)">'+
     '<th style="text-align:left;padding:6px 10px">巡检人员</th>'+
     '<th style="text-align:left;padding:6px 10px">大区</th>'+
@@ -435,7 +435,7 @@ function renderDaily(){
     '<td style="text-align:right;padding:6px 10px">'+uniqDays+'</td>'+
     '<td style="text-align:right;padding:6px 10px">'+tAvg+'</td>'+
     '<td style="text-align:right;padding:6px 10px;color:'+cc(tComp)+'">'+tComp.toFixed(0)+'%</td>'+
-    '<td style="text-align:right;padding:6px 10px;color:'+pc(tProblems)+'">'+tProblems+'<span style="font-size:10px;color:var(--muted)">/3人</span></td>'+
+    '<td style="text-align:right;padding:6px 10px;color:'+pc(tProblems)+'">'+tProblems+'<span style="font-size:12px;color:var(--muted)">/3人</span></td>'+
     '</tr></tbody></table>';
 
   document.getElementById("dailyChart").innerHTML=h;
@@ -574,7 +574,7 @@ function renderProblem(){
       const short = (s,max) => s && s.length>max ? `<span title="${s.replace(/"/g,'&quot;')}">${s.slice(0,max)}…</span>` : (s||'—');
 
       rows += `<tr style="${col?'display:none':''};cursor:pointer" onclick="state.problemExpand=state.problemExpand==='${p.name}'?'':'${p.name}';renderProblem();">
-        <td style="padding-left:22px">${p.name}${p.done?' <span style="font-size:11px;color:var(--good-ink)">✅</span>':''}${p.collected===0?' <span style="font-size:11px;color:var(--muted)">—</span>':''} ${p.collected>0?`<span style="font-size:10px;color:var(--muted)">${isExp?'▲':'▼'}</span>`:''}</td>
+        <td style="padding-left:22px">${p.name}${p.done?' <span style="font-size:11px;color:var(--good-ink)">✅</span>':''}${p.collected===0?' <span style="font-size:11px;color:var(--muted)">—</span>':''} ${p.collected>0?`<span style="font-size:12px;color:var(--muted)">${isExp?'▲':'▼'}</span>`:''}</td>
         <td style="color:var(--muted);font-size:11px">${p.region}</td>
         <td class="num tnum">${p.collected||0}</td>
         <td class="num tnum" style="color:var(--good-ink);font-weight:600">${p.passed||0}</td>
@@ -644,7 +644,7 @@ function renderPersonAnalysis(){
   function sparkline(dailyArr,maxVal,width,height,color){
     var w=width||80,h=height||24,c=color||'var(--s1)';
     var last14=[];for(var d2=1;d2<=maxDay;d2++)last14.push(dailyArr[d2]||0);
-    if(last14.length<2) return '<span style=\"font-size:10px;color:var(--muted)\">数据不足</span>';
+    if(last14.length<2) return '<span style=\"font-size:12px;color:var(--muted)\">数据不足</span>';
     var max=Math.max.apply(null,last14)||1, min=Math.min.apply(null,last14.filter(function(v){return v>0;}))||0;
     if(min===max) max=min+10;
     var points='', stepX=w/(last14.length-1);
