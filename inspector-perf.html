@@ -381,8 +381,10 @@ function renderDaily(){
   toggleHtml+='<select id="fDailyInspector" style="border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:12px;background:var(--surface-1);color:var(--ink)">';
   toggleHtml+=['全部',...allInspGlobal].map(n=>'<option '+(state.dailyInspector===n?'selected':'')+'>'+n+'</option>').join('');
   toggleHtml+='</select>';
-  toggleHtml+='<label style="font-size:12px;color:var(--ink-2);cursor:pointer;margin-left:8px"><input type="radio" name="dailyMode" value="person" '+(state._dailyMode==='person'?'checked':'')+' onchange="state._dailyMode='person';renderDaily()"> 个人</label>';
-  toggleHtml+='<label style="font-size:12px;color:var(--ink-2);cursor:pointer"><input type="radio" name="dailyMode" value="total" '+(state._dailyMode==='total'?'checked':'')+' onchange="state._dailyMode='total';renderDaily()"> 汇总</label>';
+  var personChecked = state._dailyMode === 'person' ? 'checked' : '';
+  var totalChecked = state._dailyMode === 'total' ? 'checked' : '';
+  toggleHtml += '<label style="font-size:12px;color:var(--ink-2);cursor:pointer;margin-left:8px"><input type="radio" name="dailyMode" value="person" ' + personChecked + ' onchange="state._dailyMode=' + "'person'" + ';renderDaily()"> 个人</label>';
+  toggleHtml += '<label style="font-size:12px;color:var(--ink-2);cursor:pointer"><input type="radio" name="dailyMode" value="total" ' + totalChecked + ' onchange="state._dailyMode=' + "'total'" + ';renderDaily()"> 汇总</label>';
   toggleHtml+='</div>';
 
   if(state.dailyInspector && state.dailyInspector!=='全部') f=f.filter(r=>r.inspector===state.dailyInspector);
