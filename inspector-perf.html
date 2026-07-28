@@ -178,6 +178,16 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
       <div id="dailyChart"></div>
     </div>
 
+    <div class="card">
+      <h3>📋 人员日明细 <span class="hint">每人每日台数 · 达标绿/未达标红/无数据灰</span></h3>
+      <div class="csub" style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span>巡检人员：</span>
+        <select id="fDailyDetailInspector" style="border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:12px;background:var(--surface-1);color:var(--ink)" onchange="renderDailyDetail()"></select>
+        <span class="hint">≥100台绿 · 50-99黄 · 1-49红 · 无数据灰</span>
+      </div>
+      <div class="tablewrap" style="max-height:500px;overflow:auto" id="dailyDetailWrap"></div>
+    </div>
+
   </div>
 
   <div class="foot">巡检人员效能看板 · 数据源同巡检质控看板 · 聚焦 KPI / 人员产能 / 问题收集</div>
@@ -434,7 +444,70 @@ function renderDaily(){
     '</tr></tbody></table>';
 
   document.getElementById("dailyChart").innerHTML=h;
-}/* =========================================================
+}
+
+function renderDailyDetail(){
+  var f=getFiltered();
+  var allInsp=[...new Set(RECORDS.map(r=>r.inspector))].sort();
+  var allDays=[...new Set(f.map(r=>r.day))].sort((a,b)=>a-b);
+  if(!allDays.length){ document.getElementById('dailyDetailWrap').innerHTML='<div style="color:var(--muted);padding:16px;text-align:center">暂无数据</div>'; return; }
+
+  // 填充人员下拉
+  var sel=document.getElementById('fDailyDetailInspector');
+  if(!sel.options.length){ sel.innerHTML=['全部',...allInsp].map(n=>'<option>'+n+'</option>').join(''); }
+
+  if(sel.value && sel.value!=='全部') f=f.filter(r=>r.inspector===sel.value);
+
+  // 统计每人每天
+  var dayMap={};
+  allInsp.forEach(function(n){
+    if(sel.value!=='全部' && n!==sel.value) return;
+    dayMap[n]={};
+    f.filter(function(r){return r.inspector===n;}).forEach(function(r){dayMap[n][r.day]=(dayMap[n][r.day]||0)+r.qty;});
+  });
+
+  var names=allInsp.filter(function(n){return sel.value==='全部'||n===sel.value;});
+  var dayRange=allDays;
+  // 限制显示最近14天
+  if(dayRange.length>14) dayRange=dayRange.slice(-14);
+
+  function cellColor(v){
+    if(!v||v===0) return 'background:#f5f5f5;color:#ccc';
+    if(v>=100) return 'background:#d4edda;color:#155724;font-weight:600';
+    if(v>=50) return 'background:#fff3cd;color:#856404';
+    return 'background:#f8d7da;color:#721c24';
+  }
+
+  var h='<table style="font-size:12px;border-collapse:collapse"><thead><tr style="background:var(--track)"><th style="position:sticky;left:0;background:var(--track);z-index:1;text-align:left;padding:4px 8px;min-width:55px">人员</th>';
+  dayRange.forEach(function(d){ h+='<th style="text-align:center;padding:2px 4px;min-width:30px">'+d+'</th>'; });
+  h+='<th style="text-align:center;padding:2px 6px">计</th></tr></thead><tbody>';
+
+  names.forEach(function(name,i){
+    var bg=i%2===0?'':'background:color-mix(in srgb,var(--surface-1) 50%,transparent);';
+    var total=0;
+    h+='<tr style="'+bg+'"><td style="position:sticky;left:0;background:'+(i%2===0?'var(--card)':'color-mix(in srgb,var(--surface-1) 50%,transparent)')+';z-index:1;padding:3px 8px;font-weight:600;font-size:11px">'+name+'</td>';
+    dayRange.forEach(function(d){
+      var v=dayMap[name][d]||0;
+      total+=v;
+      h+='<td style="text-align:center;font-size:10px;padding:1px 2px;'+cellColor(v)+'">'+(v||'')+'</td>';
+    });
+    h+='<td style="text-align:center;font-weight:700;font-size:11px">'+total+'</td></tr>';
+  });
+
+  // 合计行
+  h+='<tr style="border-top:2px solid var(--axis);font-weight:700;background:var(--track)"><td style="position:sticky;left:0;background:var(--track);z-index:1;padding:3px 8px;font-size:11px">合计</td>';
+  var grandTotal=0;
+  dayRange.forEach(function(d){
+    var dt=0;
+    names.forEach(function(n){dt+=(dayMap[n][d]||0);});
+    grandTotal+=dt;
+    h+='<td style="text-align:center;font-size:10px;'+cellColor(dt)+'">'+dt+'</td>';
+  });
+  h+='<td style="text-align:center;font-size:11px">'+grandTotal+'</td></tr></tbody></table>';
+
+  document.getElementById('dailyDetailWrap').innerHTML=h;
+}
+/* =========================================================
    6. 渲染：质检差异发现率
    ========================================================= */
 function renderSourceCompare(){
@@ -720,6 +793,7 @@ function renderAll(){
   renderDaily();
   renderSourceCompare(); renderDiffRate();
   renderProblem();
+  renderDailyDetail();
 }
 
 function updateFoot(){
