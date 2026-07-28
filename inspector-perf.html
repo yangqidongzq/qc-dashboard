@@ -447,25 +447,27 @@ function renderDaily(){
 
 function renderDailyDetail(){
   var f=getFiltered();
-  var allInsp=[...new Set(RECORDS.map(r=>r.inspector))].sort();
   var allDays=[...new Set(f.map(r=>r.day))].sort((a,b)=>a-b);
   if(!allDays.length){ document.getElementById('dailyDetailWrap').innerHTML='<div style="color:var(--muted);padding:16px;text-align:center">暂无数据</div>'; return; }
 
+  // 只显示当前筛选后有数据的人员
+  var names=[...new Set(f.map(r=>r.inspector))].sort();
+
   // 填充人员下拉
   var sel=document.getElementById('fDailyDetailInspector');
-  if(!sel.options.length){ sel.innerHTML=['全部',...allInsp].map(n=>'<option>'+n+'</option>').join(''); }
+  if(!sel.options.length){
+    var allInsp=[...new Set(RECORDS.map(r=>r.inspector))].sort();
+    sel.innerHTML=['全部',...allInsp].map(n=>'<option>'+n+'</option>').join('');
+  }
 
   if(sel.value && sel.value!=='全部') f=f.filter(r=>r.inspector===sel.value);
 
   // 统计每人每天
   var dayMap={};
-  allInsp.forEach(function(n){
-    if(sel.value!=='全部' && n!==sel.value) return;
+  names.forEach(function(n){
     dayMap[n]={};
     f.filter(function(r){return r.inspector===n;}).forEach(function(r){dayMap[n][r.day]=(dayMap[n][r.day]||0)+r.qty;});
   });
-
-  var names=allInsp.filter(function(n){return sel.value==='全部'||n===sel.value;});
   var dayRange=allDays;
   // 限制显示最近14天
   if(dayRange.length>14) dayRange=dayRange.slice(-14);
