@@ -472,9 +472,8 @@ function renderDailyDetail(){
   if(dayRange.length>14) dayRange=dayRange.slice(-14);
 
   function cellColor(v){
-    if(!v||v===0) return 'background:#f5f5f5;color:#ccc';
+    if(!v||v===0) return 'background:#f5f5f5;color:#aaa';
     if(v>=100) return 'background:#d4edda;color:#155724;font-weight:600';
-    if(v>=50) return 'background:#fff3cd;color:#856404';
     return 'background:#f8d7da;color:#721c24';
   }
 
@@ -489,7 +488,7 @@ function renderDailyDetail(){
     dayRange.forEach(function(d){
       var v=dayMap[name][d]||0;
       total+=v;
-      h+='<td style="text-align:center;font-size:10px;padding:1px 2px;'+cellColor(v)+'">'+(v||'')+'</td>';
+      h+='<td style="text-align:center;font-size:10px;padding:1px 2px;'+cellColor(v)+'">'+(v||'休')+'</td>';
     });
     h+='<td style="text-align:center;font-weight:700;font-size:11px">'+total+'</td></tr>';
   });
@@ -501,7 +500,7 @@ function renderDailyDetail(){
     var dt=0;
     names.forEach(function(n){dt+=(dayMap[n][d]||0);});
     grandTotal+=dt;
-    h+='<td style="text-align:center;font-size:10px;'+cellColor(dt)+'">'+dt+'</td>';
+    h+='<td style="text-align:center;font-size:10px;'+cellColor(dt)+'">'+(dt||'休')+'</td>';
   });
   h+='<td style="text-align:center;font-size:11px">'+grandTotal+'</td></tr></tbody></table>';
 
