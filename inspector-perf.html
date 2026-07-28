@@ -399,12 +399,12 @@ function renderDaily(){
     var bg=i%2===0?"":"background:color-mix(in srgb,var(--surface-1) 50%,transparent);";
     return '<tr style="'+bg+'">'+
       '<td style="padding:5px 10px;font-weight:600">'+s.name+'</td>'+
-      '<td style="padding:5px 10px;color:var(--ink-2);font-size:13px">'+s.region+'</td>'+
+      '<td style="padding:5px 10px;color:var(--ink-2)">'+s.region+'</td>'+
       '<td '+tdR+'>'+s.total+'</td>'+
       '<td style="text-align:right;padding:5px 10px;color:var(--ink-2)">'+s.days+'</td>'+
       '<td '+tdR+';font-weight:600">'+s.avg+'</td>'+
       '<td '+tdR+';font-weight:600;color:'+cc(s.comp)+'">'+bar(s.comp)+s.comp.toFixed(0)+'%</td>'+
-      '<td '+tdR+';font-weight:600;color:'+pc(s.problems)+'">'+pbar(s.problems)+s.problems+'<span style="font-size:13px;color:var(--muted)">/3</span></td>'+
+      '<td '+tdR+';font-weight:600;color:'+pc(s.problems)+'">'+pbar(s.problems)+s.problems+'<span style="color:var(--muted)">/3</span></td>'+
       '</tr>';
   });
 
@@ -430,7 +430,7 @@ function renderDaily(){
     '<td style="text-align:right;padding:6px 10px">'+uniqDays+'</td>'+
     '<td style="text-align:right;padding:6px 10px">'+tAvg+'</td>'+
     '<td style="text-align:right;padding:6px 10px;color:'+cc(tComp)+'">'+tComp.toFixed(0)+'%</td>'+
-    '<td style="text-align:right;padding:6px 10px;color:'+pc(tProblems)+'">'+pbar(tProblems)+tProblems+'<span style="font-size:13px;color:var(--muted)">/3人</span></td>'+
+    '<td style="text-align:right;padding:6px 10px;color:'+pc(tProblems)+'">'+pbar(tProblems)+tProblems+'<span style="color:var(--muted)">/3人</span></td>'+
     '</tr></tbody></table>';
 
   document.getElementById("dailyChart").innerHTML=h;
