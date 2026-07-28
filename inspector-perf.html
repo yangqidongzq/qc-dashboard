@@ -392,6 +392,7 @@ function renderDaily(){
   var cc=function(c){return c>=100?"var(--good-ink)":c>=85?"var(--ink)":"var(--crit)";};
   var pc=function(p){return p>=3?"var(--good-ink)":p>0?"var(--warn)":"var(--crit)";};
   var bar=function(p){var w=Math.min(100,p);var bg=p>=100?"var(--good)":p>=85?"var(--s1)":"var(--crit)";return '<span style="display:inline-block;width:50px;height:6px;background:var(--track);border-radius:3px;vertical-align:middle;margin-right:4px"><span style="display:block;width:'+w+'%;height:100%;background:'+bg+';border-radius:3px"></span></span>';};
+  var pbar=function(p){var w=Math.min(100,p/3*100);var bg=p>=3?"var(--good)":p>0?"var(--warn)":"var(--crit)";return '<span style="display:inline-block;width:36px;height:6px;background:var(--track);border-radius:3px;vertical-align:middle;margin-right:4px"><span style="display:block;width:'+w+'%;height:100%;background:'+bg+';border-radius:3px"></span></span>';};
   var tdR='style="text-align:right;padding:5px 10px"';
 
   var rows=stats.map(function(s,i){
@@ -403,7 +404,7 @@ function renderDaily(){
       '<td style="text-align:right;padding:5px 10px;color:var(--ink-2)">'+s.days+'</td>'+
       '<td '+tdR+';font-weight:600">'+s.avg+'</td>'+
       '<td '+tdR+';font-weight:600;color:'+cc(s.comp)+'">'+bar(s.comp)+s.comp.toFixed(0)+'%</td>'+
-      '<td '+tdR+';font-weight:600;color:'+pc(s.problems)+'">'+s.problems+'<span style="font-size:12px;color:var(--muted)">/3</span></td>'+
+      '<td '+tdR+';font-weight:600;color:'+pc(s.problems)+'">'+pbar(s.problems)+s.problems+'<span style="font-size:12px;color:var(--muted)">/3</span></td>'+
       '</tr>';
   });
 
@@ -429,7 +430,7 @@ function renderDaily(){
     '<td style="text-align:right;padding:6px 10px">'+uniqDays+'</td>'+
     '<td style="text-align:right;padding:6px 10px">'+tAvg+'</td>'+
     '<td style="text-align:right;padding:6px 10px;color:'+cc(tComp)+'">'+tComp.toFixed(0)+'%</td>'+
-    '<td style="text-align:right;padding:6px 10px;color:'+pc(tProblems)+'">'+tProblems+'<span style="font-size:12px;color:var(--muted)">/3人</span></td>'+
+    '<td style="text-align:right;padding:6px 10px;color:'+pc(tProblems)+'">'+pbar(tProblems)+tProblems+'<span style="font-size:12px;color:var(--muted)">/3人</span></td>'+
     '</tr></tbody></table>';
 
   document.getElementById("dailyChart").innerHTML=h;
