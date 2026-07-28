@@ -143,6 +143,15 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
   <div class="grid">
 
     <div class="card">
+      <h3>📋 人员日明细 <span class="hint">每人每日台数 · ≥100绿/未达标红/休息灰</span></h3>
+      <div class="csub" style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span>巡检人员：</span>
+        <select id="fDailyDetailInspector" style="border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:12px;background:var(--surface-1);color:var(--ink)" onchange="renderDailyDetail()"></select>
+      </div>
+      <div class="tablewrap" style="max-height:500px;overflow:auto" id="dailyDetailWrap"></div>
+    </div>
+
+    <div class="card">
       <h3>📬 来源差异对比 <span class="hint">邮件推送 vs 中心仓拦截</span></h3>
       <div id="sourceCompare" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px"></div>
     </div>
@@ -176,16 +185,6 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
     <div class="card">
       <h3>📅 人员产能明细 <span class="hint">按区域排序 · 目标100台/人/日 · 问题收集 目标3条/人/月</span></h3>
       <div id="dailyChart"></div>
-    </div>
-
-    <div class="card">
-      <h3>📋 人员日明细 <span class="hint">每人每日台数 · 达标绿/未达标红/无数据灰</span></h3>
-      <div class="csub" style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-        <span>巡检人员：</span>
-        <select id="fDailyDetailInspector" style="border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:12px;background:var(--surface-1);color:var(--ink)" onchange="renderDailyDetail()"></select>
-        <span class="hint">≥100台绿 · 50-99黄 · 1-49红 · 无数据灰</span>
-      </div>
-      <div class="tablewrap" style="max-height:500px;overflow:auto" id="dailyDetailWrap"></div>
     </div>
 
   </div>
