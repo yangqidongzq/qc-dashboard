@@ -472,7 +472,7 @@ function renderDailyDetail(){
   if(dayRange.length>14) dayRange=dayRange.slice(-14);
 
   function cellColor(v){
-    if(!v||v===0) return 'background:#f5f5f5;color:#aaa';
+    if(!v||v===0) return 'background:#f5f5f5;color:#666';
     if(v>=100) return 'background:#d4edda;color:#155724;font-weight:600';
     return 'background:#f8d7da;color:#721c24';
   }
