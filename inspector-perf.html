@@ -183,6 +183,11 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
     </div>
 
     <div class="card">
+      <h3>🔗 后验拦截率 & 问题反馈 <span class="hint">各中心仓后验拦截率 vs 问题上报/通过 · 通过率↑+拦截率↓=反馈有效</span></h3>
+      <div class="tablewrap"><table id="interceptCrossTable"></table></div>
+    </div>
+
+    <div class="card">
       <h3>📅 人员产能明细 <span class="hint">按区域排序 · 目标100台/人/日 · 问题收集 目标3条/人/月</span></h3>
       <div id="dailyChart"></div>
     </div>
@@ -791,12 +796,35 @@ function downloadFile(name,content){
 /* =========================================================
    12. 启动
    ========================================================= */
+
+function renderInterceptCross(){
+  var f=getFiltered();
+  if(!f.length){ document.getElementById("interceptCrossTable").innerHTML="<tr><td style=color:var(--muted);padding:16px;text-align:center>暂无数据</td></tr>"; return; }
+  // 后验拦截率（前置/后验业务线）
+  var postQc=f.filter(function(r){ return r.bizline==="前置/后验"||r.source==="邮件推送"; });
+  var byCenter={};
+  postQc.forEach(function(r){ var c=r.center; if(!c) return; if(!byCenter[c]) byCenter[c]={total:0,diff:0}; byCenter[c].total+=r.qty; if(r.qtyDiff>0) byCenter[c].diff++; });
+  // 问题反馈数据
+  var pbCenter={};
+  if(typeof PROBLEM_RECORDS!=="undefined" && PROBLEM_RECORDS.length){
+    var alias={深圳:"深圳中心仓",成都:"成都中心仓",长沙:"长沙中心仓",杭州:"杭州中心仓",合肥:"合肥中心仓",南昌:"南昌中心仓",武汉:"武汉中心仓",南京:"南京中心仓",石家庄:"石家庄中心仓",济南:"济南中心仓",沈阳:"沈阳中心仓",西安:"西安中心仓",郑州:"郑州中心仓",昆明:"昆明中心仓",重庆:"重庆中心仓",福州:"福州中心仓",青岛:"青岛中心仓"};
+    PROBLEM_RECORDS.forEach(function(r){ var st=(r.station||"").toString(); var center=""; for(var k in alias){ if(st.indexOf(k)>=0){ center=alias[k]; break; } } if(!center) return; if(!pbCenter[center]) pbCenter[center]={total:0,passed:0}; pbCenter[center].total++; if(r.adjusted==="是") pbCenter[center].passed++; });
+  }
+  var centers=Object.keys(byCenter).sort();
+  var rows=centers.map(function(c){ var q=byCenter[c]; var p=pbCenter[c]||{total:0,passed:0}; var rate=q.total>0?(q.diff/q.total*100):0; var passRate=p.total>0?(p.passed/p.total*100):0; return {center:c,total:q.total,diff:q.diff,rate:rate,problems:p.total,passed:p.passed,passRate:passRate}; });
+  var rc=function(r){ return r>=5?"var(--crit)":r>=3?"var(--warn)":"var(--good-ink)"; };
+  var h="<table style=width:100%;font-size:13px><thead><tr style=background:var(--track)><th>中心仓</th><th style=text-align:right>后验量</th><th style=text-align:right>拦截量</th><th style=text-align:right>拦截率</th><th style=text-align:right>问题上报</th><th style=text-align:right>评审通过</th><th style=text-align:right>通过率</th></tr></thead><tbody>";
+  rows.forEach(function(r){ h+="<tr><td>"+r.center+"</td><td style=text-align:right>"+r.total+"</td><td style=text-align:right>"+r.diff+"</td><td style=text-align:right;font-weight:600;color:"+rc(r.rate)+">"+r.rate.toFixed(1)+"%</td><td style=text-align:right>"+r.problems+"</td><td style=text-align:right>"+r.passed+"</td><td style=text-align:right;font-weight:600;color:"+(r.passRate>=80?"var(--good-ink)":r.passRate>=60?"var(--warn)":"var(--crit)")+">"+(r.problems>0?r.passRate.toFixed(0)+"%":"—")+"</td></tr>"; });
+  h+="</tbody></table>";
+  document.getElementById("interceptCrossTable").innerHTML=h;
+}
 function renderAll(){
   renderKPIs();
   renderDaily();
   renderSourceCompare(); renderDiffRate();
   renderProblem();
   renderDailyDetail();
+  renderInterceptCross();
 }
 
 function updateFoot(){
