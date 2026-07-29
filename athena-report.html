@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>雅典娜质检报告查询</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#f5f6f8;color:#333;max-width:600px;margin:0 auto;min-height:100vh}
+.header{background:linear-gradient(135deg,#1677ff,#0958d9);color:#fff;padding:16px;text-align:center;position:sticky;top:0;z-index:10;box-shadow:0 2px 12px rgba(22,119,255,.2)}
+.header h1{font-size:18px}
+.header .sub{font-size:12px;opacity:.8;margin-top:4px}
+
+.card{background:#fff;border-radius:10px;margin:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.input-row{display:flex;gap:8px}
+.input-row input{flex:1;height:44px;border:2px solid #e8ecf1;border-radius:8px;padding:0 12px;font-size:16px;font-family:monospace;letter-spacing:2px;transition:border .2s}
+.input-row input:focus{outline:none;border-color:#1677ff}
+.btn{height:44px;padding:0 20px;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit}
+.btn-primary{background:#1677ff;color:#fff}
+.btn-primary:active{background:#0958d9}
+.btn-scan{background:#52c41a;color:#fff}
+.btn-scan:active{background:#389e0d}
+
+.result{margin:12px}
+.loading{text-align:center;padding:40px;color:#999}
+.spinner{width:40px;height:40px;border:3px solid #e8ecf1;border-top-color:#1677ff;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.quick-codes{display:flex;flex-wrap:wrap;gap:6px}
+.quick-codes button{background:#e8f0fe;border:none;color:#1677ff;padding:4px 10px;border-radius:6px;font-size:12px;cursor:pointer;font-family:monospace}
+.quick-codes button:active{background:#1677ff;color:#fff}
+
+#scanner{display:none;width:100%;max-width:400px;margin:12px auto;border-radius:10px;overflow:hidden}
+#scanner video{width:100%}
+
+.footer{text-align:center;color:#999;font-size:11px;padding:16px;margin-top:20px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:99;opacity:0;transition:opacity .3s}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>🔍 雅典娜质检报告查询</h1>
+  <div class="sub">扫描或输入质检码，回显完整质检报告</div>
+</div>
+
+<div class="card">
+  <div class="input-row">
+    <input type="text" id="qcInput" placeholder="输入质检码，如 1006160001" inputmode="numeric" autofocus autocomplete="off">
+    <button class="btn btn-primary" onclick="queryReport()">查询</button>
+    <button class="btn btn-scan" onclick="toggleScan()" id="scanBtn">📷 扫码</button>
+  </div>
+  <div class="input-row" style="margin-top:6px">
+    <button class="btn" style="background:#888;color:#fff;flex:1" onclick="backToSearch()">✕ 清除结果</button>
+  </div>
+  <div id="scanner"><video id="video" autoplay playsinline></video></div>
+  <div class="quick-codes" style="margin-top:10px">
+    <span style="font-size:11px;color:#999;line-height:2">最近:</span>
+    <span id="quickBtns"></span>
+  </div>
+</div>
+
+<div id="result"></div>
+
+<div class="footer">
+  数据来源: zzqc.zhuanspirit.com · 仅限内网使用
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+var stream = null, scanning = false;
+
+// 快捷码（localStorage存储）
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem('qc_history') || '[]'); } catch(e) { return []; }
+}
+function addHistory(code) {
+  var h = getHistory().filter(c => c !== code);
+  h.unshift(code);
+  if (h.length > 10) h.length = 10;
+  localStorage.setItem('qc_history', JSON.stringify(h));
+  renderQuick();
+}
+function renderQuick() {
+  var h = getHistory();
+  document.getElementById('quickBtns').innerHTML = h.map(c =>
+    '<button onclick="document.getElementById(\'qcInput\').value=\''+c+'\';queryReport()">'+c+'</button>'
+  ).join('');
+}
+
+// 返回搜索界面
+function backToSearch() {
+  document.getElementById('result').innerHTML = '';
+  document.getElementById('qcInput').value = '';
+  document.getElementById('qcInput').focus();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Toast提示
+function toast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 2500);
+}
+
+// URL参数自动查询
+(function() {
+  var p = new URLSearchParams(location.search);
+  var code = p.get('qcCode') || p.get('code') || p.get('q');
+  if (code) { document.getElementById('qcInput').value = code; queryReport(); }
+  renderQuick();
+})();
+
+// 查询报告
+function queryReport() {
+  var code = document.getElementById('qcInput').value.trim();
+  if (!code || code.length < 6) { toast('请输入有效的质检码'); return; }
+  document.getElementById('qcInput').value = '';
+  addHistory(code);
+  window.open('/api/report?qcCode=' + encodeURIComponent(code), '_blank');
+}
+
+// 扫码功能
+function toggleScan() {
+  if (scanning) { stopScan(); return; }
+  if (!('mediaDevices' in navigator)) { toast('当前浏览器不支持摄像头'); return; }
+
+  var scanner = document.getElementById('scanner');
+  scanner.style.display = 'block';
+  document.getElementById('scanBtn').textContent = '⏹ 停止';
+
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+    .then(function(s) {
+      stream = s;
+      document.getElementById('video').srcObject = s;
+      scanning = true;
+      scanQR();
+    })
+    .catch(function() {
+      toast('无法打开摄像头，请检查权限');
+      stopScan();
+    });
+}
+
+function stopScan() {
+  scanning = false;
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  document.getElementById('scanner').style.display = 'none';
+  document.getElementById('scanBtn').textContent = '📷 扫码';
+}
+
+function scanQR() {
+  if (!scanning) return;
+  var video = document.getElementById('video');
+  if (video.readyState !== video.HAVE_ENOUGH_DATA) { requestAnimationFrame(scanQR); return; }
+
+  // 使用简单的定时检测（生产环境建议引入jsQR等库）
+  var canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+  var ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  // 尝试用BarcodeDetector API
+  if ('BarcodeDetector' in window) {
+    new BarcodeDetector({ formats: ['qr_code'] }).detect(canvas)
+      .then(function(codes) {
+        if (codes.length > 0) {
+          var text = codes[0].rawValue;
+          var m = text.match(/\d{7,12}/);
+          if (m) {
+            document.getElementById('qcInput').value = m[0];
+            stopScan();
+            toast('已识别: ' + m[0] + '，已打开报告');
+            setTimeout(function() { queryReport(); }, 500);
+            return;
+          }
+          toast('未识别到质检码: ' + text);
+        }
+        if (scanning) setTimeout(scanQR, 500);
+      }).catch(function() { if (scanning) setTimeout(scanQR, 500); });
+  } else {
+    if (scanning) setTimeout(scanQR, 1000);
+  }
+}
+
+// 键盘回车快捷查询
+document.getElementById('qcInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') queryReport();
+});
+</script>
+</body>
+</html>
