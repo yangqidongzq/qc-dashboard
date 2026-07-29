@@ -120,7 +120,8 @@ function queryReport() {
   if (!code || code.length < 6) { toast('请输入有效的质检码'); return; }
   document.getElementById('qcInput').value = '';
   addHistory(code);
-  window.open('/api/report?qcCode=' + encodeURIComponent(code), '_blank');
+  var apiBase = location.hostname === 'yangqidongzq.github.io' ? 'https://ugly-moose-59.loca.lt' : '';
+  window.open(apiBase + '/api/report?qcCode=' + encodeURIComponent(code), '_blank');
 }
 
 // 扫码功能
