@@ -104,7 +104,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
 }
 </style>
 
-<script>window._EMAIL_RETEST_DATA=[{"inspector":"吴恩惠","total":955,"inconsistent":19,"rate":"2.0"},{"inspector":"张晰梦","total":1039,"inconsistent":83,"rate":"8.0"},{"inspector":"杨涛","total":957,"inconsistent":47,"rate":"4.9"},{"inspector":"米小三","total":1122,"inconsistent":83,"rate":"7.4"},{"inspector":"赵子龙","total":1129,"inconsistent":85,"rate":"7.5"},{"inspector":"苏凯","total":1003,"inconsistent":88,"rate":"8.8"},{"inspector":"黄少博","total":1080,"inconsistent":56,"rate":"5.2"},{"inspector":"刘先浩","total":843,"inconsistent":32,"rate":"3.8"},{"inspector":"刘辉崇","total":1130,"inconsistent":122,"rate":"10.8"},{"inspector":"张天东","total":1139,"inconsistent":102,"rate":"9.0"},{"inspector":"杨启栋","total":1115,"inconsistent":91,"rate":"8.2"},{"inspector":"火东云","total":861,"inconsistent":126,"rate":"14.6"},{"inspector":"胡江海","total":1169,"inconsistent":52,"rate":"4.4"},{"inspector":"尚杰","total":908,"inconsistent":40,"rate":"4.4"},{"inspector":"旷小波","total":1018,"inconsistent":107,"rate":"10.5"},{"inspector":"谢志亮","total":875,"inconsistent":161,"rate":"18.4"}];</script>
+<script>window._EMAIL_RETEST_DATA=[{"inspector":"吴恩惠","total":955,"inconsistent":19,"rate":"98.0","consistent":936},{"inspector":"张晰梦","total":1039,"inconsistent":83,"rate":"92.0","consistent":956},{"inspector":"杨涛","total":957,"inconsistent":47,"rate":"95.1","consistent":910},{"inspector":"米小三","total":1122,"inconsistent":83,"rate":"92.6","consistent":1039},{"inspector":"赵子龙","total":1129,"inconsistent":85,"rate":"92.5","consistent":1044},{"inspector":"苏凯","total":1003,"inconsistent":88,"rate":"91.2","consistent":915},{"inspector":"黄少博","total":1080,"inconsistent":56,"rate":"94.8","consistent":1024},{"inspector":"刘先浩","total":843,"inconsistent":32,"rate":"96.2","consistent":811},{"inspector":"刘辉崇","total":1130,"inconsistent":122,"rate":"89.2","consistent":1008},{"inspector":"张天东","total":1139,"inconsistent":102,"rate":"91.0","consistent":1037},{"inspector":"杨启栋","total":1115,"inconsistent":91,"rate":"91.8","consistent":1024},{"inspector":"火东云","total":861,"inconsistent":126,"rate":"85.4","consistent":735},{"inspector":"胡江海","total":1169,"inconsistent":52,"rate":"95.6","consistent":1117},{"inspector":"尚杰","total":908,"inconsistent":40,"rate":"95.6","consistent":868},{"inspector":"旷小波","total":1018,"inconsistent":107,"rate":"89.5","consistent":911},{"inspector":"谢志亮","total":875,"inconsistent":161,"rate":"81.6","consistent":714}];</script>
 </head>
 <body>
 <div class="wrap">
@@ -185,7 +185,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
     </div>
 
     <div class="card">
-      <h3>📧 邮件推送不一致率 <span class="hint">飞书登记邮件推送码中"一致"占比</span></h3>
+      <h3>📧 邮件推送一致率 <span class="hint">飞书登记邮件推送码中"一致"占比</span></h3>
       <div class="tablewrap"><table id="emailRetestTable"></table></div>
     </div>
 
@@ -803,8 +803,8 @@ function renderEmailRetest(){
   var d = window._EMAIL_RETEST_DATA || [];
   if(!d.length){ document.getElementById("emailRetestTable").innerHTML="<tr><td style=color:var(--muted);padding:16px;text-align:center>暂无数据</td></tr>"; return; }
   var rc = function(r){ return r>=95?"var(--good-ink)":r>=85?"var(--warn)":"var(--crit)"; };
-  var h="<table style=width:100%;font-size:13px><thead><tr style=background:var(--track)><th>巡检人员</th><th style=text-align:right>不一致</th><th style=text-align:right>登记数</th><th style=text-align:right>一致率</th></tr></thead><tbody>";
-  d.forEach(function(r){ var rate=parseFloat(r.rate); h+="<tr><td>"+r.inspector+"</td><td style=text-align:right>"+r.total+"</td><td style=text-align:right>"+r.inconsistent+"</td><td style=text-align:right;font-weight:600;color:"+rc(rate)+">"+r.rate+"%</td></tr>"; });
+  var h="<table style=width:100%;font-size:13px><thead><tr style=background:var(--track)><th>巡检人员</th><th style=text-align:right>一致</th><th style=text-align:right>登记数</th><th style=text-align:right>一致率</th></tr></thead><tbody>";
+  d.forEach(function(r){ var rate=parseFloat(r.rate); h+="<tr><td>"+r.inspector+"</td><td style=text-align:right>"+r.total+"</td><td style=text-align:right>"+r.consistent+"</td><td style=text-align:right;font-weight:600;color:"+rc(rate)+">"+r.rate+"%</td></tr>"; });
   h+="</tbody></table>";
   document.getElementById("emailRetestTable").innerHTML=h;
 }
