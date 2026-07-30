@@ -629,7 +629,7 @@ function renderWeekTrend(){
   const dow=lastDate.getDay(); // 0=Sun, 4=Thu
   // 找到最近的周四
   let thisThu=new Date(lastDate);
-  if(dow!==4) thisThu.setDate(thisThu.getDate()-((dow+3)%7)); // 回退到最近周四
+  thisThu.setDate(thisThu.getDate()+((4-dow+7)%7)); // 前进到最近周四
   const lastFri=new Date(thisThu);lastFri.setDate(thisThu.getDate()-6); // 本周五起点
   const prevThu=new Date(lastFri);prevThu.setDate(lastFri.getDate()-1); // 上周四终点=本周五前一天
   const prevFri=new Date(prevThu);prevFri.setDate(prevThu.getDate()-6); // 上周五起点
