@@ -104,7 +104,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
 }
 </style>
 
-<script><script>window._EMAIL_RETEST_DATA=[{"inspector":"胡江海","total":1214,"consistent":1160,"rate":"95.6"},{"inspector":"张天东","total":1185,"consistent":1076,"rate":"90.8"},{"inspector":"刘辉崇","total":1170,"consistent":1051,"rate":"89.8"},{"inspector":"米小三","total":1159,"consistent":1072,"rate":"92.5"},{"inspector":"赵子龙","total":1125,"consistent":1044,"rate":"92.8"},{"inspector":"杨启栋","total":1104,"consistent":1014,"rate":"91.8"},{"inspector":"黄少博","total":1099,"consistent":1041,"rate":"94.7"},{"inspector":"张晰梦","total":1090,"consistent":1007,"rate":"92.4"},{"inspector":"旷小波","total":1063,"consistent":952,"rate":"89.6"},{"inspector":"苏凯","total":1046,"consistent":957,"rate":"91.5"},{"inspector":"杨涛","total":1015,"consistent":967,"rate":"95.3"},{"inspector":"吴恩惠","total":1011,"consistent":989,"rate":"97.8"},{"inspector":"尚杰","total":955,"consistent":912,"rate":"95.5"},{"inspector":"谢志亮","total":886,"consistent":729,"rate":"82.3"},{"inspector":"刘先浩","total":873,"consistent":841,"rate":"96.3"},{"inspector":"火东云","total":867,"consistent":741,"rate":"85.5"}];</script>
+<script><script><script>window._EMAIL_RETEST_DATA=[{"inspector":"胡江海","total":1214,"consistent":1160,"rate":"95.6"},{"inspector":"张天东","total":1185,"consistent":1076,"rate":"90.8"},{"inspector":"刘辉崇","total":1170,"consistent":1051,"rate":"89.8"},{"inspector":"米小三","total":1159,"consistent":1072,"rate":"92.5"},{"inspector":"赵子龙","total":1125,"consistent":1044,"rate":"92.8"},{"inspector":"杨启栋","total":1104,"consistent":1014,"rate":"91.8"},{"inspector":"黄少博","total":1099,"consistent":1041,"rate":"94.7"},{"inspector":"张晰梦","total":1090,"consistent":1007,"rate":"92.4"},{"inspector":"旷小波","total":1063,"consistent":952,"rate":"89.6"},{"inspector":"苏凯","total":1046,"consistent":957,"rate":"91.5"},{"inspector":"杨涛","total":1015,"consistent":967,"rate":"95.3"},{"inspector":"吴恩惠","total":1011,"consistent":989,"rate":"97.8"},{"inspector":"尚杰","total":955,"consistent":912,"rate":"95.5"},{"inspector":"谢志亮","total":886,"consistent":729,"rate":"82.3"},{"inspector":"刘先浩","total":873,"consistent":841,"rate":"96.3"},{"inspector":"火东云","total":867,"consistent":741,"rate":"85.5"}];</script>
 </head>
 <body>
 <div class="wrap">
@@ -182,6 +182,11 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
       </div>
       <div id="problemSummary" style="margin-bottom:10px"></div>
       <div class="tablewrap"><table id="problemTable"></table></div>
+    </div>
+
+    <div class="card">
+      <h3>📧 邮件推送一致率 <span class="hint">飞书登记邮件推送码中"一致"占比</span></h3>
+      <div class="tablewrap"><table id="emailRetestTable"></table></div>
     </div>
 
     <div class="card">
@@ -793,12 +798,23 @@ function downloadFile(name,content){
 /* =========================================================
    12. 启动
    ========================================================= */
+
+function renderEmailRetest(){
+  var d = window._EMAIL_RETEST_DATA || [];
+  if(!d.length){ document.getElementById("emailRetestTable").innerHTML="<tr><td style=color:var(--muted);padding:16px;text-align:center>暂无数据</td></tr>"; return; }
+  var rc = function(r){ return r>=95?"var(--good-ink)":r>=85?"var(--warn)":"var(--crit)"; };
+  var h="<table style=width:100%;font-size:13px><thead><tr style=background:var(--track)><th>巡检人员</th><th style=text-align:right>登记数</th><th style=text-align:right>一致数</th><th style=text-align:right>一致率</th></tr></thead><tbody>";
+  d.forEach(function(r){ var rate=parseFloat(r.rate); h+="<tr><td>"+r.inspector+"</td><td style=text-align:right>"+r.total+"</td><td style=text-align:right>"+r.consistent+"</td><td style=text-align:right;font-weight:600;color:"+rc(rate)+">"+r.rate+"%</td></tr>"; });
+  h+="</tbody></table>";
+  document.getElementById("emailRetestTable").innerHTML=h;
+}
 function renderAll(){
   renderKPIs();
   renderDaily();
   renderSourceCompare(); renderDiffRate();
   renderProblem();
   renderDailyDetail();
+  renderEmailRetest();
 }
 
 function updateFoot(){
