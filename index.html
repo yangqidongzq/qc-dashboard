@@ -933,7 +933,7 @@ function renderMerchantAppearanceTop(){
   // Click → filter detail
   host.querySelectorAll('.apclick').forEach(el=>{
     el.addEventListener('click',()=>{
-      const m=el.dataset.m; state.selMerchant=m; renderDiffItems(); renderDescAnalysis();
+      const m=el.dataset.m; state.selMerchant=m; state.descDiffFilter=['外观','其它']; renderDiffItems(); renderDescAnalysis();
       const da=document.getElementById('descAnalysis'); if(da){ da.scrollIntoView({behavior:'smooth'}); }
       setTimeout(()=>{ document.querySelectorAll('#detailTable tbody tr').forEach(r=>{ r.style.background=r.textContent.includes(m)?'color-mix(in srgb,var(--s3) 18%,transparent)':''; }); },300);
     });
@@ -1011,6 +1011,7 @@ function renderSplits(){
 function renderDescAnalysis(){
   var f=getFiltered(),diff=f.filter(function(r){return r.qtyDiff>0&&r.reason&&r.reason!=='—';});
   if(state.selMerchant) diff=diff.filter(function(r){return r.merchant===state.selMerchant;});
+  if(state.descDiffFilter) diff=diff.filter(function(r){return r.diffItems.some(function(it){return state.descDiffFilter.indexOf(it)>=0;});});
   if(!diff.length){document.getElementById('descAnalysis').innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px 0">无差异描述</div>';return;}
   var catColors={'屏幕外观':'var(--s6)','屏幕显示':'var(--s1)','外壳外观':'var(--s8)','功能':'var(--s2)','拆修':'var(--s5)','其他':'var(--muted)'};
   // 使用统一30条关键词体系
@@ -1021,8 +1022,9 @@ function renderDescAnalysis(){
   var autoCount=descs.filter(function(d){return d.kw!==null;}).reduce(function(s,d){return s+d.cnt;},0);
 
   var html='';
-  if(state.hlDesc) html+='<div style="margin-bottom:6px;font-size:12px;color:var(--s1);cursor:pointer" onclick="state.hlDesc=\x27\x27;state.selMerchant=\x27\x27;renderDescAnalysis();renderDiffItems();renderMerchantTop();">🔍 筛选: '+state.hlDesc+' ✕</div>';
-  if(state.selMerchant) html+='<div style="margin-bottom:6px;font-size:12px;color:var(--s1);cursor:pointer" onclick="state.selMerchant=\x27\x27;renderDescAnalysis();renderDiffItems();renderMerchantTop();">🏪 商户: '+state.selMerchant+' ✕</div>';
+  if(state.hlDesc) html+='<div style="margin-bottom:6px;font-size:12px;color:var(--s1);cursor:pointer" onclick="state.hlDesc=\x27\x27;state.selMerchant=\x27\x27;state.descDiffFilter=null;renderDescAnalysis();renderDiffItems();renderMerchantTop();">🔍 筛选: '+state.hlDesc+' ✕</div>';
+  if(state.selMerchant) html+='<div style="margin-bottom:6px;font-size:12px;color:var(--s1);cursor:pointer" onclick="state.selMerchant=\x27\x27;state.descDiffFilter=null;renderDescAnalysis();renderDiffItems();renderMerchantTop();">🏪 商户: '+state.selMerchant+' ✕</div>';
+  if(state.descDiffFilter) html+='<div style="margin-bottom:6px;font-size:12px;color:var(--s3);cursor:pointer" onclick="state.descDiffFilter=null;renderDescAnalysis();">🔍 差异项: '+state.descDiffFilter.join('+')+' ✕</div>';
   html+='<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;font-size:11px;color:var(--ink-2)"><span>📝 <b>'+diff.length+'</b>台差异</span><span>|</span><span>📋 <b>'+descs.length+'</b>种描述</span><span>|</span><span>🤖 可解析 <b style="color:'+(autoCount/diff.length>0.5?'var(--good-ink)':'var(--warn)')+'">'+autoCount+'</b>台 ('+(autoCount/diff.length*100).toFixed(0)+'%)</span></div>';
 
   html+='<div class="tablewrap scroll" style="max-height:500px"><table style="font-size:12px"><thead><tr><th>#</th><th>差异描述</th><th>标准分类</th><th class="num">台数</th><th>差异项</th><th>主要商户</th></tr></thead><tbody>';
