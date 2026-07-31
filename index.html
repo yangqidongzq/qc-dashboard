@@ -226,8 +226,8 @@ svg{display:block; width:100%; height:auto}
     </div>
 
     <div class="card col-12">
-      <h3>🔍 商户外观差异 TOP20 <span class="hint">按外观类差异台数排序 · 点击联动明细</span></h3>
-      <div class="csub">仅统计差异项含"外观"的商户，按外观差异台数降序。</div>
+      <h3>🔍 商户外观差异 TOP20 <span class="hint">按外观+其它差异台数排序 · 点击联动明细</span></h3>
+      <div class="csub">仅统计差异项含"外观"或"其它"的商户，按差异台数降序。</div>
       <div id="merchantAppearanceTop"></div>
     </div>
 
@@ -895,7 +895,7 @@ function renderMerchantAppearanceTop(){
   // Only records with "外观" diff item
   const map={};
   for(const r of f){
-    if(!r.qtyDiff || !r.diffItems.includes('外观')) continue;
+    if(!r.qtyDiff || (!r.diffItems.includes('外观') && !r.diffItems.includes('其它'))) continue;
     const m=r.merchant||'—';
     const e=map[m]||(map[m]={diff:0,qty:0});
     e.diff+=r.qtyDiff;
@@ -909,7 +909,7 @@ function renderMerchantAppearanceTop(){
   let html='';
   if(!top20.length){ html='<div style=\"color:var(--muted);padding:16px 0\">当前筛选无外观差异商户</div>'; }
   else {
-    html='<div style=\"font-size:12px;color:var(--muted);margin-bottom:8px\">共 '+arr.filter(a=>a.diff>0).length+' 家有外观差异商户，显示TOP20。仅统计差异项含「外观」的记录。</div>';
+    html='<div style=\"font-size:12px;color:var(--muted);margin-bottom:8px\">共 '+arr.filter(a=>a.diff>0).length+' 家有外观/其它差异商户，显示TOP20。仅统计差异项含「外观」或「其它」的记录。</div>';
     html+='<div class=\"tablewrap\" style=\"max-height:480px;overflow:auto\"><table><thead><tr>';
     html+='<th>#</th><th>商户</th><th class=\"num\">外观差异</th><th class=\"num\">复测量</th><th class=\"num\">外观差异率</th>';
     html+='</tr></thead><tbody>';
