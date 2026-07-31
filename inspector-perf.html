@@ -812,13 +812,13 @@ function renderEmailRetest(){
     group.forEach(function(r, i){
       var rate=parseFloat(r.rate);
       var regLabel = i===0 ? '<span style=\"font-weight:600;color:'+regionColors[reg]+'\">'+reg+'</span>' : '';
-      h+="<tr"+(i===0?" style=border-top:2px solid var(--grid)":"")+"><td>"+regLabel+"</td><td>"+r.inspector+"</td><td style=text-align:right>"+r.total+"</td><td style=text-align:right>"+r.consistent+"</td><td style=text-align:right;color:"+(r.inconsistent>0?'var(--warn)':'var(--muted)')+"\">"+(r.inconsistent||'—')+"</td><td style=text-align:right;font-weight:600;color:"+rc(rate)+"\">"+r.rate+"%</td></tr>";
+      h+="<tr"+(i===0?" style=border-top:2px solid var(--grid)":"")+"><td>"+regLabel+"</td><td>"+r.inspector+"</td><td style=text-align:right>"+r.total+"</td><td style=text-align:right>"+r.consistent+"</td><td style=text-align:right;color:"+(r.inconsistent>0?'var(--warn)':'var(--muted)')+"\">"+(r.inconsistent!=null?r.inconsistent:'—')+"</td><td style=text-align:right;font-weight:600;color:"+rc(rate)+"\">"+r.rate+"%</td></tr>";
     });
     // Region summary
     var regTotal = group.reduce(function(s,r){ return s+r.total; }, 0);
     var regCons = group.reduce(function(s,r){ return s+r.consistent; }, 0);
     var regRate = (regCons/regTotal*100).toFixed(1);
-    h+="<tr style=font-weight:600;background:color-mix(in srgb,"+regionColors[reg]+" 6%,transparent);border-bottom:1px solid var(--grid)><td></td><td style=color:var(--muted)>小计</td><td style=text-align:right>"+regTotal+"</td><td style=text-align:right>"+regCons+"</td><td style=text-align:right;color:var(--muted)>"+(regTotal-regCons||'—')+"</td><td style=text-align:right;color:"+rc(parseFloat(regRate))+"\">"+regRate+"%</td></tr>";
+    h+="<tr style=font-weight:600;background:color-mix(in srgb,"+regionColors[reg]+" 6%,transparent);border-bottom:1px solid var(--grid)><td></td><td style=color:var(--muted)>小计</td><td style=text-align:right>"+regTotal+"</td><td style=text-align:right>"+regCons+"</td><td style=text-align:right;color:var(--muted)>"+(regTotal-regCons)+"</td><td style=text-align:right;color:"+rc(parseFloat(regRate))+"\">"+regRate+"%</td></tr>";
   });
   h+="</tbody></table>";
   document.getElementById("emailRetestTable").innerHTML=h;
