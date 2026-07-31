@@ -232,12 +232,6 @@ svg{display:block; width:100%; height:auto}
     </div>
 
     <div class="card col-12">
-      <h3>📬 飞书登记 vs 邮件推送 质检码匹配 <span class="hint">按巡检人员 · 仅匹配飞书表来源=邮件推送的记录</span></h3>
-      <div class="csub">飞书表「来源=邮件推送」的质检码与邮件推送Excel对比。不一致主因：邮件导出缺少当日数据。</div>
-      <div id="emailMatchSummary"></div>
-    </div>
-
-    <div class="card col-12">
       <h3>差异项分析 · 商户拆分 <span class="hint">各差异项下TOP5商户 · 来源 · 主客观</span></h3>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
         <span style="font-size:12px;color:var(--muted)">拆修/功能/外观/显示/浸液/其他 → TOP商户</span>
@@ -557,7 +551,7 @@ function renderAnalysisAll(){try{renderAnaModel();}catch(e){}try{renderAnaSubjDe
 /* ====== 差异分析模块 END ====== */
 
 function renderAll(){ renderKPIs(); renderTop3Actions();  renderActionItems(); renderWeekTrend(); renderMonthTrend(); renderRegions();
-  renderCenterDiff(); renderMerchantTop(); renderMerchantAppearanceTop(); renderEmailMatchSummary(); renderDiffItems(); renderSplits(); renderDescAnalysis(); renderDetail();
+  renderCenterDiff(); renderMerchantTop(); renderMerchantAppearanceTop(); renderDiffItems(); renderSplits(); renderDescAnalysis(); renderDetail();
   renderAnalysisAll(); }
 
 function renderActionItems(){
@@ -944,41 +938,6 @@ function renderMerchantAppearanceTop(){
       setTimeout(()=>{ document.querySelectorAll('#detailTable tbody tr').forEach(r=>{ r.style.background=r.textContent.includes(m)?'color-mix(in srgb,var(--s3) 18%,transparent)':''; }); },300);
     });
   });
-}
-
-function renderEmailMatchSummary(){
-  // Static match summary - updated 2026-07-31 (含7/30数据)
-  const data = [
-    {name:'胡江海',feishu:1266,match:1266,mismatch:0,rate:100},{name:'张天东',feishu:1218,match:1218,mismatch:0,rate:100},
-    {name:'刘辉崇',feishu:1196,match:1196,mismatch:0,rate:100},{name:'米小三',feishu:1159,match:1153,mismatch:6,rate:99.5},
-    {name:'赵子龙',feishu:1146,match:1146,mismatch:0,rate:100},{name:'黄少博',feishu:1144,match:1144,mismatch:0,rate:100},
-    {name:'杨启栋',feishu:1143,match:1143,mismatch:0,rate:100},{name:'张晰梦',feishu:1121,match:1120,mismatch:1,rate:99.9},
-    {name:'苏凯',feishu:1096,match:1096,mismatch:0,rate:100},{name:'旷小波',feishu:1063,match:1053,mismatch:10,rate:99.1},
-    {name:'吴恩惠',feishu:1026,match:1021,mismatch:5,rate:99.5},{name:'杨涛',feishu:1015,match:1015,mismatch:0,rate:100},
-    {name:'尚杰',feishu:988,match:988,mismatch:0,rate:100},{name:'谢志亮',feishu:923,match:922,mismatch:1,rate:99.9},
-    {name:'刘先浩',feishu:873,match:873,mismatch:0,rate:100},{name:'火东云',feishu:867,match:867,mismatch:0,rate:100}
-  ];
-  const total = data.reduce((s,d)=>s+d.feishu,0);
-  const tMatch = data.reduce((s,d)=>s+d.match,0);
-  const tMismatch = data.reduce((s,d)=>s+d.mismatch,0);
-  const tRate = (tMatch/total*100).toFixed(1);
-
-  let html='<div style=\"font-size:12px;color:var(--muted);margin-bottom:8px\">匹配日期: 2026-07-31 | 飞书表来源=邮件推送 ' + total + '条 → 匹配 ' + tMatch + '条 (' + tRate + '%)</div>';
-  html+='<div class=\"tablewrap\" style=\"max-height:520px;overflow:auto\"><table style=\"font-size:12px\"><thead><tr>';
-  html+='<th>巡检人员</th><th class=\"num\">飞书台数</th><th class=\"num\">一致</th><th class=\"num\">不一致</th><th class=\"num\">一致率</th></tr></thead><tbody>';
-  data.forEach(d => {
-    const col = d.rate >= 99 ? 'var(--good-ink)' : d.rate >= 97 ? 'var(--ink-2)' : d.rate >= 95 ? 'var(--warn)' : 'var(--crit)';
-    html += '<tr><td style=\"font-weight:600\">' + d.name + '</td>';
-    html += '<td class=\"num tnum\">' + d.feishu + '</td>';
-    html += '<td class=\"num tnum\" style=\"color:var(--good-ink)\">' + d.match + '</td>';
-    html += '<td class=\"num tnum\" style=\"color:' + (d.mismatch > 30 ? 'var(--crit)' : d.mismatch > 0 ? 'var(--warn)' : 'var(--ink-2)') + '\">' + (d.mismatch || '—') + '</td>';
-    html += '<td class=\"num tnum\" style=\"color:' + col + ';font-weight:600\">' + d.rate.toFixed(1) + '%</td></tr>';
-  });
-  html += '<tr style=\"font-weight:700;border-top:2px solid var(--grid)\"><td>合计</td>';
-  html += '<td class=\"num tnum\">' + total + '</td><td class=\"num tnum\" style=\"color:var(--good-ink)\">' + tMatch + '</td>';
-  html += '<td class=\"num tnum\" style=\"color:var(--warn)\">' + tMismatch + '</td><td class=\"num tnum\">' + tRate + '%</td></tr>';
-  html += '</tbody></table></div>';
-  document.getElementById('emailMatchSummary').innerHTML = html;
 }
 
 function renderDonut(){
