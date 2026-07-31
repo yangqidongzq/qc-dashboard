@@ -947,23 +947,23 @@ function renderMerchantAppearanceTop(){
 }
 
 function renderEmailMatchSummary(){
-  // Static match summary - updated 2026-07-30
+  // Static match summary - updated 2026-07-31 (含7/30数据)
   const data = [
-    {name:'胡江海',feishu:1266,match:1266,mismatch:0,rate:100},{name:'张天东',feishu:1185,match:1185,mismatch:0,rate:100},
-    {name:'黄少博',feishu:1144,match:1144,mismatch:0,rate:100},{name:'赵子龙',feishu:1128,match:1128,mismatch:0,rate:100},
-    {name:'苏凯',feishu:1055,match:1055,mismatch:0,rate:100},{name:'杨涛',feishu:1015,match:1015,mismatch:0,rate:100},
-    {name:'刘先浩',feishu:873,match:873,mismatch:0,rate:100},{name:'火东云',feishu:867,match:867,mismatch:0,rate:100},
-    {name:'张晰梦',feishu:1090,match:1089,mismatch:1,rate:99.9},{name:'米小三',feishu:1159,match:1153,mismatch:6,rate:99.5},
-    {name:'吴恩惠',feishu:1011,match:1006,mismatch:5,rate:99.5},{name:'尚杰',feishu:988,match:973,mismatch:15,rate:98.5},
-    {name:'谢志亮',feishu:923,match:885,mismatch:38,rate:95.9},{name:'刘辉崇',feishu:1196,match:1143,mismatch:53,rate:95.6},
-    {name:'杨启栋',feishu:1136,match:1082,mismatch:54,rate:95.2},{name:'旷小波',feishu:1063,match:1002,mismatch:61,rate:94.3}
+    {name:'胡江海',feishu:1266,match:1266,mismatch:0,rate:100},{name:'张天东',feishu:1218,match:1218,mismatch:0,rate:100},
+    {name:'刘辉崇',feishu:1196,match:1196,mismatch:0,rate:100},{name:'米小三',feishu:1159,match:1153,mismatch:6,rate:99.5},
+    {name:'赵子龙',feishu:1146,match:1146,mismatch:0,rate:100},{name:'黄少博',feishu:1144,match:1144,mismatch:0,rate:100},
+    {name:'杨启栋',feishu:1143,match:1143,mismatch:0,rate:100},{name:'张晰梦',feishu:1121,match:1120,mismatch:1,rate:99.9},
+    {name:'苏凯',feishu:1096,match:1096,mismatch:0,rate:100},{name:'旷小波',feishu:1063,match:1053,mismatch:10,rate:99.1},
+    {name:'吴恩惠',feishu:1026,match:1021,mismatch:5,rate:99.5},{name:'杨涛',feishu:1015,match:1015,mismatch:0,rate:100},
+    {name:'尚杰',feishu:988,match:988,mismatch:0,rate:100},{name:'谢志亮',feishu:923,match:922,mismatch:1,rate:99.9},
+    {name:'刘先浩',feishu:873,match:873,mismatch:0,rate:100},{name:'火东云',feishu:867,match:867,mismatch:0,rate:100}
   ];
   const total = data.reduce((s,d)=>s+d.feishu,0);
   const tMatch = data.reduce((s,d)=>s+d.match,0);
   const tMismatch = data.reduce((s,d)=>s+d.mismatch,0);
   const tRate = (tMatch/total*100).toFixed(1);
 
-  let html='<div style=\"font-size:12px;color:var(--muted);margin-bottom:8px\">匹配日期: 2026-07-30 | 飞书表来源=邮件推送 ' + total + '条 → 匹配 ' + tMatch + '条 (' + tRate + '%)</div>';
+  let html='<div style=\"font-size:12px;color:var(--muted);margin-bottom:8px\">匹配日期: 2026-07-31 | 飞书表来源=邮件推送 ' + total + '条 → 匹配 ' + tMatch + '条 (' + tRate + '%)</div>';
   html+='<div class=\"tablewrap\" style=\"max-height:520px;overflow:auto\"><table style=\"font-size:12px\"><thead><tr>';
   html+='<th>巡检人员</th><th class=\"num\">飞书台数</th><th class=\"num\">一致</th><th class=\"num\">不一致</th><th class=\"num\">一致率</th></tr></thead><tbody>';
   data.forEach(d => {
