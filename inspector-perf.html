@@ -768,8 +768,8 @@ function fillSelect(id,opts,val,on){
 
 function applyPreset(p){
   state.preset=p;
-  if(p==='todate'){state.from=1; state.to=CFG.asOfDay; state.fromDate=null; state.toDate=null;}
-  else if(p==='7'){state.to=CFG.asOfDay; state.from=Math.max(1,CFG.asOfDay-6); state.fromDate=null; state.toDate=null;}
+  if(p==='todate'){state.from=1; state.to=CFG.asOfDay; state.fromDate=dayToDate(1); state.toDate=dayToDate(CFG.asOfDay);}
+  else if(p==='7'){state.to=CFG.asOfDay; state.from=Math.max(1,CFG.asOfDay-6); state.fromDate=dayToDate(state.from); state.toDate=dayToDate(CFG.asOfDay);}
   else if(p==='all'){state.from=1; state.to=CFG.workDays; state.fromDate=null; state.toDate=null;}
   buildControls(); renderAll();
 }
