@@ -344,12 +344,15 @@ function computeDims(){
     const rs=im[n];
     return [n, Object.keys(rs).sort((a,b)=>rs[b]-rs[a])[0]];
   });
-  const days=[...new Set(D.map(r=>r.day))].sort((a,b)=>a-b);
   const dates=[...new Set(D.map(r=>r.date))].sort();
-  CFG.asOfDay=days[days.length-1];
-  if(dates.length) CFG.cycleMonth=dates[dates.length-1].slice(0,7);
-  state.fromDate=dates[0]; state.toDate=dates[dates.length-1];
-  state.from=days[0]; state.to=CFG.asOfDay;
+  if(dates.length){
+    CFG.cycleMonth=dates[dates.length-1].slice(0,7);
+    const monthDates=dates.filter(d=>d.startsWith(CFG.cycleMonth));
+    const monthDays=[...new Set(D.filter(r=>r.date.startsWith(CFG.cycleMonth)).map(r=>r.day))].sort((a,b)=>a-b);
+    CFG.asOfDay=monthDays[monthDays.length-1];
+    state.fromDate=monthDates[0]; state.toDate=monthDates[monthDates.length-1];
+    state.from=monthDays[0]; state.to=CFG.asOfDay;
+  }
 }
 function deriveDims(){
   if(typeof window!=='undefined' && window.QC_DATA && window.QC_DATA.length) computeDims();
