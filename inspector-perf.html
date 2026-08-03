@@ -259,7 +259,8 @@ const pad2 = n => String(n).padStart(2,'0');
 function parseDate(s){
   const m=/(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/.exec(String(s||''));
   if(!m) return null;
-  return {norm:`${m[1]}-${pad2(m[2])}-${pad2(m[3])}`, day:+m[3]};
+  const norm=`${m[1]}-${pad2(m[2])}-${pad2(m[3])}`;
+  return {norm, day:+m[3], month:norm.slice(0,7)};
 }
 
 /* RNG */
@@ -299,7 +300,7 @@ function genData(){
    ========================================================= */
 const state = {
   region:'全区域', center:'全部', category:'全部', inspector:'全部',
-  bizline:'全部', from:1, to:CFG.asOfDay, preset:'todate',
+  bizline:'全部', from:1, to:CFG.asOfDay, fromDate:null, toDate:null, preset:'todate',
   underOnly:false, collapseAll:true, collapsed:{}, problemMonth:'', problemExpand:'', problemCollapseAll:true, dailyInspector:'全部', dailyFrom:'', dailyTo:''
 };
 
@@ -309,7 +310,8 @@ function baseFilter(r, ignore={}){
   if(state.category!=='全部' && r.category!==state.category) return false;
   if(state.inspector!=='全部' && r.inspector!==state.inspector) return false;
   if(state.bizline!=='全部' && r.bizline!==state.bizline) return false;
-  if(r.day<state.from || r.day>state.to) return false;
+  if(state.fromDate && r.date<state.fromDate) return false;
+  if(state.toDate && r.date>state.toDate) return false;
   return true;
 }
 const getFiltered = (ignore={}) => RECORDS.filter(r=>baseFilter(r,ignore));
@@ -343,11 +345,11 @@ function computeDims(){
     return [n, Object.keys(rs).sort((a,b)=>rs[b]-rs[a])[0]];
   });
   const days=[...new Set(D.map(r=>r.day))].sort((a,b)=>a-b);
-  CFG.asOfDay=days[days.length-1];
-  state.from=days[0];
-  state.to=CFG.asOfDay;
   const dates=[...new Set(D.map(r=>r.date))].sort();
+  CFG.asOfDay=days[days.length-1];
   if(dates.length) CFG.cycleMonth=dates[dates.length-1].slice(0,7);
+  state.fromDate=dates[0]; state.toDate=dates[dates.length-1];
+  state.from=days[0]; state.to=CFG.asOfDay;
 }
 function deriveDims(){
   if(typeof window!=='undefined' && window.QC_DATA && window.QC_DATA.length) computeDims();
@@ -731,9 +733,12 @@ function buildControls(){
 
   const ff=document.getElementById('fFrom'), ft=document.getElementById('fTo');
   ff.min=ft.min=dayToDate(1); ff.max=ft.max=dayToDate(CFG.workDays);
-  ff.value=dayToDate(state.from); ft.value=dayToDate(state.to);
-  ff.onchange=()=>{ const p=parseDate(ff.value); if(p){state.from=p.day; syncPreset(); renderAll();} };
-  ft.onchange=()=>{ const p=parseDate(ft.value); if(p){state.to=p.day; syncPreset(); renderAll();} };
+  const allDates=[...new Set(RECORDS.map(r=>r.date))].sort();
+  const minDate=allDates[0], maxDate=allDates[allDates.length-1];
+  ff.min=ft.min=minDate; ff.max=ft.max=maxDate;
+  ff.value=state.fromDate||maxDate; ft.value=state.toDate||maxDate;
+  ff.onchange=()=>{ const p=parseDate(ff.value); if(p){state.fromDate=p.norm; state.from=p.day; syncPreset(); renderAll();} };
+  ft.onchange=()=>{ const p=parseDate(ft.value); if(p){state.toDate=p.norm; state.to=p.day; syncPreset(); renderAll();} };
 
   document.querySelectorAll('#presets .chip').forEach(b=>{
     b.classList.toggle('active',state.preset===b.dataset.p);
@@ -760,9 +765,9 @@ function fillSelect(id,opts,val,on){
 
 function applyPreset(p){
   state.preset=p;
-  if(p==='todate'){state.from=1; state.to=CFG.asOfDay;}
-  else if(p==='7'){state.to=CFG.asOfDay; state.from=Math.max(1,CFG.asOfDay-6);}
-  else if(p==='all'){state.from=1; state.to=CFG.workDays;}
+  if(p==='todate'){state.from=1; state.to=CFG.asOfDay; state.fromDate=null; state.toDate=null;}
+  else if(p==='7'){state.to=CFG.asOfDay; state.from=Math.max(1,CFG.asOfDay-6); state.fromDate=null; state.toDate=null;}
+  else if(p==='all'){state.from=1; state.to=CFG.workDays; state.fromDate=null; state.toDate=null;}
   buildControls(); renderAll();
 }
 function syncPreset(){ state.preset=''; document.querySelectorAll('#presets .chip').forEach(b=>b.classList.remove('active')); }
