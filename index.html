@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>巡检质控数据看板 · 前置后验 / 入仓质检</title>
 <style>
 :root{
@@ -339,7 +342,7 @@ n  <div class="card col-12">
 <div class="toast" id="toast"></div>
 
 <div id="loadingOverlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#f9f9f7;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:system-ui,sans-serif"><div style="font-size:48px;margin-bottom:16px">⏳</div><div style="font-size:16px;color:#52514e">巡检质控数据加载中...</div><div style="margin-top:8px;font-size:12px;color:#898781">数据量较大，首次加载约需5-15秒</div></div>
-<script src="qc-data.js?v=202607311718"></script>
+<script src="qc-data.js?v=20260803"></script>
 <script>document.getElementById('loadingOverlay').style.display='none';</script>
 <script>
 /* =========================================================
@@ -1548,8 +1551,8 @@ updateFoot();
       var qcUpd = v.qcData?.updated || '';
       var pbUpd = v.problemData?.updated || '';
       if (lastQc && (qcUpd !== lastQc || pbUpd !== lastPb)) {
-        console.log('[auto] Data changed, reloading...');
-        location.reload();
+        console.log('[auto] Data changed, hard reloading...');
+        location.href = location.href.split('?')[0] + '?v=' + Date.now();
         return;
       }
       lastQc = qcUpd; lastPb = pbUpd;
