@@ -347,11 +347,10 @@ function computeDims(){
   const dates=[...new Set(D.map(r=>r.date))].sort();
   if(dates.length){
     CFG.cycleMonth=dates[dates.length-1].slice(0,7);
-    const monthDates=dates.filter(d=>d.startsWith(CFG.cycleMonth));
     const monthDays=[...new Set(D.filter(r=>r.date.startsWith(CFG.cycleMonth)).map(r=>r.day))].sort((a,b)=>a-b);
     CFG.asOfDay=monthDays[monthDays.length-1];
-    state.fromDate=monthDates[0]; state.toDate=monthDates[monthDates.length-1];
-    state.from=monthDays[0]; state.to=CFG.asOfDay;
+    state.from=1; state.to=CFG.asOfDay;
+    state.fromDate=null; state.toDate=null;
   }
 }
 function deriveDims(){
@@ -771,9 +770,10 @@ function fillSelect(id,opts,val,on){
 
 function applyPreset(p){
   state.preset=p;
-  if(p==='todate'){state.from=1; state.to=CFG.asOfDay; state.fromDate=dayToDate(1); state.toDate=dayToDate(CFG.asOfDay);}
-  else if(p==='7'){state.to=CFG.asOfDay; state.from=Math.max(1,CFG.asOfDay-6); state.fromDate=dayToDate(state.from); state.toDate=dayToDate(CFG.asOfDay);}
+  if(p==='todate'){state.from=1; state.to=CFG.asOfDay; state.fromDate=null; state.toDate=null;}
+  else if(p==='7'){state.to=CFG.asOfDay; state.from=Math.max(1,CFG.asOfDay-6); state.fromDate=null; state.toDate=null;}
   else if(p==='all'){state.from=1; state.to=CFG.workDays; state.fromDate=null; state.toDate=null;}
+  else if(p==='month'){state.from=1; state.to=CFG.asOfDay; state.fromDate=dayToDate(1); state.toDate=dayToDate(CFG.asOfDay);}
   buildControls(); renderAll();
 }
 function syncPreset(){ state.preset=''; document.querySelectorAll('#presets .chip').forEach(b=>b.classList.remove('active')); }
