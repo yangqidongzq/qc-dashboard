@@ -1302,6 +1302,7 @@ function buildControls(){
   fillSelect('fInspector',['全部',...DYN_INSPECTORS.map(i=>i[0])],state.inspector,v=>state.inspector=v);
   fillSelect('fBiz',['全部',...CFG.bizlines],state.bizline,v=>state.bizline=v);
 
+  const ff=document.getElementById('fFrom'), ft=document.getElementById('fTo');
   const allDates=[...new Set(RECORDS.map(r=>r.date))].sort();
   const minDate=allDates[0], maxDate=allDates[allDates.length-1];
   ff.min=ft.min=minDate; ff.max=ft.max=maxDate;
