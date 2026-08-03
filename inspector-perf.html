@@ -396,7 +396,7 @@ function renderDaily(){
   var allInsp=[...new Set(RECORDS.map(r=>r.inspector))].sort();
   var names=allInsp.filter(n=>f.some(r=>r.inspector===n));
   // 只统计当月问题收集（与renderProblem一致）
-  var problemMonth = state.problemMonth || '2026-07';
+  var problemMonth = state.problemMonth || CFG.cycleMonth;
   var problemMap={};
   if(typeof PROBLEM_RECORDS!=='undefined' && PROBLEM_RECORDS.length){
     PROBLEM_RECORDS.forEach(function(r){
@@ -592,7 +592,10 @@ function renderProblem(){
   const QC_INSPECTORS = new Set(Object.keys(INSPECTOR_REGION));
 
   const months = [...new Set(PROBLEM_RECORDS.map(r => r.date.slice(0,7)))].sort();
-  if(!state.problemMonth && months.length) state.problemMonth = months[months.length-1];
+  // 确保当月可选
+  if(!months.includes(CFG.cycleMonth)) months.push(CFG.cycleMonth);
+  months.sort();
+  if(!state.problemMonth) state.problemMonth = CFG.cycleMonth;
 
   const sel = document.getElementById('fProblemMonth');
   if(sel && sel.options.length===0){
