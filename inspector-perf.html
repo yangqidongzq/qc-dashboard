@@ -132,9 +132,9 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
       <div class="field">
         <label>快捷区间</label>
         <div class="presets" id="presets">
-          <button class="chip" data-p="todate">至今</button>
-          <button class="chip" data-p="7">近7天</button>
-          <button class="chip" data-p="all">全周期</button>
+          <button class="chip" data-p="today">当日</button>
+          <button class="chip" data-p="7">近7日</button>
+          <button class="chip" data-p="todate">本月</button>
         </div>
       </div>
     </div>
@@ -769,10 +769,9 @@ function fillSelect(id,opts,val,on){
 
 function applyPreset(p){
   state.preset=p;
-  if(p==='todate'){state.from=1; state.to=CFG.asOfDay; state.fromDate=dayToDate(1); state.toDate=dayToDate(CFG.asOfDay);}
-  else if(p==='7'){state.to=CFG.asOfDay; state.from=Math.max(1,CFG.asOfDay-6); state.fromDate=dayToDate(Math.max(1,CFG.asOfDay-6)); state.toDate=dayToDate(CFG.asOfDay);}
-  else if(p==='all'){state.from=1; state.to=CFG.workDays; state.fromDate=null; state.toDate=null;}
-  else if(p==='month'){state.from=1; state.to=CFG.asOfDay; state.fromDate=dayToDate(1); state.toDate=dayToDate(CFG.asOfDay);}
+  if(p==='today'){state.from=CFG.asOfDay; state.to=CFG.asOfDay; state.fromDate=dayToDate(CFG.asOfDay); state.toDate=dayToDate(CFG.asOfDay);}
+  else if(p==='7'){state.from=Math.max(1,CFG.asOfDay-6); state.to=CFG.asOfDay; state.fromDate=dayToDate(Math.max(1,CFG.asOfDay-6)); state.toDate=dayToDate(CFG.asOfDay);}
+  else if(p==='todate'){state.from=1; state.to=CFG.asOfDay; state.fromDate=dayToDate(1); state.toDate=dayToDate(CFG.asOfDay);}
   buildControls(); renderAll();
 }
 function syncPreset(){ state.preset=''; document.querySelectorAll('#presets .chip').forEach(b=>b.classList.remove('active')); }
