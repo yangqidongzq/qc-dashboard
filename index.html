@@ -638,7 +638,7 @@ function tile(l,v,u,d,good,bad){ return `<div class="kpi"><div class="klabel">${
   <div class="kdelta ${bad?'down':good?'up':''}">${d}</div></div>`; }
 
 function renderWeekTrend(){
-  const f=getFiltered();
+  const f=RECORDS; // 周趋势用全量数据，不受日期筛选影响
   const dates=[...new Set(f.map(r=>r.date))].sort();
   const lastDate=new Date(dates[dates.length-1]);
   const dow=lastDate.getDay();
@@ -732,7 +732,7 @@ function renderWeekTrend(){
 }
 
 function renderMonthTrend(){
-  var f=getFiltered();
+  var f=RECORDS; // 近两月对比用全量数据，不受日期筛选影响
   var thisMonth = CFG.cycleMonth;
   var pm = thisMonth.split('-').map(Number);
   var lastMonth = pm[1]===1 ? (pm[0]-1)+'-12' : pm[0]+'-'+String(pm[1]-1).padStart(2,'0');
