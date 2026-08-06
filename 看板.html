@@ -207,13 +207,13 @@ svg{display:block; width:100%; height:auto}
     </div>
 
     <div class="card col-12">
-      <h3>📈 近两月对比 <span class="hint">本月 vs 上月 · 质检台数/差异率变化</span></h3>
+      <h3>📈 周维度趋势 <span class="hint">本周 vs 上周 · 质检台数/差异率变化</span></h3>
       <div class="csub">对比最近7天与上一个7天的数据变化，分析上升/下降原因。</div>
       <div id="weekTrend"></div>
     </div>
     <div class="card col-12">
-      <h3>📊 月度差异率趋势 <span class="hint">近6个月 · 整体+按中心仓</span></h3>
-      <div class="csub">总质检台数、差异率月度变化，识别持续改善 vs 反复波动</div>
+      <h3>📊 近两月差异对比 <span class="hint">本月 vs 上月 · 按中心仓</span></h3>
+      <div class="csub">各中心仓本月与上月质检台数、差异率对比，识别变化趋势</div>
       <div id="monthTrend"></div>
     </div>
     <div class="card col-12">
@@ -640,13 +640,17 @@ function tile(l,v,u,d,good,bad){ return `<div class="kpi"><div class="klabel">${
 
 function renderWeekTrend(){
   const f=getFiltered();
-  // 本月 vs 上月对比
-  const thisMonth = CFG.cycleMonth;
-  const [y, m] = thisMonth.split('-').map(Number);
-  const lastMonth = m === 1 ? (y-1)+'-12' : y+'-'+String(m-1).padStart(2,'0');
-
-  const thisPeriod = f.filter(r => r.date.startsWith(thisMonth));
-  const lastPeriod = f.filter(r => r.date.startsWith(lastMonth));
+  const dates=[...new Set(f.map(r=>r.date))].sort();
+  const lastDate=new Date(dates[dates.length-1]);
+  const dow=lastDate.getDay();
+  let thisThu=new Date(lastDate);
+  thisThu.setDate(thisThu.getDate()+((4-dow+7)%7));
+  const lastFri=new Date(thisThu);lastFri.setDate(thisThu.getDate()-6);
+  const prevThu=new Date(lastFri);prevThu.setDate(lastFri.getDate()-1);
+  const prevFri=new Date(prevThu);prevFri.setDate(prevThu.getDate()-6);
+  const fmtD=d=>d.toISOString().slice(0,10);
+  const thisWeek=f.filter(r=>r.date>=fmtD(lastFri)&&r.date<=fmtD(thisThu));
+  const lastWeek=f.filter(r=>r.date>=fmtD(prevFri)&&r.date<=fmtD(prevThu));
 
   // 按中心仓统计
   const centers=[...new Set(f.map(r=>r.center))].sort();
@@ -654,8 +658,8 @@ function renderWeekTrend(){
   if(!state[expandKey]) state[expandKey]='';
 
   const data=centers.map(c=>{
-    const tw=thisPeriod.filter(r=>r.center===c);
-    const lw=lastPeriod.filter(r=>r.center===c);
+    const tw=thisWeek.filter(r=>r.center===c);
+    const lw=lastWeek.filter(r=>r.center===c);
     const twQty=sum(tw,r=>r.qty),twDiff=sum(tw,r=>r.qtyDiff);
     const lwQty=sum(lw,r=>r.qty),lwDiff=sum(lw,r=>r.qtyDiff);
     const twRate=pct(twDiff,twQty),lwRate=pct(lwDiff,lwQty);
@@ -685,7 +689,7 @@ function renderWeekTrend(){
   const arrow=v=>v>1?'🔴 ↑':v>0.5?'🟡 ↗':v<-1?'🟢 ↓':v<-0.5?'🟢 ↘':'➡';
   const color=v=>v>2?'var(--crit)':v>1?'var(--serious)':v<-2?'var(--good-ink)':v<-1?'var(--good-ink)':'var(--ink-2)';
 
-  let html='<div class=\"tablewrap\" style=\"max-height:600px;overflow:auto\"><table style=\"font-size:12px\"><thead><tr><th>中心仓</th><th class=\"num\">本月台数</th><th class=\"num\">本月差异率</th><th class=\"num\">上月差异率</th><th class=\"num\">变化</th><th>趋势原因</th></tr></thead><tbody>';
+  let html='<div class=\"tablewrap\" style=\"max-height:600px;overflow:auto\"><table style=\"font-size:12px\"><thead><tr><th>中心仓</th><th class=\"num\">本周台数</th><th class=\"num\">本周差异率</th><th class=\"num\">上周差异率</th><th class=\"num\">变化</th><th>趋势原因</th></tr></thead><tbody>';
   data.forEach(d=>{
     const isExp=state[expandKey]===d.c;
     html+=`<tr style=\"cursor:pointer\" onclick=\"state.trendExpand=state.trendExpand==='${d.c}'?'':'${d.c}';renderWeekTrend();\">
@@ -729,52 +733,50 @@ function renderWeekTrend(){
 }
 
 function renderMonthTrend(){
-  var f=getFiltered(),dr=f.filter(function(r){return r.qtyDiff>0;});
-  // 按月聚合
-  var months={};f.forEach(function(r){var m=r.date.slice(0,7);months[m]=months[m]||{t:0,d:0,centers:{}};months[m].t++;if(r.qtyDiff){months[m].d++;months[m].centers[r.center]=(months[m].centers[r.center]||0)+1;}});
-  var ml=Object.keys(months).sort();
-  if(ml.length<2){document.getElementById('monthTrend').innerHTML='<div style=\"color:var(--muted);padding:12px\">数据不足（需至少2个月）</div>';return;}
+  var f=getFiltered();
+  var thisMonth = CFG.cycleMonth;
+  var pm = thisMonth.split('-').map(Number);
+  var lastMonth = pm[1]===1 ? (pm[0]-1)+'-12' : pm[0]+'-'+String(pm[1]-1).padStart(2,'0');
 
-  // SVG area
-  var pad=40, w=700,h=180,gw=w-pad*2,gh=h-pad*2;
-  var maxTotal=0,maxRate=0;ml.forEach(function(m){var v=months[m];if(v.t>maxTotal)maxTotal=v.t;var r=pct(v.d,v.t);if(r>maxRate)maxRate=r;});
-  maxTotal=Math.ceil(maxTotal/100)*100+100; maxRate=Math.ceil(maxRate)+2;
+  var thisPeriod = f.filter(function(r){ return r.date.startsWith(thisMonth); });
+  var lastPeriod = f.filter(function(r){ return r.date.startsWith(lastMonth); });
 
-  var html='<div style=\"font-size:12px;margin-bottom:4px\">📊 整体差异率月度趋势</div>';
-  html+='<svg width=\"100%\" height=\"'+(h+10)+'\" viewBox=\"0 0 '+w+' '+h+'\">';
-  // Grid
-  for(var i=0;i<=4;i++){var y=pad+i*(gh/4);html+='<line x1=\"'+pad+'\" y1=\"'+y+'\" x2=\"'+(w-pad)+'\" y2=\"'+y+'\" stroke=\"var(--grid)\" stroke-width=\"1\"/>';html+='<text x=\"'+(pad-5)+'\" y=\"'+(y+3)+'\" text-anchor=\"end\" font-size=\"9\" fill=\"var(--muted)\">'+(maxRate-maxRate*i/4).toFixed(1)+'%</text>';}
-  // Bars (total) + Line (rate)
-  var bw=(gw/ml.length-10);
-  ml.forEach(function(m,i){
-    var v=months[m],x=pad+10+i*(bw+10),barH=(v.t/maxTotal)*gh,rate=pct(v.d,v.t),ry=pad+gh-(rate/maxRate)*gh;
-    // Bar
-    html+='<rect x=\"'+x+'\" y=\"'+(pad+gh-barH)+'\" width=\"'+bw+'\" height=\"'+barH+'\" fill=\"color-mix(in srgb,var(--s1) 30%,transparent)\" rx=\"3\"/>';
-    html+='<text x=\"'+(x+bw/2)+'\" y=\"'+(pad+gh-barH-4)+'\" text-anchor=\"middle\" font-size=\"8\" fill=\"var(--ink-2)\">'+v.t+'台</text>';
-    // Line points
-    if(i>0){var prev=months[ml[i-1]],pr=pct(prev.d,prev.t),px=pad+10+(i-1)*(bw+10)+bw/2,py=pad+gh-(pr/maxRate)*gh;html+='<line x1=\"'+px+'\" y1=\"'+py+'\" x2=\"'+(x+bw/2)+'\" y2=\"'+ry+'\" stroke=\"var(--crit)\" stroke-width=\"2\"/>';}
-    html+='<circle cx=\"'+(x+bw/2)+'\" cy=\"'+ry+'\" r=\"3\" fill=\"var(--crit)\"/>';
-    html+='<text x=\"'+(x+bw/2)+'\" y=\"'+(pad+gh+14)+'\" text-anchor=\"middle\" font-size=\"9\" fill=\"var(--ink)\">'+m.slice(5)+'</text>';
-    html+='<text x=\"'+(x+bw/2)+'\" y=\"'+(ry-7)+'\" text-anchor=\"middle\" font-size=\"8\" fill=\"var(--crit)\" font-weight=\"600\">'+rate.toFixed(1)+'%</text>';
-  });
-  // Legend
-  html+='<text x=\"'+(w-pad)+'\" y=\"16\" text-anchor=\"end\" font-size=\"9\" fill=\"var(--ink-2)\">柱=质检台数 线=差异率</text>';
-  html+='</svg>';
+  if(!thisPeriod.length && !lastPeriod.length){ document.getElementById('monthTrend').innerHTML='<div style=\"color:var(--muted);padding:12px\">数据不足</div>'; return; }
 
-  // Center comparison table
-  html+='<div style=\"margin-top:8px;font-size:11px;display:grid;grid-template-columns:repeat(4,1fr);gap:4px\" class=\"tablewrap\">';
-  var centers={};f.forEach(function(r){var c=r.center;centers[c]=centers[c]||{};var m=r.date.slice(0,7);centers[c][m]=centers[c][m]||{t:0,d:0};centers[c][m].t++;if(r.qtyDiff)centers[c][m].d++;});
-  var cl=Object.keys(centers).sort();var trendText={};
-  cl.forEach(function(c){
-    var rates=ml.map(function(m){var v=(centers[c]||{})[m];return v?pct(v.d,v.t):null;}).filter(function(x){return x!==null;});
-    if(rates.length>=2){var first=rates[0],last=rates[rates.length-1],delta=last-first;trendText[c]=(delta>1?'↑恶化':delta<-1?'↓改善':'→持平')+' '+Math.abs(delta).toFixed(1)+'%';}
+  var centers=[...new Set(f.map(function(r){return r.center;}))].sort();
+  var data=centers.map(function(c){
+    var tw=thisPeriod.filter(function(r){return r.center===c;});
+    var lw=lastPeriod.filter(function(r){return r.center===c;});
+    var twQty=tw.reduce(function(s,r){return s+r.qty;},0);
+    var lwQty=lw.reduce(function(s,r){return s+r.qty;},0);
+    var twDiff=tw.reduce(function(s,r){return s+r.qtyDiff;},0);
+    var lwDiff=lw.reduce(function(s,r){return s+r.qtyDiff;},0);
+    return {c:c, twQty:twQty, twDiff:twDiff, twRate:twQty?twDiff/twQty*100:0, lwQty:lwQty, lwDiff:lwDiff, lwRate:lwQty?lwDiff/lwQty*100:0};
+  }).filter(function(d){return d.twQty>0||d.lwQty>0;}).sort(function(a,b){return (b.twRate-b.lwRate)-(a.twRate-a.lwRate);});
+
+  var html='<div style=\"font-size:12px;color:var(--muted);margin-bottom:8px\">📊 '+thisMonth+' vs '+lastMonth+' · 按中心仓对比</div>';
+  html+='<div class=\"tablewrap\" style=\"max-height:500px;overflow:auto\"><table style=\"font-size:12px\"><thead><tr>';
+  html+='<th>中心仓</th><th class=\"num\">本月台数</th><th class=\"num\">本月差异率</th><th class=\"num\">上月差异率</th><th class=\"num\">变化</th></tr></thead><tbody>';
+  data.forEach(function(d){
+    var change=d.twRate-d.lwRate;
+    var arrow=change>1?'🔴':change>0.5?'🟡':change<-1?'🟢':change<-0.5?'🟢':'➡';
+    var col=change>2?'var(--crit)':change>1?'var(--serious)':change<-2?'var(--good-ink)':change<-1?'var(--good-ink)':'var(--ink-2)';
+    html+='<tr><td style=\"font-weight:600\">'+d.c+'</td>';
+    html+='<td class=\"num tnum\">'+d.twQty+'</td>';
+    html+='<td class=\"num tnum\" style=\"color:'+(d.twRate>8?'var(--crit)':d.twRate>5?'var(--warn)':'var(--good-ink)')+';font-weight:600\">'+d.twRate.toFixed(1)+'%</td>';
+    html+='<td class=\"num tnum\" style=\"color:var(--ink-2)\">'+d.lwRate.toFixed(1)+'%</td>';
+    html+='<td class=\"num tnum\" style=\"color:'+col+';font-weight:600\">'+arrow+' '+(change>0?'+':'')+change.toFixed(1)+'%</td></tr>';
   });
-  html+='<div style=\"font-weight:600;font-size:11px;margin-bottom:2px\">各中心仓趋势：</div>';
-  cl.forEach(function(c){
-    var col=trendText[c]?trendText[c].includes('↓')?'var(--good-ink)':trendText[c].includes('↑')?'var(--crit)':'var(--ink-2)':'var(--muted)';
-    html+='<div style=\"color:'+col+'\">'+c.slice(0,2)+'… '+trendText[c]+'</div>';
-  });
-  html+='</div>';
+  // Total row
+  var tQty=thisPeriod.length, lQty=lastPeriod.length;
+  var tDiff=thisPeriod.reduce(function(s,r){return s+r.qtyDiff;},0);
+  var lDiff=lastPeriod.reduce(function(s,r){return s+r.qtyDiff;},0);
+  var tRate=tQty?tDiff/tQty*100:0, lRate=lQty?lDiff/lQty*100:0, tChange=tRate-lRate;
+  html+='<tr style=\"font-weight:700;border-top:2px solid var(--grid)\"><td>合计</td>';
+  html+='<td class=\"num tnum\">'+tQty+'</td><td class=\"num tnum\">'+tRate.toFixed(1)+'%</td>';
+  html+='<td class=\"num tnum\" style=\"color:var(--ink-2)\">'+lRate.toFixed(1)+'%</td>';
+  html+='<td class=\"num tnum\" style=\"color:'+(tChange>1?'var(--crit)':tChange<0?'var(--good-ink)':'var(--ink-2)')+'\">'+(tChange>0?'+':'')+tChange.toFixed(1)+'%</td></tr>';
+  html+='</tbody></table></div>';
   document.getElementById('monthTrend').innerHTML=html;
 }
 
