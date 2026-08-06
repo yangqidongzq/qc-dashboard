@@ -207,7 +207,7 @@ svg{display:block; width:100%; height:auto}
     </div>
 
     <div class="card col-12">
-      <h3>📈 周维度趋势 <span class="hint">本周 vs 上周 · 质检台数/差异率变化</span></h3>
+      <h3>📈 近两月对比 <span class="hint">本月 vs 上月 · 质检台数/差异率变化</span></h3>
       <div class="csub">对比最近7天与上一个7天的数据变化，分析上升/下降原因。</div>
       <div id="weekTrend"></div>
     </div>
@@ -640,20 +640,13 @@ function tile(l,v,u,d,good,bad){ return `<div class="kpi"><div class="klabel">${
 
 function renderWeekTrend(){
   const f=getFiltered();
-  // 用实际日期计算周：上周五→本周四为一个周期
-  const dates=[...new Set(f.map(r=>r.date))].sort();
-  const lastDate=new Date(dates[dates.length-1]);
-  const dow=lastDate.getDay(); // 0=Sun, 4=Thu
-  // 找到最近的周四
-  let thisThu=new Date(lastDate);
-  thisThu.setDate(thisThu.getDate()+((4-dow+7)%7)); // 前进到最近周四
-  const lastFri=new Date(thisThu);lastFri.setDate(thisThu.getDate()-6); // 本周五起点
-  const prevThu=new Date(lastFri);prevThu.setDate(lastFri.getDate()-1); // 上周四终点=本周五前一天
-  const prevFri=new Date(prevThu);prevFri.setDate(prevThu.getDate()-6); // 上周五起点
+  // 本月 vs 上月对比
+  const thisMonth = CFG.cycleMonth;
+  const [y, m] = thisMonth.split('-').map(Number);
+  const lastMonth = m === 1 ? (y-1)+'-12' : y+'-'+String(m-1).padStart(2,'0');
 
-  const fmtD=d=>d.toISOString().slice(0,10);
-  const thisWeek=f.filter(r=>r.date>=fmtD(lastFri)&&r.date<=fmtD(thisThu));
-  const lastWeek=f.filter(r=>r.date>=fmtD(prevFri)&&r.date<=fmtD(prevThu));
+  const thisPeriod = f.filter(r => r.date.startsWith(thisMonth));
+  const lastPeriod = f.filter(r => r.date.startsWith(lastMonth));
 
   // 按中心仓统计
   const centers=[...new Set(f.map(r=>r.center))].sort();
@@ -661,8 +654,8 @@ function renderWeekTrend(){
   if(!state[expandKey]) state[expandKey]='';
 
   const data=centers.map(c=>{
-    const tw=thisWeek.filter(r=>r.center===c);
-    const lw=lastWeek.filter(r=>r.center===c);
+    const tw=thisPeriod.filter(r=>r.center===c);
+    const lw=lastPeriod.filter(r=>r.center===c);
     const twQty=sum(tw,r=>r.qty),twDiff=sum(tw,r=>r.qtyDiff);
     const lwQty=sum(lw,r=>r.qty),lwDiff=sum(lw,r=>r.qtyDiff);
     const twRate=pct(twDiff,twQty),lwRate=pct(lwDiff,lwQty);
@@ -692,7 +685,7 @@ function renderWeekTrend(){
   const arrow=v=>v>1?'🔴 ↑':v>0.5?'🟡 ↗':v<-1?'🟢 ↓':v<-0.5?'🟢 ↘':'➡';
   const color=v=>v>2?'var(--crit)':v>1?'var(--serious)':v<-2?'var(--good-ink)':v<-1?'var(--good-ink)':'var(--ink-2)';
 
-  let html='<div class=\"tablewrap\" style=\"max-height:600px;overflow:auto\"><table style=\"font-size:12px\"><thead><tr><th>中心仓</th><th class=\"num\">本周台数</th><th class=\"num\">本周差异率</th><th class=\"num\">上周差异率</th><th class=\"num\">变化</th><th>趋势原因</th></tr></thead><tbody>';
+  let html='<div class=\"tablewrap\" style=\"max-height:600px;overflow:auto\"><table style=\"font-size:12px\"><thead><tr><th>中心仓</th><th class=\"num\">本月台数</th><th class=\"num\">本月差异率</th><th class=\"num\">上月差异率</th><th class=\"num\">变化</th><th>趋势原因</th></tr></thead><tbody>';
   data.forEach(d=>{
     const isExp=state[expandKey]===d.c;
     html+=`<tr style=\"cursor:pointer\" onclick=\"state.trendExpand=state.trendExpand==='${d.c}'?'':'${d.c}';renderWeekTrend();\">
