@@ -104,7 +104,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
 }
 </style>
 
-<script>window._EMAIL_RETEST_DATA=[{"inspector":"胡江海","total":758,"consistent":718,"inconsistent":40,"rate":"94.7","region":"华南"},{"inspector":"张天东","total":716,"consistent":657,"inconsistent":59,"rate":"91.8","region":"华南"},{"inspector":"杨启栋","total":653,"consistent":589,"inconsistent":64,"rate":"90.2","region":"华南"},{"inspector":"火东云","total":648,"consistent":589,"inconsistent":59,"rate":"90.9","region":"华南"},{"inspector":"刘辉崇","total":600,"consistent":538,"inconsistent":62,"rate":"89.7","region":"华南"},{"inspector":"刘先浩","total":473,"consistent":455,"inconsistent":18,"rate":"96.2","region":"华南"},{"inspector":"谢志亮","total":679,"consistent":616,"inconsistent":63,"rate":"90.7","region":"华东"},{"inspector":"尚杰","total":628,"consistent":605,"inconsistent":23,"rate":"96.3","region":"华东"},{"inspector":"旷小波","total":625,"consistent":578,"inconsistent":47,"rate":"92.5","region":"华东"},{"inspector":"米小三","total":759,"consistent":725,"inconsistent":34,"rate":"95.5","region":"华西"},{"inspector":"苏凯","total":697,"consistent":650,"inconsistent":47,"rate":"93.3","region":"华西"},{"inspector":"黄少博","total":628,"consistent":610,"inconsistent":18,"rate":"97.1","region":"华西"},{"inspector":"张晰梦","total":764,"consistent":724,"inconsistent":40,"rate":"94.8","region":"华北"},{"inspector":"赵子龙","total":648,"consistent":585,"inconsistent":63,"rate":"90.3","region":"华北"},{"inspector":"杨涛","total":622,"consistent":582,"inconsistent":40,"rate":"93.6","region":"华北"},{"inspector":"吴恩惠","total":602,"consistent":591,"inconsistent":11,"rate":"98.2","region":"华北"}];</script>
+<script>window._EMAIL_RETEST_DATA=[{"inspector":"刘辉崇","pushed":1140,"matched":600,"unmatched":540,"rate":"52.6","region":"华南"},{"inspector":"张天东","pushed":1140,"matched":716,"unmatched":424,"rate":"62.8","region":"华南"},{"inspector":"杨启栋","pushed":1140,"matched":653,"unmatched":487,"rate":"57.3","region":"华南"},{"inspector":"火东云","pushed":1140,"matched":648,"unmatched":492,"rate":"56.8","region":"华南"},{"inspector":"刘先浩","pushed":1140,"matched":473,"unmatched":667,"rate":"41.5","region":"华南"},{"inspector":"胡江海","pushed":1140,"matched":758,"unmatched":382,"rate":"66.5","region":"华南"},{"inspector":"尚杰","pushed":1140,"matched":628,"unmatched":512,"rate":"55.1","region":"华东"},{"inspector":"旷小波","pushed":1140,"matched":625,"unmatched":515,"rate":"54.8","region":"华东"},{"inspector":"谢志亮","pushed":1140,"matched":679,"unmatched":461,"rate":"59.6","region":"华东"},{"inspector":"米小三","pushed":1140,"matched":759,"unmatched":381,"rate":"66.6","region":"华西"},{"inspector":"苏凯","pushed":1140,"matched":713,"unmatched":427,"rate":"62.5","region":"华西"},{"inspector":"黄少博","pushed":1140,"matched":628,"unmatched":512,"rate":"55.1","region":"华西"},{"inspector":"吴恩惠","pushed":1140,"matched":602,"unmatched":538,"rate":"52.8","region":"华北"},{"inspector":"张晰梦","pushed":1140,"matched":764,"unmatched":376,"rate":"67.0","region":"华北"},{"inspector":"杨涛","pushed":1140,"matched":622,"unmatched":518,"rate":"54.6","region":"华北"},{"inspector":"赵子龙","pushed":1140,"matched":676,"unmatched":464,"rate":"59.3","region":"华北"}];</script>
 </head>
 <body>
 <div class="wrap">
@@ -185,7 +185,7 @@ tbody tr:hover{background:color-mix(in srgb,var(--s1) 6%,transparent)}
     </div>
 
     <div class="card">
-      <h3>📧 邮件推送一致率 <span class="hint">飞书登记邮件推送码中"一致"占比</span></h3>
+      <h3>📧 邮件推送匹配率 <span class="hint">总表码中飞书有登记记录的占比（差异默认正常）</span></h3>
       <div class="tablewrap"><table id="emailRetestTable"></table></div>
     </div>
 
@@ -813,23 +813,23 @@ function downloadFile(name,content){
 function renderEmailRetest(){
   var d = window._EMAIL_RETEST_DATA || [];
   if(!d.length){ document.getElementById("emailRetestTable").innerHTML="<tr><td style=color:var(--muted);padding:16px;text-align:center>暂无数据</td></tr>"; return; }
-  var rc = function(r){ return r>=95?"var(--good-ink)":r>=85?"var(--warn)":"var(--crit)"; };
+  var rc = function(r){ return r>=80?"var(--good-ink)":r>=60?"var(--warn)":"var(--crit)"; };
   var regions = ['华南','华东','华西','华北'];
   var regionColors = {'华南':'var(--s1)','华东':'var(--s2)','华西':'var(--s3)','华北':'var(--s5)'};
-  var h="<table style=width:100%;font-size:13px><thead><tr style=background:var(--track)><th>区域</th><th>巡检人员</th><th style=text-align:right>登记数</th><th style=text-align:right>一致</th><th style=text-align:right>不一致</th><th style=text-align:right>一致率</th></tr></thead><tbody>";
+  var h="<table style=width:100%;font-size:13px><thead><tr style=background:var(--track)><th>区域</th><th>巡检人员</th><th style=text-align:right>总表码数</th><th style=text-align:right>匹配上</th><th style=text-align:right>匹配不上</th><th style=text-align:right>匹配率</th></tr></thead><tbody>";
   regions.forEach(function(reg){
     var group = d.filter(function(r){ return r.region === reg; });
     if(!group.length) return;
     group.forEach(function(r, i){
       var rate=parseFloat(r.rate);
       var regLabel = i===0 ? '<span style=\"font-weight:600;color:'+regionColors[reg]+'\">'+reg+'</span>' : '';
-      h+="<tr"+(i===0?" style=border-top:2px solid var(--grid)":"")+"><td>"+regLabel+"</td><td>"+r.inspector+"</td><td style=text-align:right>"+r.total+"</td><td style=text-align:right>"+r.consistent+"</td><td style=text-align:right;color:"+(r.inconsistent>0?'var(--warn)':'var(--muted)')+"\">"+(r.inconsistent!=null?r.inconsistent:'—')+"</td><td style=text-align:right;font-weight:600;color:"+rc(rate)+"\">"+r.rate+"%</td></tr>";
+      h+="<tr"+(i===0?" style=border-top:2px solid var(--grid)":"")+"><td>"+regLabel+"</td><td>"+r.inspector+"</td><td style=text-align:right>"+r.pushed+"</td><td style=text-align:right>"+r.matched+"</td><td style=text-align:right;color:"+(r.unmatched>0?'var(--warn)':'var(--muted)')+"\">"+r.unmatched+"</td><td style=text-align:right;font-weight:600;color:"+rc(rate)+"\">"+r.rate+"%</td></tr>";
     });
     // Region summary
-    var regTotal = group.reduce(function(s,r){ return s+r.total; }, 0);
-    var regCons = group.reduce(function(s,r){ return s+r.consistent; }, 0);
-    var regRate = (regCons/regTotal*100).toFixed(1);
-    h+="<tr style=font-weight:600;background:color-mix(in srgb,"+regionColors[reg]+" 6%,transparent);border-bottom:1px solid var(--grid)><td></td><td style=color:var(--muted)>小计</td><td style=text-align:right>"+regTotal+"</td><td style=text-align:right>"+regCons+"</td><td style=text-align:right;color:var(--muted)>"+(regTotal-regCons)+"</td><td style=text-align:right;color:"+rc(parseFloat(regRate))+"\">"+regRate+"%</td></tr>";
+    var regPush = group.reduce(function(s,r){ return s+r.pushed; }, 0);
+    var regMatch = group.reduce(function(s,r){ return s+r.matched; }, 0);
+    var regRate = (regMatch/regPush*100).toFixed(1);
+    h+="<tr style=font-weight:600;background:color-mix(in srgb,"+regionColors[reg]+" 6%,transparent);border-bottom:1px solid var(--grid)><td></td><td style=color:var(--muted)>小计</td><td style=text-align:right>"+regPush+"</td><td style=text-align:right>"+regMatch+"</td><td style=text-align:right;color:var(--muted)>"+(regPush-regMatch)+"</td><td style=text-align:right;color:"+rc(parseFloat(regRate))+"\">"+regRate+"%</td></tr>";
   });
   h+="</tbody></table>";
   document.getElementById("emailRetestTable").innerHTML=h;
